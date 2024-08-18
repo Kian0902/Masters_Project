@@ -125,14 +125,25 @@ def IonogramProcessing(data, times, plot, result_path=None):
         
 
 
-def ImportData(datapath):
+def import_data(datapath: str):
     """
-    Function for importing ionogram data processed
-    by SAO explorer in form of text files.
+    This function handles ionogram data in form of text files that has been
+    pre-processed by the "SAO explorer" software.
+    
+    Each of these text files consist of 24-hour worth of ionosonde measurements
+    with 15 minutes interval per data update. In other words, each 15 min
+    interval has a time and date header followed by the ionosonde measurements.
+    Each measurement (one row) has 8 ionosonde features represented as the
+    columns. The features are: [Freq  Range  Pol  MPA  Amp  Doppler  Az  Zn].
+    
+    The number of measurements (rows) per "batch" changes depending on whether
+    or not the Ionosonde was able to receive a backscatter signal. So each
+    "batch" can contain different number of rows.
+    
     
     Input (type)    | DESCRIPTION
     ------------------------------------------------
-    datapath (str)  | Path to folder that contains original ionograms 
+    datapath (str)  | Path to folder that contains original ionograms txt files
     
     Return (type)              | DESCRIPTION
     ------------------------------------------------
@@ -141,38 +152,37 @@ def ImportData(datapath):
     """
     
     ionogram_time = []
-    data = []
+    ionogram_data = []
     with open(datapath, "r") as file:
         
-        # Reading all lines in txt file
-        lines = file.readlines()
+        lines = file.readlines() # Reading all lines in txt file
 
-        data_temp = []
+        data_batch = []
         for line in lines:
             
-            """# Condition when encountering new header containing date and time (Ex: "2018.09.21 (264) 00:00:00.000")"""
-            if len(line) == 30:  # length of header containing date and time is 30
+            """ # When encountering new header containing date and time (Ex: "2018.09.21 (264) 00:00:00.000") """
+            if len(line) == 30:                                               # length of header containing date and time which is 30
                 iono_date = line[0:10]                                        # length of date (Ex: "2018.09.21" has length=10)
                 iono_time = f"{line[-13:-11]}-{line[-10:-8]}-{line[-7:-5]}"   # defining new time format (Ex: 20-15-00)
-                iono_datetime = f"{iono_date}_{iono_time}"                    # Changing the format to be "yyyy.MM.dd_hh-mm-ss"
+                iono_datetime = f"{iono_date}_{iono_time}"                    # changing the format to be "yyyy.MM.dd_hh-mm-ss"
                 ionogram_time.append(iono_datetime)
             
             
-            """# Condition when encountering ionogram data (Ex: 3.400  315.0  90  24  33  -1.172 270.0  30.0)"""
-            if len(line) == 46: # length of eahc line containing ionogram values is 46
-                line_split = line.split() # Splitting strings in line elementwise e.g., ["Hello There"] to ["Hiello", "There"]
-                line_final= [float(x) for x in line_split] # Converting strings to floats
-                data_temp.append(line_final)
+            """ When encountering ionogram data (Ex: 3.400  315.0  90  24  33  -1.172 270.0  30.0) """
+            if len(line) == 46:                             # length of each line containing ionogram values which is 46
+                line_split = line.split()                   # splitting strings in line by the whitespace between values e.g., ["3.14 0.4"] to ["3.14", "0.4"]
+                line_final= [float(x) for x in line_split]  # Converting strings to floats
+                data_batch.append(line_final)
             
-            
-            if len(line) == 1:
-                data.append(np.array(data_temp))
-                data_temp = []
+            """ When encountering space between each batch of 15 min data """
+            if len(line) == 1:                     # length of whitespace which is 1
+                ionogram_data.append(np.array(data_batch))  # appending the "batch" to the total data list 
+                data_batch = []                    # resetting the batch list 
             
             else:
                 continue
     
-    ionogram_data = np.array(data, dtype=object)
+    ionogram_data = np.array(ionogram_data, dtype=object)
     ionogram_time = np.array(ionogram_time, dtype=object)
     
     return ionogram_data, ionogram_time
@@ -193,7 +203,7 @@ for file in os.listdir(datapath_folder):
     
     file_path = os.path.join(datapath_folder, file)
 
-    data, times = ImportData(file_path)
+    data, times = import_data(file_path)
     
     print(data.shape, times.shape)
     
