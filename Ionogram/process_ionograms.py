@@ -175,17 +175,18 @@ def import_data(datapath: str):
                 data_batch.append(line_final)
             
             """ When encountering space between each batch of 15 min data """
-            if len(line) == 1:                     # length of whitespace which is 1
+            if len(line) == 1:                              # length of whitespace which is 1
                 ionogram_data.append(np.array(data_batch))  # appending the "batch" to the total data list 
-                data_batch = []                    # resetting the batch list 
+                data_batch = []                             # resetting the batch list 
             
             else:
                 continue
     
-    ionogram_data = np.array(ionogram_data, dtype=object)
+    # Converting list into np.ndarrays
     ionogram_time = np.array(ionogram_time, dtype=object)
+    ionogram_data = np.array(ionogram_data, dtype=object)
     
-    return ionogram_data, ionogram_time
+    return ionogram_time, ionogram_data
 
 
 
@@ -203,15 +204,15 @@ for file in os.listdir(datapath_folder):
     
     file_path = os.path.join(datapath_folder, file)
 
-    data, times = import_data(file_path)
+    times, data = import_data(file_path)
     
-    print(data.shape, times.shape)
+    # print(data.shape, times.shape)
     
     
-    # IonogramProcessing(data, times, plot=False)
+    IonogramProcessing(data, times, plot=False)
       
     i+=1
 
-    break
+    # break
 
 
