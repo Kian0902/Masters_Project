@@ -130,43 +130,39 @@ def ImportData(datapath):
     Function for importing ionogram data processed
     by SAO explorer in form of text files.
     
-    Parameters  |   TYPE   | DESCRIPTION
+    Input (type)    | DESCRIPTION
     ------------------------------------------------
-    datapath    |   str    | Path to folder that contains original ionograms 
+    datapath (str)  | Path to folder that contains original ionograms 
     
-    Return         |   TYPE   | DESCRIPTION
+    Return (type)              | DESCRIPTION
     ------------------------------------------------
-    ionogram_data  | np array | Original ionogram data
-    ionogramTime   | np array | Timstamps of ionogram
-    
+    ionogram_data (np.ndarray) | Original ionogram data
+    ionogramTime  (np.ndarray) | Timstamps of ionogram
     """
     
-    ionogramTime = []
+    ionogram_time = []
     data = []
     with open(datapath, "r") as file:
         
         # Reading all lines in txt file
         lines = file.readlines()
-        
+
         data_temp = []
         for line in lines:
-            if len(line) == 30:
-                
-                iono_date = line[0:10]
-                iono_time = f"{line[-13:-11]}-{line[-10:-8]}-{line[-7:-5]}"
-
-                iono_datetime = f"{iono_date}_{iono_time}"
-                
-                ionogramTime.append(iono_datetime)
             
-            # Condition for if encounter space
-            if len(line) == 46:
-                
-                ll = line.split() # Splitting strings in line elementwise e.g., ["Hello There"] to ["Hiello", "There"]
-
-                l = [float(x) for x in ll] # Converting strings to floats
-                
-                data_temp.append(l)
+            """# Condition when encountering new header containing date and time (Ex: "2018.09.21 (264) 00:00:00.000")"""
+            if len(line) == 30:  # length of header containing date and time is 30
+                iono_date = line[0:10]                                        # length of date (Ex: "2018.09.21" has length=10)
+                iono_time = f"{line[-13:-11]}-{line[-10:-8]}-{line[-7:-5]}"   # defining new time format (Ex: 20-15-00)
+                iono_datetime = f"{iono_date}_{iono_time}"                    # Changing the format to be "yyyy.MM.dd_hh-mm-ss"
+                ionogram_time.append(iono_datetime)
+            
+            
+            """# Condition when encountering ionogram data (Ex: 3.400  315.0  90  24  33  -1.172 270.0  30.0)"""
+            if len(line) == 46: # length of eahc line containing ionogram values is 46
+                line_split = line.split() # Splitting strings in line elementwise e.g., ["Hello There"] to ["Hiello", "There"]
+                line_final= [float(x) for x in line_split] # Converting strings to floats
+                data_temp.append(line_final)
             
             
             if len(line) == 1:
@@ -177,8 +173,9 @@ def ImportData(datapath):
                 continue
     
     ionogram_data = np.array(data, dtype=object)
+    ionogram_time = np.array(ionogram_time, dtype=object)
     
-    return ionogram_data, ionogramTime
+    return ionogram_data, ionogram_time
 
 
 
@@ -186,8 +183,8 @@ def ImportData(datapath):
 
 
 
-resultpath = "C:\\Users\\kian0\\OneDrive\\Desktop\\FYS-3730 Project Paper\\training\\justmadeiono"
-datapath_folder = "C:\\Users\\kian0\\OneDrive\\Desktop\\FYS-3730 Project Paper\\FromGRMtotxt\\Training Data"
+# resultpath = "justmadeiono"
+datapath_folder = "ionograms_txt_data"
 
 i=0
 for file in os.listdir(datapath_folder):
@@ -197,11 +194,14 @@ for file in os.listdir(datapath_folder):
     file_path = os.path.join(datapath_folder, file)
 
     data, times = ImportData(file_path)
-
-    IonogramProcessing(data, times, plot=True)
+    
+    print(data.shape, times.shape)
+    
+    
+    # IonogramProcessing(data, times, plot=False)
       
     i+=1
 
-
+    break
 
 
