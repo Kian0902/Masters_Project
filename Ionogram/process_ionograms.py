@@ -6,6 +6,20 @@ Created on Sun Dec 10 14:32:00 2023
 """
 
 
+"""
+To do:
+    - Understand the each step in "ionogram_processing".
+    - Find ways of writing it more efficiently.
+    - Access whether or not to make a class.
+    - Maybe two seperate scripts?
+"""
+
+
+
+
+
+
+
 import os
 import numpy as np
 import matplotlib.pyplot as plt
@@ -15,29 +29,31 @@ from PIL import Image
 
 
 
-def IonogramProcessing(data, times, plot, result_path=None):
+def ionogram_processing(data, times, plot=False, result_path=None):
     """
     Function for reconstructing ionograms to their
     original dimensions, then resampling onto a
     81x81 grid.
     
     
-    Parameters  |   TYPE   | DESCRIPTION
+    Input (type) | DESCRIPTION
     ------------------------------------------------
-    data        | np array | Array with original ionograms 
-    times       | np array | Timestamps of the original ionograms
-    data        |   Bool   | Argument for plotting ionograms 
-    result_path |   str    | Path for Saving processed ionograms
+    data  (np.ndarray)  | Array with original ionograms 
+    times (np.ndarray)  | Timestamps of the original ionograms
+    plot  (bool)        | Argument for plotting ionograms 
+    result_path (str)   | Path for Saving processed ionograms
 
     """
     
-    for i in np.arange(0, len(data)):
+    
+    for i in np.arange(0, 1):
         print(i, len(times))
         
         time = times[i]
         test = data[i]
         
-        
+        print(test.shape)
+        print(len(time))
         """ Reconstructing ionograms to original dimensions"""
         # 1 Read Data
         freq = np.round(test[:, 0]*20)/20
@@ -147,8 +163,8 @@ def import_data(datapath: str):
     
     Return (type)              | DESCRIPTION
     ------------------------------------------------
-    ionogram_data (np.ndarray) | Original ionogram data
-    ionogramTime  (np.ndarray) | Timstamps of ionogram
+    ionogram_data (np.ndarray) | Procrssed ionogram data
+    ionogram_time (np.ndarray) | Timestamps of ionogram data
     """
     
     ionogram_time = []
@@ -174,6 +190,7 @@ def import_data(datapath: str):
                 line_final= [float(x) for x in line_split]  # Converting strings to floats
                 data_batch.append(line_final)
             
+            
             """ When encountering space between each batch of 15 min data """
             if len(line) == 1:                              # length of whitespace which is 1
                 ionogram_data.append(np.array(data_batch))  # appending the "batch" to the total data list 
@@ -185,7 +202,6 @@ def import_data(datapath: str):
     # Converting list into np.ndarrays
     ionogram_time = np.array(ionogram_time, dtype=object)
     ionogram_data = np.array(ionogram_data, dtype=object)
-    
     return ionogram_time, ionogram_data
 
 
@@ -200,7 +216,7 @@ datapath_folder = "ionograms_txt_data"
 i=0
 for file in os.listdir(datapath_folder):
     
-    print(i)
+    # print(i)
     
     file_path = os.path.join(datapath_folder, file)
 
@@ -209,10 +225,10 @@ for file in os.listdir(datapath_folder):
     # print(data.shape, times.shape)
     
     
-    IonogramProcessing(data, times, plot=False)
+    ionogram_processing(data, times)
       
     i+=1
 
-    # break
+    break
 
 
