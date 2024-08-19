@@ -62,30 +62,25 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         # 1 Rounding to the nearest 2nd decimal place (Ex: 2.157 --> 2.16)
         freq = np.around(test[:, 0], decimals=2)  # frequencies  [MHz]
         rang = np.around(test[:, 1], decimals=2)  # radar range  [km]
-        pol  = test[:, 2]                         # polarization (either 90 or -90 degrees)
+        pol  = np.round(test[:, 2])               # polarization (either 90 or -90 degrees)
         amp  = test[:, 4]                         # backscatter amplitude
-        ang  = test[:, 7]                         # received angle
+        ang  = np.round(test[:, 7])               # received angle
+        
         
         
         # 2 Recreate ionogram
-        iono_org = np.zeros((len(freq_org), len(rang_org)))  # defining initial shape of ionograms 
+        iono_org = np.zeros((len(freq_org), len(rang_org)))
+        F_idx  =  np.searchsorted(freq_org, freq)   # finding indices where values of freq matches with freq_org
+        Z_idx  =  np.searchsorted(rang_org, rang)   # finding indices where values of rang matches with rang_org
+        I_idx  =  np.clip(amp, 21, 75)              # only interested in amp: [21, 75]
+        P_mask =  (pol == 90) & (ang == 0)          # mask for positive 90 deg pol values and a 0 deg ang values
         
-        # Finding indices of ionogram data that is close to custom array
-        for i in range(0, len(freq)):
-            F_idx =  np.where(np.isclose(freq_org, freq[i]))[0]
-            Z_idx =  np.where(np.isclose(rang_org, rang[i]))[0]
-            P_idx =  np.round(pol[i])
-            I_idx =  amp[i]
-            A_idx =  np.round(ang[i])
-            if I_idx > I_max:
-                I_idx = 75
-            elif I_idx < 21:
-                I_idx = 21
-            
-            if A_idx == 0:
-                if P_idx == 90:
-                    iono_org[Z_idx, F_idx] = (I_idx - I_min)/(I_max-I_min)
-            
+        
+        
+        scaled_I_idx = (I_idx - I_min) / (I_max - I_min)
+        
+        iono_org[Z_idx[P_mask], F_idx[P_mask]] = scaled_I_idx[P_mask]
+        
         iono_org = (iono_org / np.max(iono_org)) * 255
         
 
