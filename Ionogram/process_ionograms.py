@@ -35,7 +35,6 @@ def ionogram_processing(data, times, plot=False, result_path=None):
     original dimensions, then resampling onto a
     81x81 grid.
     
-    
     Input (type) | DESCRIPTION
     ------------------------------------------------
     data  (np.ndarray)  | Array with original ionograms 
@@ -44,74 +43,75 @@ def ionogram_processing(data, times, plot=False, result_path=None):
     result_path (str)   | Path for Saving processed ionograms
     """
     
+    
     # Defining ionogram axes
     freq_org = np.arange(1, 16 + 0.05, 0.05)  # original ionogram freq: [1, 16] MHz
     rang_org = np.arange(80, 640 + 5, 5)      # original ionogram range: [80, 640] km 
+    
     
     # Max and min allowed amplitudes
     I_max = 75
     I_min = 20
     
+    # Prepare output grid for resampling
+    output_size = 81
+    Frange = [1, 9]
+    Zrange = [80, 480]
+    frequency_axis  = np.linspace(Frange[0], Frange[1], output_size)
+    range_axis = np.linspace(Zrange[0], Zrange[1], output_size)
+    r, f = np.meshgrid(range_axis, frequency_axis)
     
-    for i in np.arange(0, 1):
-
-        time = times[i]
-        test = data[i]
+    for i in np.arange(0, len(data)):
         
+        time = times[i]
+        data_i = data[i]
+        
+        print(f'  - {time[11: ]}')
+
         """ Reconstructing ionograms to original dimensions"""
         # 1 Rounding to the nearest 2nd decimal place (Ex: 2.157 --> 2.16)
-        freq = np.around(test[:, 0], decimals=2)  # frequencies  [MHz]
-        rang = np.around(test[:, 1], decimals=2)  # radar range  [km]
-        pol  = np.round(test[:, 2])               # polarization (either 90 or -90 degrees)
-        amp  = test[:, 4]                         # backscatter amplitude
-        ang  = np.round(test[:, 7])               # received angle
+        freq = np.around(data_i[:, 0], decimals=2)  # frequencies  [MHz]
+        rang = np.around(data_i[:, 1], decimals=2)  # radar range  [km]
+        pol  = np.round(data_i[:, 2])               # polarization (either 90 or -90 degrees)
+        amp  = data_i[:, 4]                         # backscatter amplitude
+        ang  = np.round(data_i[:, 7])               # received angle
         
         
         
         # 2 Recreate ionogram
-        iono_org = np.zeros((len(freq_org), len(rang_org)))
-        F_idx  =  np.searchsorted(freq_org, freq)   # finding indices where values of freq matches with freq_org
-        Z_idx  =  np.searchsorted(rang_org, rang)   # finding indices where values of rang matches with rang_org
-        I_idx  =  np.clip(amp, 21, 75)              # only interested in amp: [21, 75]
-        P_mask =  (pol == 90) & (ang == 0)          # mask for positive 90 deg pol values and a 0 deg ang values
+        iono_org = np.zeros((len(rang_org), len(freq_org)))
         
         
         
-        scaled_I_idx = (I_idx - I_min) / (I_max - I_min)
+        # Finding indices and ensuring they stay within valid bounds
+        F_idx = np.clip(np.searchsorted(freq_org, freq), 0, len(freq_org) - 1)
+        Z_idx = np.clip(np.searchsorted(rang_org, rang), 0, len(rang_org) - 1)
+        I_idx = np.clip(amp, I_min, I_max)              # only interested in amp: [21, 75]
+        mask = (pol == 90) & (ang == 0)                 # mask for positive 90 deg pol values and a 0 deg ang values
         
-        iono_org[Z_idx[P_mask], F_idx[P_mask]] = scaled_I_idx[P_mask]
         
-        iono_org = (iono_org / np.max(iono_org)) * 255
         
-
+        # Safeguarding index operations by clipping the indices
+        iono_org[Z_idx[mask], F_idx[mask]] = (I_idx[mask] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
+        iono_org = (iono_org / np.max(iono_org)) * 255                                # multiplying by 255 for image purposes
+        
+        
+        
         
         """ Resampling Ionograms on 81x81 grid"""
-        
-        # 3 Create an ionogram with reduced size
-        OutputSize = 81
-        Frange = [1, 9]
-        Zrange = [80, 480]
-        
-        
-        frequency  =  np.linspace(Frange[0], Frange[1], OutputSize)
-        range_vals =  np.linspace(Zrange[0], Zrange[1], OutputSize)
-        
-        xg, yg = np.meshgrid(rang_org, freq_org)
-        
-        r, f = np.meshgrid(range_vals, frequency)
-        
+        # Meshgrid
+        r_g, f_g = np.meshgrid(rang_org, freq_org)  # org ionogram grid
 
-        # Resampling onto grid
-        iono = np.uint8(griddata((xg.flatten(), yg.flatten()), iono_org.T.flatten(), (r.flatten(), f.flatten())).reshape(81, 81).T)
-  
         
+        # Resampling onto grid
+        iono = np.uint8(griddata((r_g.flatten(), f_g.flatten()), iono_org.T.flatten(), (r.flatten(), f.flatten())).reshape(output_size, output_size).T)
         ionogram = np.uint8((iono / np.max(iono)) * 255)
         
         
-
         # Convert the ionogram data to a Pillow image
         ionogram_image = Image.fromarray(ionogram)
         ionogram_image = ionogram_image.transpose(Image.FLIP_TOP_BOTTOM)
+        
         
         if plot == True:
 
@@ -204,22 +204,19 @@ def import_data(datapath: str):
 # resultpath = "justmadeiono"
 datapath_folder = "ionograms_txt_data"
 
-i=0
+
 for file in os.listdir(datapath_folder):
     
-    # print(i)
     
     file_path = os.path.join(datapath_folder, file)
 
     times, data = import_data(file_path)
     
+    print(f'Date {times[0][:10]}')
+    
     # print(data.shape, times.shape)
     
     
-    ionogram_processing(data, times)
-      
-    i+=1
+    ionogram_processing(data, times, plot=False)
 
     break
-
-
