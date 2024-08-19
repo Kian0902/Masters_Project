@@ -42,8 +42,15 @@ def ionogram_processing(data, times, plot=False, result_path=None):
     times (np.ndarray)  | Timestamps of the original ionograms
     plot  (bool)        | Argument for plotting ionograms 
     result_path (str)   | Path for Saving processed ionograms
-
     """
+    
+    # Defining ionogram axes
+    freq_org = np.arange(1, 16 + 0.05, 0.05)  # original ionogram freq: [1, 16] MHz
+    rang_org = np.arange(80, 640 + 5, 5)      # original ionogram range: [80, 640] km 
+    
+    # Max and min allowed amplitudes
+    I_max = 75
+    I_min = 20
     
     
     for i in np.arange(0, 1):
@@ -55,24 +62,13 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         # 1 Rounding to the nearest 2nd decimal place (Ex: 2.157 --> 2.16)
         freq = np.around(test[:, 0], decimals=2)  # frequencies  [MHz]
         rang = np.around(test[:, 1], decimals=2)  # radar range  [km]
-        pol  = test[:, 2]  # polarization (either 90 or -90 degrees)
-        amp  = test[:, 4]  # backscatter amplitude
-        ang  = test[:, 7]  # received angle
-
-
-
-        # 2 Recreate original ionogram
-        freq_org = np.round(np.arange(1, 16 + 0.05, 0.05)*20)/20
-        rang_org = np.round(np.arange(80, 640 + 5, 5)*5)/5
-        
-        length_freq = len(freq_org)
-        length_rang = len(rang_org)
-        
-        I_min = 20
-        I_max = 75
+        pol  = test[:, 2]                         # polarization (either 90 or -90 degrees)
+        amp  = test[:, 4]                         # backscatter amplitude
+        ang  = test[:, 7]                         # received angle
         
         
-        iono_org = np.zeros((length_rang, length_freq))
+        # 2 Recreate ionogram
+        iono_org = np.zeros((len(freq_org), len(rang_org)))  # defining initial shape of ionograms 
         
         # Finding indices of ionogram data that is close to custom array
         for i in range(0, len(freq)):
