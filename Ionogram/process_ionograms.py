@@ -52,14 +52,15 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         test = data[i]
         
         """ Reconstructing ionograms to original dimensions"""
-        # 1 Read Data
-        freq = np.round(test[:, 0]*20)/20
-        rang = np.round(test[:, 1]*5)/5
-        pol  = test[:, 2]
-        ion  = test[:, 4]
-        ang  = test[:, 7]
-        
-        
+        # 1 Rounding to the nearest 2nd decimal place (Ex: 2.157 --> 2.16)
+        freq = np.around(test[:, 0], decimals=2)  # frequencies  [MHz]
+        rang = np.around(test[:, 1], decimals=2)  # radar range  [km]
+        pol  = test[:, 2]  # polarization (either 90 or -90 degrees)
+        amp  = test[:, 4]  # backscatter amplitude
+        ang  = test[:, 7]  # received angle
+
+
+
         # 2 Recreate original ionogram
         freq_org = np.round(np.arange(1, 16 + 0.05, 0.05)*20)/20
         rang_org = np.round(np.arange(80, 640 + 5, 5)*5)/5
@@ -78,7 +79,7 @@ def ionogram_processing(data, times, plot=False, result_path=None):
             F_idx =  np.where(np.isclose(freq_org, freq[i]))[0]
             Z_idx =  np.where(np.isclose(rang_org, rang[i]))[0]
             P_idx =  np.round(pol[i])
-            I_idx =  ion[i]
+            I_idx =  amp[i]
             A_idx =  np.round(ang[i])
             if I_idx > I_max:
                 I_idx = 75
@@ -91,14 +92,7 @@ def ionogram_processing(data, times, plot=False, result_path=None):
             
         iono_org = (iono_org / np.max(iono_org)) * 255
         
-        
-        
-        
-        
-        
-        
-        
-        
+
         
         """ Resampling Ionograms on 81x81 grid"""
         
