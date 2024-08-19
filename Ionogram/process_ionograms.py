@@ -31,13 +31,15 @@ from PIL import Image
 
 def ionogram_processing(data, times, plot=False, result_path=None):
     """
-    Function for reconstructing ionograms to their
-    original dimensions, then resampling onto a
-    81x81 grid.
+    Function for reconstructing ionograms to their original dimensions, then
+    resampling onto a 81x81 grid.
     
-    Input (type) | DESCRIPTION
+    This function takes in data that has been processed by the "import_data"
+    function which contains ionograms over a whole day.
+    
+    Input (type)        | DESCRIPTION
     ------------------------------------------------
-    data  (np.ndarray)  | Array with original ionograms 
+    data  (np.ndarray)  | ndarray with original ionograms 
     times (np.ndarray)  | Timestamps of the original ionograms
     plot  (bool)        | Argument for plotting ionograms 
     result_path (str)   | Path for Saving processed ionograms
@@ -69,7 +71,7 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         print(f'  - {time[11: ]}')
 
         """ Reconstructing ionograms to original dimensions"""
-        # 1 Rounding to the nearest 2nd decimal place (Ex: 2.157 --> 2.16)
+        # Rounding to the nearest 2nd decimal place (Ex: 2.157 --> 2.16)
         freq = np.around(data_i[:, 0], decimals=2)  # frequencies  [MHz]
         rang = np.around(data_i[:, 1], decimals=2)  # radar range  [km]
         pol  = np.round(data_i[:, 2])               # polarization (either 90 or -90 degrees)
@@ -78,9 +80,8 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         
         
         
-        # 2 Recreate ionogram
+        """ Recreate ionogram """
         iono_org = np.zeros((len(rang_org), len(freq_org)))
-        
         
         
         # Finding indices and ensuring they stay within valid bounds
@@ -88,7 +89,6 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         Z_idx = np.clip(np.searchsorted(rang_org, rang), 0, len(rang_org) - 1)
         I_idx = np.clip(amp, I_min, I_max)              # only interested in amp: [21, 75]
         mask = (pol == 90) & (ang == 0)                 # mask for positive 90 deg pol values and a 0 deg ang values
-        
         
         
         # Safeguarding index operations by clipping the indices
@@ -114,11 +114,9 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         
         
         if plot == True:
-
             plt.imshow(ionogram_image, cmap='gray')
             plt.axis("off")
             plt.show()
-        
         
         
         if result_path is not None:
