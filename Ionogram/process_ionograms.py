@@ -47,13 +47,10 @@ def ionogram_processing(data, times, plot=False, result_path=None):
     
     
     for i in np.arange(0, 1):
-        print(i, len(times))
-        
+
         time = times[i]
         test = data[i]
         
-        print(test.shape)
-        print(len(time))
         """ Reconstructing ionograms to original dimensions"""
         # 1 Read Data
         freq = np.round(test[:, 0]*20)/20
@@ -93,6 +90,15 @@ def ionogram_processing(data, times, plot=False, result_path=None):
                     iono_org[Z_idx, F_idx] = (I_idx - I_min)/(I_max-I_min)
             
         iono_org = (iono_org / np.max(iono_org)) * 255
+        
+        
+        
+        
+        
+        
+        
+        
+        
         
         """ Resampling Ionograms on 81x81 grid"""
         
