@@ -12,6 +12,13 @@ import numpy as np
 from scipy.io import loadmat
 
 
+"""
+To do:
+    - Add more explanation to 'sort_data' method
+"""
+
+
+
 
 """
 dataset is a nested dictionary.   key_global: key_local1, key_local2
@@ -71,51 +78,47 @@ class EISCATDataSorter:
         return data
 
 
-    def sort_data(self):
-        """Sort the data from the global folder."""
+    def sort_data(self, save_data: bool=False):
+        """
+        Sort the data from the global folder.
+        """
+        
         subfolder_names = self.get_subfolder_names()
         
-        for iteration, subfolder in enumerate(subfolder_names):
-            print(iteration)
+        for i, subfolder in enumerate(subfolder_names):
             
+            
+            # Condition for reducing number of print statements
+            if len(subfolder_names) > 100:
+                print(f'Processed: {i+1} of {len(subfolder_names)} days')
+            else:
+                print(f'Processed: {i+1} of {len(subfolder_names)} days')
+                
+                
+            # Getting matlab files from subfolder
             files = [filename.path for filename in os.scandir(subfolder)
                                 if (filename.is_file()) and (filename.path[-3:] == 'mat')]
             
+            # Getting data stat at 15min interval
             files_to_process = [file for file in files if loadmat(file)["r_time"][0][4] % 15 == 0]
             
-            day = subfolder[10:20]
+            day = subfolder[10:20]  # date of subfolder containing data
             self.dataset[day] = {'r_time': [], 'r_h': [], 'r_param': [], 'r_error': []}
             
+            # Processing each matlab file
             for file in files_to_process:
                 data = self.process_file(file)
                 
+                # Assigning data to corresponding key
                 for key in self.dataset[day]:
                     self.dataset[day][key].append(np.array(data[key]))
-        
-        self.save_dataset()
+                    
+        if save_data == True:
+            self.save_dataset()
 
     def save_dataset(self, output_file='testing_sorted_data.pkl'):
-        """Save the dataset to a pickle file."""
         with open(output_file, 'wb') as file:
             pickle.dump(self.dataset, file)
-
-
-
-
-
-
-# Main path to Folder containing EISCAT data
-path = "C:\\Users\\kian0\\OneDrive\\Desktop\\UiT Courses\\FYS_3931\\Scripts\\Masters_Project\\Eiscat\\EISCAT_Ne"
-
-
-A = EISCATDataSorter(path, "EISCAT_Ne")
-
-
-
-
-
-
-
 
 
 
