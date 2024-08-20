@@ -17,26 +17,6 @@ from scipy.io import loadmat
 from scipy.interpolate import interp1d
 
 
-class BulkFiltering:
-    """
-    Class is for clipping and filtering data with  nested dictionaries. 
-    """
-    
-    def __init__(self, dataset: dict):
-        """
-        Nested Dict...
-        """
-        self.dataset = dataset
-    
-    
-    def process_bulk(self):
-         
-        
-        for i, day in enumerate(self.dataset):
-            
-            data = self.dataset[day] 
-            
-            print(data.keys())
 
 
 class DataFiltering:
@@ -69,11 +49,11 @@ class DataFiltering:
         mask = (self.dataset[key] >= min_val) & (self.dataset[key] <= max_val)
         mask = mask.ravel()
         
-
         # Applying mask to all keys
         for k in list(self.dataset.keys())[1:]:
-            self.dataset = self.dataset[k][mask, 0]
-
+            self.dataset[k] = self.dataset[k][mask, 0]
+            
+            
         
 
     def handle_nan(self, replace_val):
@@ -89,23 +69,31 @@ class DataFiltering:
         """
         
         # Looping through keys
-        for key in self.data:
+        # print(len(self.dataset.keys()))
+        for key in self.dataset:
+            
+            
+            
             
             # If any values within key is nan
-            if np.isnan(self.data[key]).any() == True:
-                nan_indices = np.isnan(self.data[key]) # Find the indices of NaN values
+            if np.isnan(self.dataset[key]).any() == True:
+                nan_indices = np.isnan(self.dataset[key]) # Find the indices of NaN values
+                
                 
                 # If more than half of array contains nan
                 """ This is so that faulty data can be detected"""
-                if len(nan_indices[nan_indices == True]) > len(self.data[key])/2:
-                    self.data[key].fill(replace_val)
+                if len(nan_indices[nan_indices == True]) > len(self.dataset[key])/2:
+                    self.dataset[key].fill(replace_val)
 
 
                 # If array contains any other instances of nans
                 else:
-                    self.data[key][nan_indices] = interp1d(np.arange(len(self.data[key]))[~nan_indices], 
-                                              self.data[key][~nan_indices], 
-                                              kind='linear', fill_value="extrapolate")(np.arange(len(self.data[key]))[nan_indices])
+                    
+                    self.dataset[key][nan_indices] = interp1d(np.arange(len(self.dataset[key]))[~nan_indices], 
+                                              self.dataset[key][~nan_indices], 
+                                              kind='linear', fill_value="extrapolate")(np.arange(len(self.dataset[key]))[nan_indices])
+                    
+                    
             # If nan is not detected
             else:
                 pass
@@ -120,7 +108,7 @@ class DataFiltering:
         """
         Returns self.data
         """
-        return self.data
+        return self.dataset
         
 
 

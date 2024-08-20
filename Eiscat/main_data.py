@@ -7,7 +7,6 @@ Created on Tue Aug 20 14:13:45 2024
 
 
 from sorting_data import EISCATDataSorter
-from filter_data import BulkFiltering
 
 
 
@@ -22,8 +21,5 @@ A.sort_data()
 
 data = A.return_data()
 
-Filter = BulkFiltering(data)
-
-filter_data = Filter.process_bulk()
 
 

@@ -75,6 +75,11 @@ class EISCATDataSorter:
         data = loadmat(file)  # importing matlab file as dictionary
         include = ["r_time", "r_h", "r_param", "r_error"]  # keys to include
         data = {key: data[key] for key in data if key in include}
+        
+        
+        process = DataFiltering(data)
+        process.filter_range("r_h", 90, 400)
+        process.handle_nan(replace_val=666)
         return data
     
     
