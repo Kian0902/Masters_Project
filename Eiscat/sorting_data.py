@@ -10,7 +10,7 @@ import os
 import pickle
 import numpy as np
 from scipy.io import loadmat
-
+from filter_data import DataFiltering
 
 """
 To do:
@@ -76,7 +76,8 @@ class EISCATDataSorter:
         include = ["r_time", "r_h", "r_param", "r_error"]  # keys to include
         data = {key: data[key] for key in data if key in include}
         return data
-
+    
+    
 
     def sort_data(self, save_data: bool=False):
         """
@@ -120,9 +121,12 @@ class EISCATDataSorter:
         with open(output_file, 'wb') as file:
             pickle.dump(self.dataset, file)
 
-
-
-
+    
+    def return_data(self):
+            """Returns the sorted dataset."""
+            return self.dataset
+    
+    
 
 
 

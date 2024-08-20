@@ -17,20 +17,37 @@ from scipy.io import loadmat
 from scipy.interpolate import interp1d
 
 
-
-
-
+class BulkFiltering:
+    """
+    Class is for clipping and filtering data with  nested dictionaries. 
+    """
+    
+    def __init__(self, dataset: dict):
+        """
+        Nested Dict...
+        """
+        self.dataset = dataset
+    
+    
+    def process_bulk(self):
+         
+        
+        for i, day in enumerate(self.dataset):
+            
+            data = self.dataset[day] 
+            
+            print(data.keys())
 
 
 class DataFiltering:
     """
-    This class is for clipping and filtering data with dictionaries. 
+    Class for clipping and filtering data with dictionaries. 
     """
     def __init__(self, dataset):
         """
         Attributes (type)  | DESCRIPTION
         ------------------------------------------------
-        dataset (dict)     | Dictionary containing the data.
+        dataset (dict)     | Single dictionary containing the matlab data.
         """
         self.dataset = dataset
     
@@ -59,6 +76,51 @@ class DataFiltering:
 
         
 
+    def handle_nan(self, replace_val):
+        """
+        Function for handling arrays with nan values. This method interpolates
+        and/or extrapolates way nans. If more than half of the array contains
+        nans, then user has the choise of which value to fill the entire array
+        with.
+        
+        Input (type)            | DESCRIPTION
+        ------------------------------------------------
+        replace_val (int/float) | Value to replace nans with
+        """
+        
+        # Looping through keys
+        for key in self.data:
+            
+            # If any values within key is nan
+            if np.isnan(self.data[key]).any() == True:
+                nan_indices = np.isnan(self.data[key]) # Find the indices of NaN values
+                
+                # If more than half of array contains nan
+                """ This is so that faulty data can be detected"""
+                if len(nan_indices[nan_indices == True]) > len(self.data[key])/2:
+                    self.data[key].fill(replace_val)
+
+
+                # If array contains any other instances of nans
+                else:
+                    self.data[key][nan_indices] = interp1d(np.arange(len(self.data[key]))[~nan_indices], 
+                                              self.data[key][~nan_indices], 
+                                              kind='linear', fill_value="extrapolate")(np.arange(len(self.data[key]))[nan_indices])
+            # If nan is not detected
+            else:
+                pass
+                
+                
+        # # Allow the user to return data after applying method
+        # if return_data == True:
+        #     return self.data
+
+
+    def return_data(self):
+        """
+        Returns self.data
+        """
+        return self.data
         
 
 
