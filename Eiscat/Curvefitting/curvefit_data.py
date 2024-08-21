@@ -80,6 +80,10 @@ class Curvefit(nn.Module):
 
 
 
+# Importing processed dataset
+custom_file_path = "C:\\Users\\kian0\\OneDrive\\Desktop\\UiT Courses\\FYS_3931\\Scripts\\Masters_Project\\Eiscat\\Curvefitting\\Sorted_data.pkl"
+with open(custom_file_path, 'rb') as f:
+    dataset = pickle.load(f)
 
 
 
