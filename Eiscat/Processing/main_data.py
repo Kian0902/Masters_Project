@@ -11,12 +11,12 @@ from sorting_data import EISCATDataSorter
 
 
 # Main path to Folder containing EISCAT data
-path = "C:\\Users\\kian0\\OneDrive\\Desktop\\UiT Courses\\FYS_3931\\Scripts\\Masters_Project\\Eiscat\\EISCAT_Ne"
+path = "C:\\Users\\kian0\\OneDrive\\Desktop\\UiT Courses\\FYS_3931\\Scripts\\Masters_Project\\Eiscat\\Processing\\EISCAT_Ne"
 
 
 A = EISCATDataSorter(path, "EISCAT_Ne")
 
-A.sort_data()
+A.sort_data(save_data=True)
 
 
 data = A.return_data()

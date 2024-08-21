@@ -122,7 +122,7 @@ class EISCATDataSorter:
         if save_data == True:
             self.save_dataset()
 
-    def save_dataset(self, output_file='testing_sorted_data.pkl'):
+    def save_dataset(self, output_file='sorted_data.pkl'):
         with open(output_file, 'wb') as file:
             pickle.dump(self.dataset, file)
 
