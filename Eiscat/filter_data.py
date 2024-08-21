@@ -98,10 +98,6 @@ class DataFiltering:
             else:
                 pass
                 
-                
-        # # Allow the user to return data after applying method
-        # if return_data == True:
-        #     return self.data
 
 
     def return_data(self):
