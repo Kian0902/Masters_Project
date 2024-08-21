@@ -35,7 +35,6 @@ class Curvefit(nn.Module):
         self.HF_below = nn.Parameter(torch.tensor([np.log(25)], dtype=torch.float64), requires_grad=True)
         self.HF_above = nn.Parameter(torch.tensor([np.log(40)], dtype=torch.float64), requires_grad=True)
 
-
     def forward(self, x, nE_peak, nF_peak, zE_peak, zF_peak):
         """
         Forward propagation function.
