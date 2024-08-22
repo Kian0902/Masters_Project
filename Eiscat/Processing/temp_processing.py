@@ -46,7 +46,13 @@ class EISCATDataSorter:
         return data
 
 
-
+    def sort_data(self, save_data: bool=False):
+        files = self.get_file_paths()
+        for i, file in enumerate(files):
+            data = self.process_file(file)
+            # Add processing logic here
+            # Example:
+            self.dataset[file] = data
 
     def return_data(self):
         """Returns the sorted dataset."""
