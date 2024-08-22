@@ -87,7 +87,8 @@ class EISCATDataSorter:
         
         # Applying filers
         filt = DataFiltering(data)
-        filt.filter_range('r_h', 90, 400)        
+        filt.filter_range('r_h', 90, 400)    
+        filt.filter_nan()
         return data
     
     
@@ -195,7 +196,21 @@ class EISCATDataSorter:
 folder_name = "Ne"
 A = EISCATDataSorter(folder_name)
 
-a = A.sort_data()
+A.sort_data()
+
+data = A.return_data()
+
+a = data['2018-11-10']
+
+z  =  a['r_h']
+ne =  a['r_param']
+
+
+plt.plot(ne[:, 0:6], z[:, 0:6])
+plt.show()
+
+
+
 # A.test_dataflow()
 
 
