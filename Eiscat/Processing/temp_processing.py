@@ -13,6 +13,7 @@ import numpy as np
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
+from temp_filter_data import DataFiltering
 
 
 
@@ -72,15 +73,21 @@ class EISCATDataSorter:
         
         data = loadmat(file)  # importing .mat file as dict
         include = ["r_h", "r_param", "r_error"]
-        data = {key: data[key] for key in data if key in include}
+        data = {key: data[key].T for key in data if key in include}
         
+        
+
         
         # if detecting different shapes
         if data['r_h'].shape != data["r_param"].shape:
-            data['r_h'] = np.tile(data['r_h'], (1, data["r_param"].shape[0])).T  # copying r_h such that is has the same shape as r_param
+            data['r_h'] = np.tile(data['r_h'], (data["r_param"].shape[1], 1)).T  # copying r_h such that is has the same shape as r_param
         else:
             pass
         
+        
+        # Applying filers
+        filt = DataFiltering(data)
+        filt.filter_range('r_h', 90, 400)        
         return data
     
     
@@ -95,27 +102,29 @@ class EISCATDataSorter:
             data = self.process_file(file)           # open and convert matlab file to dict
             file_name = os.path.basename(file)[:-4]  # only get date from filename
             self.dataset[file_name] = data           # assign data to date of measurement
-        
+            
         
         if save_data == True:
             self.save_dataset()
         
         
-        
+    
     def save_dataset(self, output_file='sorted_data.pkl'):
         """
         Saves dataset locally as a .pkl file.
         """
         with open(output_file, 'wb') as file:
             pickle.dump(self.dataset, file)
-    
-    
-    
+
+
+
     def return_data(self):
         """
         Returns the sorted dataset.
         """
         return self.dataset
+
+
 
 
 
@@ -187,7 +196,7 @@ folder_name = "Ne"
 A = EISCATDataSorter(folder_name)
 
 a = A.sort_data()
-
+# A.test_dataflow()
 
 
 
