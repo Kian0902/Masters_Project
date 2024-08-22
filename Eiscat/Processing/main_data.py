@@ -7,19 +7,25 @@ Created on Tue Aug 20 14:13:45 2024
 
 
 from sorting_data import EISCATDataSorter
+import matplotlib.pyplot as plt
 
+# Use the local folder name instead of the full path
+folder_name = "Ne"
+A = EISCATDataSorter(folder_name)
 
-
-# Main path to Folder containing EISCAT data
-path = "C:\\Users\\kian0\\OneDrive\\Desktop\\UiT Courses\\FYS_3931\\Scripts\\Masters_Project\\Eiscat\\Processing\\EISCAT_Ne"
-
-
-A = EISCATDataSorter(path, "EISCAT_Ne")
-
-A.sort_data(save_data=True)
-
+A.sort_data()
 
 data = A.return_data()
 
+a = data['2018-11-10']
+
+z  =  a['r_h']
+ne =  a['r_param']
 
 
+plt.plot(ne[:, 0:6], z[:, 0:6])
+plt.show()
+
+
+
+# A.test_dataflow()
