@@ -38,7 +38,7 @@ class EISCATDataSorter:
 
 
     def process_file(self, file: str):
-        
+        print("h")
         data = loadmat(file)  # importing matlab file as dictionary
         include = ["r_h", "r_param", "r_error"]  # keys to include
         data = {key: data[key] for key in data if key in include}
@@ -47,15 +47,6 @@ class EISCATDataSorter:
 
 
 
-
-
-    def sort_data(self, save_data: bool=False):
-        files = self.get_file_paths()
-        for i, file in enumerate(files):
-            data = self.process_file(file)
-            # Add processing logic here
-            # Example:
-            self.dataset[file] = data
 
     def return_data(self):
         """Returns the sorted dataset."""
@@ -68,7 +59,7 @@ A = EISCATDataSorter(folder_name)
 
 a = A.get_file_paths()
 
-print(a.dataset)
+print(A.dataset)
 
 # file_paths = A.get_file_paths()
 
