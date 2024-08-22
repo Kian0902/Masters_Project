@@ -62,11 +62,11 @@ class EISCATDataSorter:
         data  (dict)  | Dictionary containing data per wanted key
         """
 
-        data = loadmat(file)
+        data = loadmat(file)  # importing .mat file as dict
         include = ["r_h", "r_param", "r_error"]
         data = {key: data[key] for key in data if key in include}
         
-        
+        # if shapes are different
         if data['r_h'].shape != data["r_param"].shape:
             data['r_h'] = np.tile(data['r_h'], (1, data["r_param"].shape[0])).T  # copying r_h such that is has the same shape as r_param
         else:
@@ -77,15 +77,19 @@ class EISCATDataSorter:
     
     
     def sort_data(self, save_data: bool=False):
+        """
+        Sort the data from folder containing .mat data files.
+        """
         
-        files = self.get_file_paths()
+        files = self.get_file_paths()  # getting full path of .mat files
+        
         
         for i, file in enumerate(files):
 
-            data = self.process_file(file)  # open convert matlab file to dict
+            data = self.process_file(file)       # open and convert matlab file to dict
             
             file_name = os.path.basename(file)[:-4]  # only get date from filename
-            self.dataset[file_name] = data
+            self.dataset[file_name] = data           # assign data to date of measurement
 
 
     def return_data(self):
