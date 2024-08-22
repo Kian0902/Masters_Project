@@ -21,13 +21,25 @@ class EISCATDataSorter:
     Class for importing and sorting EISCAT data.
     """
     def __init__(self, folder_name: str):
-        
-        self.full_path = os.path.abspath(os.path.join(os.getcwd(), folder_name))
-        self.dataset = {}  # for storing dataset
+        """
+        Attributes (type)          | DESCRIPTION
+        ------------------------------------------------
+        folder_name (str)   | Name of folder containing .mat data files
+        dataset     (dict)  | Dict for storing data
+        """
+        self.full_path = os.path.abspath(os.path.join(os.getcwd(), folder_name))  # Find full dir path
+        self.dataset = {}
 
 
 
     def get_file_paths(self):
+        """
+        Getting the full dir path of each .mat data file.
+        
+        Return (type)            | DESCRIPTION
+        ------------------------------------------------
+        file_paths (list[str])   | List containing full .mat path names
+        """
         
         file_paths = [os.path.join(root, file) 
                       for root, dirs, files in os.walk(self.full_path) 
@@ -38,17 +50,32 @@ class EISCATDataSorter:
 
 
     def process_file(self, file: str):
-        data = loadmat(file)  # importing matlab file as dictionary
-        include = ["r_h", "r_param", "r_error"]  # keys to include
+        """
+        Load data from a single .mat data file
+        
+        Input (type) | DESCRIPTION
+        ------------------------------------------------
+        file  (str)  | matlab file name
+        
+        Return (type) | DESCRIPTION
+        ------------------------------------------------
+        data  (dict)  | Dictionary containing data per wanted key
+        """
+
+        data = loadmat(file)
+        include = ["r_h", "r_param", "r_error"]
         data = {key: data[key] for key in data if key in include}
         
-        data['r_h'] = np.tile(data['r_h'], (1, data["r_param"].shape[0])).T  # copying r_h such that is has the same shape as r_param
+        
+        if data['r_h'].shape != data["r_param"].shape:
+            data['r_h'] = np.tile(data['r_h'], (1, data["r_param"].shape[0])).T  # copying r_h such that is has the same shape as r_param
+        else:
+            pass
+        
         return data
     
     
     
-    
-
     def sort_data(self, save_data: bool=False):
         
         files = self.get_file_paths()
@@ -57,24 +84,16 @@ class EISCATDataSorter:
 
             data = self.process_file(file)  # open convert matlab file to dict
             
-            
-            
-            
             file_name = os.path.basename(file)[:-4]  # only get date from filename
-            
-
-            
             self.dataset[file_name] = data
-            
-            
-            if i == 0:
-                break
-
 
 
     def return_data(self):
         """Returns the sorted dataset."""
         return self.dataset
+
+
+
 
 
 # Use the local folder name instead of the full path
@@ -83,7 +102,8 @@ A = EISCATDataSorter(folder_name)
 
 a = A.sort_data()
 
-print(A.dataset['2018-11-10']['r_h'].shape)
+print(len(A.dataset.keys()))
+print(A.dataset['2018-11-10']['r_param'].shape)
 
 # file_paths = A.get_file_paths()
 
