@@ -38,21 +38,39 @@ class EISCATDataSorter:
 
 
     def process_file(self, file: str):
-        print("h")
         data = loadmat(file)  # importing matlab file as dictionary
         include = ["r_h", "r_param", "r_error"]  # keys to include
         data = {key: data[key] for key in data if key in include}
         
+        data['r_h'] = np.tile(data['r_h'], (1, data["r_param"].shape[0])).T  # copying r_h such that is has the same shape as r_param
         return data
-
+    
+    
+    
+    
 
     def sort_data(self, save_data: bool=False):
+        
         files = self.get_file_paths()
+        
         for i, file in enumerate(files):
-            data = self.process_file(file)
-            # Add processing logic here
-            # Example:
-            self.dataset[file] = data
+
+            data = self.process_file(file)  # open convert matlab file to dict
+            
+            
+            
+            
+            file_name = os.path.basename(file)[:-4]  # only get date from filename
+            
+
+            
+            self.dataset[file_name] = data
+            
+            
+            if i == 0:
+                break
+
+
 
     def return_data(self):
         """Returns the sorted dataset."""
@@ -63,9 +81,9 @@ class EISCATDataSorter:
 folder_name = "Ne"
 A = EISCATDataSorter(folder_name)
 
-a = A.get_file_paths()
+a = A.sort_data()
 
-print(A.dataset)
+print(A.dataset['2018-11-10']['r_h'].shape)
 
 # file_paths = A.get_file_paths()
 
