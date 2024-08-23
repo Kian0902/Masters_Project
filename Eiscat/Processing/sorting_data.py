@@ -76,8 +76,7 @@ class EISCATDataSorter:
         
         data = loadmat(file)  # importing .mat file as dict
         include = ["r_h", "r_param", "r_error"]
-        data = {key: data[key].T for key in data if key in include}
-        
+        data = {key: data[key].T for key in include if key in data}  # includes keys in same order as in the include list
         
 
         # if detecting different shapes

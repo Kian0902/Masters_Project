@@ -17,6 +17,16 @@ A = EISCATDataSorter(folder_name)
 
 # data = A.return_data()
 
+
+# print(type(data))
+# print(data.keys())
+# print(data['2018-11-10'].keys())
+
+# for key in data['2018-11-10']:
+#     print(key)
+#     print(type(data['2018-11-10'][key]))
+#     print(data['2018-11-10'][key].shape)
+
 # a = data['2018-11-10']
 
 # z  =  a['r_h']
