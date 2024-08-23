@@ -161,6 +161,19 @@ for iE in range(0, nE):
             name = f"{year}-{month}-{day}.png"
             plt.savefig(name)
             plt.close()
+            
+            # Convert the datetime array into a matrix of date/time components
+            datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
+
+            # Assign the final values for saving
+            r_time = datetime_matrix  # Time values
+            r_h = np.nanmean(range_i, axis=0)  # Range values
+            r_param = Ne_i  # Electron density
+            r_error = DNe_i  # Error in electron density
+
+            # Save the results as a .mat file
+            name = f"{year}-{month}-{day}.mat"
+            sio.savemat(name, {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error})
 
 
 
