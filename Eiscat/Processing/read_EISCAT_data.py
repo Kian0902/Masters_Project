@@ -104,7 +104,25 @@ for iE in range(0, nE):
         Vi_i = np.full((nT, nZ), np.nan)  # Ion velocity
         El_i = np.full((nT, nZ), np.nan)  # Elevation angle
 
+        # Loop over time steps to process the data
+        for iT in range(nT - 1):
+            # Define the start and end indices for each time step
+            ind_s = ind[iT]
+            ind_f = ind[iT + 1]
+            # Extract elevation angle for this time range
+            El_iT = data['elm'][ind_s:ind_f]
 
+            # Check if the mean elevation is close to 90 degrees (indicating data is usable)
+            if round(abs(np.mean(El_iT) - 90)) < 6:
+                # Store data for this time step
+                Ne_i[iT, :len(data['ne'][ind_s:ind_f])] = data['ne'][ind_s:ind_f]
+                DNe_i[iT, :len(data['dne'][ind_s:ind_f])] = data['dne'][ind_s:ind_f]
+                Vi_i[iT, :len(data['vo'][ind_s:ind_f])] = data['vo'][ind_s:ind_f]
+                Te_i[iT, :len(te[ind_s:ind_f])] = te[ind_s:ind_f]
+                Ti_i[iT, :len(data['ti'][ind_s:ind_f])] = data['ti'][ind_s:ind_f]
+                range_i[iT, :len(data['ne'][ind_s:ind_f])] = range_data[ind_s:ind_f]
+
+        
 
 
 
