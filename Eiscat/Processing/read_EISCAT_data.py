@@ -44,6 +44,67 @@ for iE in range(0, nE):
     os.chdir(datapath)
     file = datafiles[iE]
     
+    with h5py.File(file, 'r') as f:
+        data = f['/Data/Table Layout']
+
+
+
+        # Extract year, month, and day from the file name
+        year = int(file[8:12])
+        yy = np.full(len(data['ne']), year)
+
+        month = int(file[13:15])
+        mm = np.full(len(data['ne']), month)
+
+        day = int(file[16:18])
+        dd = np.full(len(data['ne']), 2)  # Placeholder for day
+
+        # Convert time data (year, month, day, hour, min, sec) into datetime format
+        t = [datetime(year, month, day, int(h), int(m), int(s))
+             for h, m, s in zip(data['hour'], data['min'], data['sec'])]
+
+        # Extract the range information
+        range_data = data['range'][:]
+        
+        # Find indices where range data shows significant drops (indicating a new time step)
+        ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
+        
+        
+        # Get the time steps corresponding to these indices
+        t_i = np.array(t)[ind]
+        
+        
+        
+        
+        # Combine electron and ion temperatures
+        te = data['tr'][:] * data['ti'][:]
+        
+        
+        
+        
+        # Number of time-steps
+        nT = len(ind)
+        unique_values, counts = np.unique(np.diff(ind), return_counts=True)
+        max_index = np.argmax(counts)
+        
+        most_repeated_value = unique_values[max_index]
+        
+        
+        nZ = int(most_repeated_value)
+        
+        
+        
+        
+        # Initialize matrices to store interpolated data
+        Ne_i = np.full((nT, nZ), np.nan)  # Electron density
+        DNe_i = np.full((nT, nZ), np.nan)  # Electron density error
+        range_i = np.full((nT, nZ), np.nan)  # Range values
+        Te_i = np.full((nT, nZ), np.nan)  # Electron temperature
+        Ti_i = np.full((nT, nZ), np.nan)  # Ion temperature
+        Vi_i = np.full((nT, nZ), np.nan)  # Ion velocity
+        El_i = np.full((nT, nZ), np.nan)  # Elevation angle
+
+
 
 
 
