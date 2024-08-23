@@ -2,7 +2,10 @@
 """
 Created on Fri Aug 23 14:17:03 2024
 
-@author: Kian Sartipzadeh
+@authors: Kian Sartipzadeh, Andreas Kvammen
+
+This code was originally written by Andreas in matlab but converted into
+python code by Kian.
 """
 
 
