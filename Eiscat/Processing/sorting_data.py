@@ -65,18 +65,21 @@ class EISCATDataSorter:
         data  (dict)  | Dictionary containing data per wanted key
         """
         
-        # if testing is True
+        # ===========================================
+        #                 Testing mode
         if testing is True:
             print("Keys before processing:")
             for key in loadmat(file):
                 print(f" - {key}")
             print("\n")
-        
-        
+        # ===========================================
         
         data = loadmat(file)  # importing .mat file as dict
-        include = ["r_h", "r_param", "r_error"]
-        data = {key: data[key].T for key in include if key in data}  # includes keys in same order as in the include list
+        include = ["r_time", "r_h", "r_param", "r_error"]
+        
+        # includes keys in same order as in the include list
+        data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
+
         
 
         # if detecting different shapes
@@ -85,7 +88,7 @@ class EISCATDataSorter:
         else:
             pass
         
-        
+
         # Applying filers
         filt = DataFiltering(data)
         filt.filter_range('r_h', 90, 400)    

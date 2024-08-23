@@ -46,8 +46,8 @@ class DataFiltering:
         # Mask for filtered values. False outside and True inside interval
         mask = np.any((self.dataset[key] >= min_val) & (self.dataset[key] <= max_val), axis=1)
         
-        # Applying mask to all keys
-        for key in list(self.dataset.keys()):
+        # Applying mask to all keys except "r_time"
+        for key in list(self.dataset.keys())[1:]:
             self.dataset[key] = self.dataset[key][mask,:]
             
     
@@ -65,8 +65,8 @@ class DataFiltering:
         replace_val (int/float) | Value to replace nans with
         """
         
-        # Looping through keys
-        for key in self.dataset:
+        # Looping through keys except "r_time"
+        for key in list(self.dataset.keys())[1:]:
             data = self.dataset[key]
             
             # Check if there are any NaNs in the data
