@@ -13,19 +13,27 @@ import matplotlib.pyplot as plt
 folder_name = "Ne"
 A = EISCATDataSorter(folder_name)
 
-A.sort_data()
+# A.sort_data()
 
-data = A.return_data()
+# data = A.return_data()
 
-a = data['2018-11-10']
+# a = data['2018-11-10']
 
-z  =  a['r_h']
-ne =  a['r_param']
-
-
-plt.plot(ne[:, 0:6], z[:, 0:6])
-plt.show()
+# z  =  a['r_h']
+# ne =  a['r_param']
 
 
+A.test_dataflow()
 
-# A.test_dataflow()
+
+
+
+
+# plt.plot(ne[:, 0:12], z[:, 0:12])
+# plt.show()
+
+
+
+
+
+

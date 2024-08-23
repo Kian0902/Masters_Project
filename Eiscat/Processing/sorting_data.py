@@ -19,56 +19,59 @@ from filter_data import DataFiltering
 
 class EISCATDataSorter:
     """
-    Class for importing and sorting EISCAT data.
+    Class for importing and sorting EISCAT data. Here it is assumed that the
+    data to be processed consists of .mat files where each file contains a
+    whole day worth of measurements.
     """
     def __init__(self, folder_name: str):
         """
-        Attributes (type)          | DESCRIPTION
+        Attributes (type)   | DESCRIPTION
         ------------------------------------------------
-        folder_name (str)   | Name of folder containing .mat data files
-        dataset     (dict)  | Dict for storing data
+        folder_name (str)   | Name of folder containing all .mat data files.
+        dataset     (dict)  | Dict for storing processed data.
         """
         self.full_path = os.path.abspath(os.path.join(os.getcwd(), folder_name))  # Find full dir path
         self.dataset = {}
 
 
-
-    def get_file_paths(self):
+    
+    def get_file_paths(self) -> list:
         """
-        Getting the full dir path of each .mat data file.
+        Get the full dir path of each .mat data file.
         
-        Return (type)            | DESCRIPTION
+        Return (type)                   | DESCRIPTION
         ------------------------------------------------
-        file_paths (list[str])   | List containing full .mat path names
+        file_paths (list[str, str,...]) | List containing full .mat path names
         """
-        
         file_paths = [os.path.join(root, file) 
                       for root, dirs, files in os.walk(self.full_path) 
                       for file in files if file.endswith('.mat')]
-        
         return file_paths
-
-
-
-    def process_file(self, file: str, testing: bool=False):
+    
+    
+    
+    def process_file(self, file: str, testing: bool=False) -> dict:
         """
-        Load data from a single .mat data file
+        Load radar measurements from a single .mat data file.
+         -   This method also has a testing mode which is activated if 
+             'test_dataflow' is called upon.
         
         Input (type) | DESCRIPTION
         ------------------------------------------------
-        file  (str)  | matlab file name
+        file  (str)  | .mat file name
         
         Return (type) | DESCRIPTION
         ------------------------------------------------
         data  (dict)  | Dictionary containing data per wanted key
         """
         
-        # if testing is activated
-        if testing==True:
+        # if testing is True
+        if testing is True:
             print("Keys before processing:")
             for key in loadmat(file):
                 print(f" - {key}")
             print("\n")
+        
         
         
         data = loadmat(file)  # importing .mat file as dict
@@ -77,7 +80,6 @@ class EISCATDataSorter:
         
         
 
-        
         # if detecting different shapes
         if data['r_h'].shape != data["r_param"].shape:
             data['r_h'] = np.tile(data['r_h'], (data["r_param"].shape[1], 1)).T  # copying r_h such that is has the same shape as r_param
@@ -146,7 +148,7 @@ class EISCATDataSorter:
         print(f"Testing with file: {os.path.basename(test_file)}")
 
 
-        # Test get_file_paths method
+        # Step 1 get_file path
         print("\nStep 1: get_file_paths()\n")
         print(f"Output Type: {type(files)}")
         print(f"Output Length: {len(files)}")
@@ -154,7 +156,7 @@ class EISCATDataSorter:
         print("_____________________________________________")
         
         
-        # Test process_file method
+        # Step 2 process_file
         print("\nStep 2: process_file()\n")
         data = self.process_file(test_file, testing=True)
         print(f"Input Type: {type(test_file)}")
@@ -166,7 +168,7 @@ class EISCATDataSorter:
         print("_____________________________________________")
         
         
-        # Test sort_data method with just this file
+        # Step 3 sort_data
         print("\nStep 3: sort_data()\n")
         self.dataset = {}  # Reset the dataset for the test
         self.dataset[os.path.basename(test_file)[:-4]] = data
