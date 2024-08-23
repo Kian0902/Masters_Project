@@ -122,7 +122,45 @@ for iE in range(0, nE):
                 Ti_i[iT, :len(data['ti'][ind_s:ind_f])] = data['ti'][ind_s:ind_f]
                 range_i[iT, :len(data['ne'][ind_s:ind_f])] = range_data[ind_s:ind_f]
 
-        
+        # If the elevation angle is still valid after the loop
+        if round(abs(np.mean(El_iT) - 90)) < 6:
+            # Plot the results for visualization
+            plt.figure()
+
+            # Electron density plot
+            ax1 = plt.subplot(4, 1, 1)
+            plt.pcolor(t_i, np.nanmean(range_i, axis=0), Ne_i.T, shading='auto')
+            plt.colorbar()
+            plt.clim(1e9, 5e11)  # Set color axis limits
+
+            # Electron temperature plot
+            ax2 = plt.subplot(4, 1, 2)
+            plt.pcolor(t_i, np.nanmean(range_i, axis=0), Te_i.T, shading='auto')
+            plt.colorbar()
+            plt.clim(500, 4000)  # Set color axis limits
+
+            # Ion temperature plot
+            ax3 = plt.subplot(4, 1, 3)
+            plt.pcolor(t_i, np.nanmean(range_i, axis=0), Ti_i.T, shading='auto')
+            plt.colorbar()
+            plt.clim(500, 3000)  # Set color axis limits
+
+            # Ion velocity plot
+            ax4 = plt.subplot(4, 1, 4)
+            plt.pcolor(t_i, np.nanmean(range_i, axis=0), Vi_i.T, shading='auto')
+            plt.colorbar()
+            plt.clim(-400, 400)  # Set color axis limits
+
+            # Set the colormap and link the axes of all plots
+            plt.set_cmap('turbo')
+            plt.subplots_adjust(hspace=0.5)
+            # plt.show()
+
+            # # Save the figure as a .png file in the result folder
+            os.chdir(resultpath)
+            name = f"{year}-{month}-{day}.png"
+            plt.savefig(name)
+            plt.close()
 
 
 
