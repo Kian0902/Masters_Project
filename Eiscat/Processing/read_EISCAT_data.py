@@ -72,7 +72,21 @@ class EISCATDataProcessor:
     
     
     def fix_shape(self, X, n_rows, n_cols, n_true_cols):
+        """
+        Reshapes a 1D array into a 2D array with specified dimensions and pads it 
+        with NaN values to match the required number of columns.
         
+        Input (type)        | DESCRIPTION
+        ------------------------------------------------
+        X (np.array)        | The input 1D array to be reshaped.
+        n_rows (int)        | The number of rows of data X.
+        n_cols (int)        | The number of columns of data X.
+        n_true_cols (int)   | The number of columns to reshape to.
+        
+        Return (type)       | DESCRIPTION
+        ------------------------------------------------
+        X_i (np.array)      | The reshaped 2D array with NaN padding to match `n_true_cols`.
+        """
         
         X_i_newshape = X[:n_rows * n_cols].reshape(n_rows, n_cols)
         X_i  = np.full((n_rows, n_true_cols), np.nan)
