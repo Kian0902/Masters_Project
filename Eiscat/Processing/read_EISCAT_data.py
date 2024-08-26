@@ -65,11 +65,24 @@ class EISCATDataProcessor:
         """
         # os.chdir(self.datapath)
         file_names = [f for f in os.listdir(self.datapath) if f.endswith('.hdf5')]
-        return file_names 
-
-
-
-
+        return file_names
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     def process_file(self, file_index):
         """
         Processes a specific .hdf5 file by its index, extracting relevant data,
@@ -142,30 +155,41 @@ class EISCATDataProcessor:
             
             if shape[0]*shape[1] != range_data.size:
                 
-                # Initialize matrices to store interpolated data
-                Ne_i = np.full((nT, nZ), np.nan)
-                DNe_i = np.full((nT, nZ), np.nan)
-                range_i = np.full((nT, nZ), np.nan)
-                Te_i = np.full((nT, nZ), np.nan)
-                Ti_i = np.full((nT, nZ), np.nan)
-                Vi_i = np.full((nT, nZ), np.nan)
-                El_i = np.full((nT, nZ), np.nan)
+                n_rows = nT
+                n_cols = data['range'].size // n_rows
+                
+                El_i_newshape = data['elm'][:n_rows * n_cols].reshape(n_rows, n_cols)
+                El_it  = np.full((n_rows, nZ), np.nan)
+                El_it[:, :n_cols] = El_i_newshape
+                
+                
+                Ne_i_newshape = data['ne'][:n_rows * n_cols].reshape(n_rows, n_cols)
+                Ne_i  = np.full((n_rows, nZ), np.nan)
+                Ne_i[:, :n_cols] = Ne_i_newshape
+                
+                
+                DNe_i_newshape = data['dne'][:n_rows * n_cols].reshape(n_rows, n_cols)
+                DNe_i  = np.full((n_rows, nZ), np.nan)
+                DNe_i[:, :n_cols] = DNe_i_newshape
+                
+                Vi_i_newshape = data['vo'][:n_rows * n_cols].reshape(n_rows, n_cols)
+                Vi_i  = np.full((n_rows, nZ), np.nan)
+                Vi_i[:, :n_cols] = Vi_i_newshape
+                
+                Te_i_newshape = te[:n_rows * n_cols].reshape(n_rows, n_cols)
+                Te_i  = np.full((n_rows, nZ), np.nan)
+                Te_i[:, :n_cols] = Te_i_newshape
+                
+                Ti_i_newshape = data['ti'][:n_rows * n_cols].reshape(n_rows, n_cols)
+                Ti_i  = np.full((n_rows, nZ), np.nan)
+                Ti_i[:, :n_cols] = Ti_i_newshape
+                
+                range_i_newshape = range_data[:n_rows * n_cols].reshape(n_rows, n_cols)
+                range_i  = np.full((n_rows, nZ), np.nan)
+                range_i[:, :n_cols] = range_i_newshape
                 
                 
                 
-                for iT in range(nT - 1):
-                    ind_s = ind[iT]
-                    ind_f = ind[iT + 1]
-                    El_iT = data['elm'][ind_s:ind_f]
-    
-                    if round(abs(np.mean(El_iT) - 90)) < 6:
-                        Ne_i[iT, :len(data['ne'][ind_s:ind_f])]    = data['ne'][ind_s:ind_f]
-                        DNe_i[iT, :len(data['dne'][ind_s:ind_f])]  = data['dne'][ind_s:ind_f]
-                        Vi_i[iT, :len(data['vo'][ind_s:ind_f])]    = data['vo'][ind_s:ind_f]
-                        Te_i[iT, :len(te[ind_s:ind_f])]            = te[ind_s:ind_f]
-                        Ti_i[iT, :len(data['ti'][ind_s:ind_f])]    = data['ti'][ind_s:ind_f]
-                        range_i[iT, :len(data['ne'][ind_s:ind_f])] = range_data[ind_s:ind_f]
-                        
                 self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
                 self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
 
@@ -184,23 +208,27 @@ class EISCATDataProcessor:
     def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
         plt.figure(dpi=50, figsize=(6, 8))
         
+        t_i = np.nan_to_num(t_i, nan=0.0)
+        range_i_mean = np.nan_to_num(np.nanmean(range_i, axis=0), nan=0.0)
+        
+        
         ax1 = plt.subplot(4, 1, 1)
-        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ne_i.T, shading='auto')
+        plt.pcolormesh(t_i, range_i_mean, np.ma.masked_invalid(Ne_i.T), shading='auto')
         plt.colorbar()
         plt.clim(1e9, 5e11)
 
         ax2 = plt.subplot(4, 1, 2)
-        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Te_i.T, shading='auto')
+        plt.pcolormesh(t_i, range_i_mean, np.ma.masked_invalid(Te_i.T), shading='auto')
         plt.colorbar()
         plt.clim(500, 4000)
 
         ax3 = plt.subplot(4, 1, 3)
-        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ti_i.T, shading='auto')
+        plt.pcolormesh(t_i, range_i_mean, np.ma.masked_invalid(Ti_i.T), shading='auto')
         plt.colorbar()
         plt.clim(500, 3000)
 
         ax4 = plt.subplot(4, 1, 4)
-        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Vi_i.T, shading='auto')
+        plt.pcolormesh(t_i, range_i_mean,np.ma.masked_invalid(Vi_i.T), shading='auto')
         plt.colorbar()
         plt.clim(-400, 400)
 
