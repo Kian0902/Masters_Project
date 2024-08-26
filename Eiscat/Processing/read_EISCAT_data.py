@@ -92,8 +92,10 @@ class EISCATDataProcessor:
         file = self.datafiles[file_index]
         print(f'Processing file {file_index + 1}/{self.num_datafiles}: {file}')
 
-        os.chdir(self.datapath)
-        with h5py.File(file, 'r') as f:
+
+
+        file_path = os.path.join(self.datapath, file)
+        with h5py.File(file_path, 'r') as f:
             data = f['/Data/Table Layout']
             
             year = int(file[8:12])
