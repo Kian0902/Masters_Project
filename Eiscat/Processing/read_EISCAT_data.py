@@ -97,41 +97,68 @@ class EISCATDataProcessor:
         file_path = os.path.join(self.datapath, file)
         with h5py.File(file_path, 'r') as f:
             data = f['/Data/Table Layout']
+            print("Shape:", data.shape)
+            # print("Data Type:", data.dtype)
             
+            
+            # Extract year, month, and day from the file name
             year = int(file[8:12])
             month = int(file[13:15])
             day = int(file[16:18])
-
+            
+            
+            # Convert time data (year, month, day, hour, min, sec) into datetime format
             t = [datetime(year, month, day, int(h), int(m), int(s))
                  for h, m, s in zip(data['hour'], data['min'], data['sec'])]
+            
+            
+            # Extract the range information
             range_data = data['range'][:]
+            
+            
+            # Find indices where range data shows significant drops (indicating a new time step)
             ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
+            
+            # Get the time steps corresponding to these indices
             t_i = np.array(t)[ind]
+            
+            # Combine electron and ion temperatures
             te = data['tr'][:] * data['ti'][:]
+            
+            
+            # Number of time-steps
             nT = len(ind)
-            unique_values, counts = np.unique(np.diff(ind), return_counts=True)
-            most_repeated_value = unique_values[np.argmax(counts)]
-            nZ = int(most_repeated_value)
-
-            Ne_i = np.full((nT, nZ), np.nan)
-            DNe_i = np.full((nT, nZ), np.nan)
-            range_i = np.full((nT, nZ), np.nan)
-            Te_i = np.full((nT, nZ), np.nan)
-            Ti_i = np.full((nT, nZ), np.nan)
-            Vi_i = np.full((nT, nZ), np.nan)
-            El_i = np.full((nT, nZ), np.nan)
-
+            unique_values, counts = np.unique(np.diff(ind), return_counts=True)  # find num of unique values
+            most_repeated_value = unique_values[np.argmax(counts)]  # find the largest unique value
+            nZ = int(most_repeated_value)  # convert to int
+            
+            
+            
+            # Initialize NaN arrays to store data
+            shape = (nT, nZ)
+            Ne_i = np.full(shape, np.nan)
+            DNe_i = np.full(shape, np.nan)
+            range_i = np.full(shape, np.nan)
+            Te_i = np.full(shape, np.nan)
+            Ti_i = np.full(shape, np.nan)
+            Vi_i = np.full(shape, np.nan)
+            El_i = np.full(shape, np.nan)
+            
+            
+            
             for iT in range(nT - 1):
+                
+                
                 ind_s = ind[iT]
                 ind_f = ind[iT + 1]
                 El_iT = data['elm'][ind_s:ind_f]
 
                 if round(abs(np.mean(El_iT) - 90)) < 6:
-                    Ne_i[iT, :len(data['ne'][ind_s:ind_f])] = data['ne'][ind_s:ind_f]
-                    DNe_i[iT, :len(data['dne'][ind_s:ind_f])] = data['dne'][ind_s:ind_f]
-                    Vi_i[iT, :len(data['vo'][ind_s:ind_f])] = data['vo'][ind_s:ind_f]
-                    Te_i[iT, :len(te[ind_s:ind_f])] = te[ind_s:ind_f]
-                    Ti_i[iT, :len(data['ti'][ind_s:ind_f])] = data['ti'][ind_s:ind_f]
+                    Ne_i[iT, :len(data['ne'][ind_s:ind_f])]    = data['ne'][ind_s:ind_f]
+                    DNe_i[iT, :len(data['dne'][ind_s:ind_f])]  = data['dne'][ind_s:ind_f]
+                    Vi_i[iT, :len(data['vo'][ind_s:ind_f])]    = data['vo'][ind_s:ind_f]
+                    Te_i[iT, :len(te[ind_s:ind_f])]            = te[ind_s:ind_f]
+                    Ti_i[iT, :len(data['ti'][ind_s:ind_f])]    = data['ti'][ind_s:ind_f]
                     range_i[iT, :len(data['ne'][ind_s:ind_f])] = range_data[ind_s:ind_f]
 
             if round(abs(np.mean(El_iT) - 90)) < 6:
