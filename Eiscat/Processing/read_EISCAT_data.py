@@ -71,11 +71,14 @@ class EISCATDataProcessor:
     
     
     
-    
-    
-    
-    
-    
+    def fix_shape(self, X, n_rows, n_cols, n_true_cols):
+        
+        
+        X_i_newshape = X[:n_rows * n_cols].reshape(n_rows, n_cols)
+        X_i  = np.full((n_rows, n_true_cols), np.nan)
+        X_i[:, :n_cols] = X_i_newshape
+        
+        return X_i
     
     
     
@@ -158,35 +161,13 @@ class EISCATDataProcessor:
                 n_rows = nT
                 n_cols = data['range'].size // n_rows
                 
-                El_i_newshape = data['elm'][:n_rows * n_cols].reshape(n_rows, n_cols)
-                El_it  = np.full((n_rows, nZ), np.nan)
-                El_it[:, :n_cols] = El_i_newshape
-                
-                
-                Ne_i_newshape = data['ne'][:n_rows * n_cols].reshape(n_rows, n_cols)
-                Ne_i  = np.full((n_rows, nZ), np.nan)
-                Ne_i[:, :n_cols] = Ne_i_newshape
-                
-                
-                DNe_i_newshape = data['dne'][:n_rows * n_cols].reshape(n_rows, n_cols)
-                DNe_i  = np.full((n_rows, nZ), np.nan)
-                DNe_i[:, :n_cols] = DNe_i_newshape
-                
-                Vi_i_newshape = data['vo'][:n_rows * n_cols].reshape(n_rows, n_cols)
-                Vi_i  = np.full((n_rows, nZ), np.nan)
-                Vi_i[:, :n_cols] = Vi_i_newshape
-                
-                Te_i_newshape = te[:n_rows * n_cols].reshape(n_rows, n_cols)
-                Te_i  = np.full((n_rows, nZ), np.nan)
-                Te_i[:, :n_cols] = Te_i_newshape
-                
-                Ti_i_newshape = data['ti'][:n_rows * n_cols].reshape(n_rows, n_cols)
-                Ti_i  = np.full((n_rows, nZ), np.nan)
-                Ti_i[:, :n_cols] = Ti_i_newshape
-                
-                range_i_newshape = range_data[:n_rows * n_cols].reshape(n_rows, n_cols)
-                range_i  = np.full((n_rows, nZ), np.nan)
-                range_i[:, :n_cols] = range_i_newshape
+                El_it = self.fix_shape(data['elm'], n_rows, n_cols, nZ)
+                Ne_i  = self.fix_shape(data['ne'], n_rows, n_cols, nZ)
+                DNe_i = self.fix_shape(data['dne'], n_rows, n_cols, nZ)
+                Vi_i  = self.fix_shape(data['vo'], n_rows, n_cols, nZ)
+                Te_i  = self.fix_shape(te, n_rows, n_cols, nZ)
+                Ti_i  = self.fix_shape(data['ti'], n_rows, n_cols, nZ)
+                range_i = self.fix_shape(range_data, n_rows, n_cols, nZ)
                 
                 
                 
