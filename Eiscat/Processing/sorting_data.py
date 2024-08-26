@@ -80,14 +80,15 @@ class EISCATDataSorter:
         # includes keys in same order as in the include list
         data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
 
+
+
+        # # if detecting different shapes
+        # if data['r_h'].shape != data["r_param"].shape:
+        #     data['r_h'] = np.tile(data['r_h'], (data["r_param"].shape[1], 1)).T  # copying r_h such that is has the same shape as r_param
+        # else:
+        #     pass
         
 
-        # if detecting different shapes
-        if data['r_h'].shape != data["r_param"].shape:
-            data['r_h'] = np.tile(data['r_h'], (data["r_param"].shape[1], 1)).T  # copying r_h such that is has the same shape as r_param
-        else:
-            pass
-        
 
         # Applying filers
         filt = DataFiltering(data)

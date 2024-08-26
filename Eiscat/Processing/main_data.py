@@ -10,12 +10,12 @@ from sorting_data import EISCATDataSorter
 import matplotlib.pyplot as plt
 
 # Use the local folder name instead of the full path
-folder_name = "Ne"
+folder_name = "Ne_vhf"
 A = EISCATDataSorter(folder_name)
 
-# A.sort_data()
+A.sort_data()
 
-# data = A.return_data()
+data = A.return_data()
 
 
 # print(type(data))
