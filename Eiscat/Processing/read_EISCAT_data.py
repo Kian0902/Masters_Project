@@ -115,13 +115,10 @@ class EISCATDataProcessor:
             # Extract the range information
             range_data = data['range'][:]
             
-
+            # print(range_data[-36:-1])
             
             # Find indices where range data shows significant drops (indicating a new time step)
             ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
-            
-            
-
             
             
             # Get the time steps corresponding to these indices
@@ -135,39 +132,54 @@ class EISCATDataProcessor:
             nT = len(ind)
             
 
-            
             unique_values, counts = np.unique(np.diff(ind), return_counts=True)  # find num of unique values  
             most_repeated_value = unique_values[np.argmax(counts)]  # find the largest unique value
             nZ = int(most_repeated_value)  # convert to int
             
             
-
+            
             shape = (nT, nZ)
             
-            print(shape)
-            print(data['range'].shape)
-            print(data['elm'].shape)
-            print(data['ne'].shape)
-            
-            El_it = data['elm'].reshape(shape)
-            Ne_i  = data['ne'].reshape(shape)
-            DNe_i = data['dne'].reshape(shape)
-            Vi_i  = data['vo'].reshape(shape)
-            Te_i  = te.reshape(shape)
-            Ti_i  = data['ti'].reshape(shape)
-            range_i = range_data.reshape(shape)
-            
-            self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-            self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
-            
-            # if round(abs(np.mean(El_iT) - 90)) < 6:
-            #     self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-            #     # self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+            if shape[0]*shape[1] != range_data.size:
+                
+                # Initialize matrices to store interpolated data
+                Ne_i = np.full((nT, nZ), np.nan)
+                DNe_i = np.full((nT, nZ), np.nan)
+                range_i = np.full((nT, nZ), np.nan)
+                Te_i = np.full((nT, nZ), np.nan)
+                Ti_i = np.full((nT, nZ), np.nan)
+                Vi_i = np.full((nT, nZ), np.nan)
+                El_i = np.full((nT, nZ), np.nan)
+                
+                
+                
+                for iT in range(nT - 1):
+                    ind_s = ind[iT]
+                    ind_f = ind[iT + 1]
+                    El_iT = data['elm'][ind_s:ind_f]
+    
+                    if round(abs(np.mean(El_iT) - 90)) < 6:
+                        Ne_i[iT, :len(data['ne'][ind_s:ind_f])]    = data['ne'][ind_s:ind_f]
+                        DNe_i[iT, :len(data['dne'][ind_s:ind_f])]  = data['dne'][ind_s:ind_f]
+                        Vi_i[iT, :len(data['vo'][ind_s:ind_f])]    = data['vo'][ind_s:ind_f]
+                        Te_i[iT, :len(te[ind_s:ind_f])]            = te[ind_s:ind_f]
+                        Ti_i[iT, :len(data['ti'][ind_s:ind_f])]    = data['ti'][ind_s:ind_f]
+                        range_i[iT, :len(data['ne'][ind_s:ind_f])] = range_data[ind_s:ind_f]
+                        
+                self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
 
-
-
-
-
+            else:
+                El_it  = data['elm'].reshape(shape)
+                Ne_i  = data['ne'].reshape(shape)
+                DNe_i = data['dne'].reshape(shape)
+                Vi_i  = data['vo'].reshape(shape)
+                Te_i  = te.reshape(shape)
+                Ti_i  = data['ti'].reshape(shape)
+                range_i = range_data.reshape(shape)
+                
+                self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
 
     def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
         plt.figure(dpi=50, figsize=(6, 8))
@@ -213,7 +225,7 @@ class EISCATDataProcessor:
         
 
     def process_all_files(self):
-        for iE in range(16,20):
+        for iE in range(self.num_datafiles):
             self.process_file(iE)
 
 # Usage example:
