@@ -51,18 +51,26 @@ class EISCATDataProcessor:
     
     
     def _find_data_files(self):
+        """
+        Static function for finding .hdf5 datafile names.
+        
+        Return (type)      | DESCRIPTION
+        ------------------------------------------------
+        file_names (list)  | List containing names of -hdf5 datafiles.
+        """
         os.chdir(self.datapath)
-        return [f for f in os.listdir(self.datapath) if f.endswith('.hdf5')]
+        file_names = [f for f in os.listdir(self.datapath) if f.endswith('.hdf5')]
+        return file_names 
 
 
 
 
     def process_file(self, file_index):
-        if file_index < 0 or file_index >= self.nE:
+        if file_index < 0 or file_index >= self.num_datafiles:
             raise ValueError("File index out of range")
         
         file = self.datafiles[file_index]
-        print(f'Processing file {file_index + 1}/{self.nE}: {file}')
+        print(f'Processing file {file_index + 1}/{self.num_datafiles}: {file}')
 
         os.chdir(self.datapath)
         with h5py.File(file, 'r') as f:
