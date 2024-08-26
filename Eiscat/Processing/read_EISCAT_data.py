@@ -97,7 +97,7 @@ class EISCATDataProcessor:
         file_path = os.path.join(self.datapath, file)
         with h5py.File(file_path, 'r') as f:
             data = f['/Data/Table Layout']
-            print("Shape:", data.shape)
+            # print("Shape:", data.shape)
             # print("Data Type:", data.dtype)
             
             
@@ -115,9 +115,14 @@ class EISCATDataProcessor:
             # Extract the range information
             range_data = data['range'][:]
             
+
             
             # Find indices where range data shows significant drops (indicating a new time step)
             ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
+            
+            
+
+            
             
             # Get the time steps corresponding to these indices
             t_i = np.array(t)[ind]
@@ -128,42 +133,36 @@ class EISCATDataProcessor:
             
             # Number of time-steps
             nT = len(ind)
-            unique_values, counts = np.unique(np.diff(ind), return_counts=True)  # find num of unique values
+            
+
+            
+            unique_values, counts = np.unique(np.diff(ind), return_counts=True)  # find num of unique values  
             most_repeated_value = unique_values[np.argmax(counts)]  # find the largest unique value
             nZ = int(most_repeated_value)  # convert to int
             
             
-            
-            # Initialize NaN arrays to store data
+
             shape = (nT, nZ)
-            Ne_i = np.full(shape, np.nan)
-            DNe_i = np.full(shape, np.nan)
-            range_i = np.full(shape, np.nan)
-            Te_i = np.full(shape, np.nan)
-            Ti_i = np.full(shape, np.nan)
-            Vi_i = np.full(shape, np.nan)
-            El_i = np.full(shape, np.nan)
             
+            print(shape)
+            print(data['range'].shape)
+            print(data['elm'].shape)
+            print(data['ne'].shape)
             
+            El_it = data['elm'].reshape(shape)
+            Ne_i  = data['ne'].reshape(shape)
+            DNe_i = data['dne'].reshape(shape)
+            Vi_i  = data['vo'].reshape(shape)
+            Te_i  = te.reshape(shape)
+            Ti_i  = data['ti'].reshape(shape)
+            range_i = range_data.reshape(shape)
             
-            for iT in range(nT - 1):
-                
-                
-                ind_s = ind[iT]
-                ind_f = ind[iT + 1]
-                El_iT = data['elm'][ind_s:ind_f]
-
-                if round(abs(np.mean(El_iT) - 90)) < 6:
-                    Ne_i[iT, :len(data['ne'][ind_s:ind_f])]    = data['ne'][ind_s:ind_f]
-                    DNe_i[iT, :len(data['dne'][ind_s:ind_f])]  = data['dne'][ind_s:ind_f]
-                    Vi_i[iT, :len(data['vo'][ind_s:ind_f])]    = data['vo'][ind_s:ind_f]
-                    Te_i[iT, :len(te[ind_s:ind_f])]            = te[ind_s:ind_f]
-                    Ti_i[iT, :len(data['ti'][ind_s:ind_f])]    = data['ti'][ind_s:ind_f]
-                    range_i[iT, :len(data['ne'][ind_s:ind_f])] = range_data[ind_s:ind_f]
-
-            if round(abs(np.mean(El_iT) - 90)) < 6:
-                self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+            self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+            self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+            
+            # if round(abs(np.mean(El_iT) - 90)) < 6:
+            #     self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+            #     # self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
 
 
 
@@ -171,31 +170,32 @@ class EISCATDataProcessor:
 
 
     def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
-        plt.figure()
-
+        plt.figure(dpi=50, figsize=(6, 8))
+        
         ax1 = plt.subplot(4, 1, 1)
-        plt.pcolor(t_i, np.nanmean(range_i, axis=0), Ne_i.T, shading='auto')
+        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ne_i.T, shading='auto')
         plt.colorbar()
         plt.clim(1e9, 5e11)
 
         ax2 = plt.subplot(4, 1, 2)
-        plt.pcolor(t_i, np.nanmean(range_i, axis=0), Te_i.T, shading='auto')
+        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Te_i.T, shading='auto')
         plt.colorbar()
         plt.clim(500, 4000)
 
         ax3 = plt.subplot(4, 1, 3)
-        plt.pcolor(t_i, np.nanmean(range_i, axis=0), Ti_i.T, shading='auto')
+        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ti_i.T, shading='auto')
         plt.colorbar()
         plt.clim(500, 3000)
 
         ax4 = plt.subplot(4, 1, 4)
-        plt.pcolor(t_i, np.nanmean(range_i, axis=0), Vi_i.T, shading='auto')
+        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Vi_i.T, shading='auto')
         plt.colorbar()
         plt.clim(-400, 400)
 
         plt.set_cmap('turbo')
         plt.subplots_adjust(hspace=0.5)
 
+        
         os.chdir(self.resultpath)
         name = f"{year}-{month}-{day}.png"
         plt.savefig(name)
@@ -213,7 +213,7 @@ class EISCATDataProcessor:
         
 
     def process_all_files(self):
-        for iE in range(1):#self.num_datafiles):
+        for iE in range(16,20):
             self.process_file(iE)
 
 # Usage example:
