@@ -13,9 +13,9 @@ import matplotlib.pyplot as plt
 folder_name = "Ne_vhf"
 A = EISCATDataSorter(folder_name)
 
-A.sort_data()
+A.sort_data(save_data=True)
 
-data = A.return_data()
+# data = A.return_data()
 
 
 # print(type(data))
@@ -33,7 +33,7 @@ data = A.return_data()
 # ne =  a['r_param']
 
 
-A.test_dataflow()
+# A.test_dataflow()
 
 
 

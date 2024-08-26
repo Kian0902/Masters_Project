@@ -36,11 +36,10 @@ for day in dataset.keys():
     
 
     # True EISCAT data
-    Z_true = np.array(data_day["r_h"])        # altitude [km] 
-    Ne_true = np.array(data_day["r_param"])   # electron density []
-    
-    
-    
+    Z_true = np.tile(np.array(data_day["r_h"]), 479).T        # altitude [km] 
+    Ne_true = np.array(data_day["r_param"]).T   # electron density []
+    print(Z_true.shape)
+    print(Ne_true.shape)
     
     # Loop though time of day
     for i in np.arange(0, len(Z_true)):
