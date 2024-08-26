@@ -26,23 +26,31 @@ import scipy.io as sio
 
 class EISCATDataProcessor:
     """
-    Class for processing EISCAT data taken from guisdap. 
+    Class for processing EISCAT data taken from guisdap.
     """
-    def __init__(self, folder_name, resultpath):
+    def __init__(self, folder_name_in: str, folder_name_out: str):
         """
+        Input (type)         | DESCRIPTION
+        ------------------------------------------------
+        folder_name_in  (str) | Name of local folder containing data.
+        folder_name_out (str) | Name of local folder for storing the processed data.
+        
+        
         Attributes (type)  | DESCRIPTION
         ------------------------------------------------
-        datapath (str)     | 
-        dataset     (dict)  | Dict for storing processed data.
+        datapath   (str)    | Full path to local folder containing input data.
+        resultpath (str)    | Full path to local folder for storing output data.
+        datafiles  (list)   | List containing names of -hdf5 datafiles.
+        num_datafiles (int) | Number of files to process.
         """
-        self.datapath = os.path.abspath(os.path.join(os.getcwd(), folder_name))  # Find full dir path
-        self.resultpath = resultpath
-        self.datafiles = self.find_data_files()
-        self.nE = len(self.datafiles)
-
-
-
-    def find_data_files(self):
+        self.datapath   = os.path.abspath(os.path.join(os.getcwd(), folder_name_in))
+        self.resultpath = os.path.abspath(os.path.join(os.getcwd(), folder_name_out))
+        self.datafiles = self._find_data_files()
+        self.num_datafiles = len(self.datafiles)
+    
+    
+    
+    def _find_data_files(self):
         os.chdir(self.datapath)
         return [f for f in os.listdir(self.datapath) if f.endswith('.hdf5')]
 
@@ -145,14 +153,15 @@ class EISCATDataProcessor:
 
         name = f"{year}-{month}-{day}.mat"
         sio.savemat(os.path.join(self.resultpath, name), {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error})
+        
 
     def process_all_files(self):
-        for iE in range(1):
+        for iE in range(1):#self.num_datafiles):
             self.process_file(iE)
 
 # Usage example:
 datapath = "beata_vhf"
-resultpath = "C:\\Users\\kian0\\OneDrive\\Desktop\\UiT Courses\\FYS_3931\\Scripts\\Masters_Project\\Eiscat\\Processing\\Ne_new"
+resultpath = "Ne_new"
 
 processor = EISCATDataProcessor(datapath, resultpath)
 processor.process_all_files()
