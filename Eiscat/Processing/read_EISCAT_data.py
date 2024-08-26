@@ -26,22 +26,27 @@ import scipy.io as sio
 
 class EISCATDataProcessor:
     """
-    Class for processing EISCAT data taken from guisdap.
+    Class to process raw EISCAT radar data from .hdf5 files and save the
+    processed data as .mat files for further analysis. The class handles data
+    extraction, processing, visualization, and saving the results.
+    
+    Attributes (type)  | DESCRIPTION
+    ------------------------------------------------
+    datapath   (str)    | Full path to the local folder containing input .hdf5 data files.
+    resultpath (str)    | Full path to the local folder for storing output data (images and .mat files).
+    datafiles  (list)   | List of .hdf5 file names in the input data directory.
+    num_datafiles (int) | Number of .hdf5 files found in the input directory.
     """
     def __init__(self, folder_name_in: str, folder_name_out: str):
         """
+        Initializes the Class with the specified input and output local folder
+        dir names.
+        
+        
         Input (type)         | DESCRIPTION
         ------------------------------------------------
-        folder_name_in  (str) | Name of local folder containing data.
-        folder_name_out (str) | Name of local folder for storing the processed data.
-        
-        
-        Attributes (type)  | DESCRIPTION
-        ------------------------------------------------
-        datapath   (str)    | Full path to local folder containing input data.
-        resultpath (str)    | Full path to local folder for storing output data.
-        datafiles  (list)   | List containing names of -hdf5 datafiles.
-        num_datafiles (int) | Number of files to process.
+        folder_name_in  (str) | Name of local folder containing .hdf5 data files.
+        folder_name_out (str) | Name of local folder where the processed data and images will be stored.
         """
         self.datapath   = os.path.abspath(os.path.join(os.getcwd(), folder_name_in))
         self.resultpath = os.path.abspath(os.path.join(os.getcwd(), folder_name_out))
@@ -52,13 +57,13 @@ class EISCATDataProcessor:
     
     def _find_data_files(self):
         """
-        Static function for finding .hdf5 datafile names.
+        Finds and returns a list of all hdf5 files in the input directory.
         
         Return (type)      | DESCRIPTION
         ------------------------------------------------
-        file_names (list)  | List containing names of -hdf5 datafiles.
+        file_names (list)  | A list of filenames (str) of all .hfd5 files found in the input directory.
         """
-        os.chdir(self.datapath)
+        # os.chdir(self.datapath)
         file_names = [f for f in os.listdir(self.datapath) if f.endswith('.hdf5')]
         return file_names 
 
@@ -66,6 +71,21 @@ class EISCATDataProcessor:
 
 
     def process_file(self, file_index):
+        """
+        Processes a specific .hdf5 file by its index, extracting relevant data,
+        generating plots, and saving the processed data.
+        
+        Input (type)     | DESCRIPTION
+        ------------------------------------------------
+        file_index (int) | The index of the file to be processed in the `datafiles` list.
+        
+        
+        Raises       | Condition
+        ------------------------------------------------
+        ValueError   | If 'file_index' is out of the range of available files.
+        """
+        
+        
         if file_index < 0 or file_index >= self.num_datafiles:
             raise ValueError("File index out of range")
         
