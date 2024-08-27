@@ -13,9 +13,19 @@ import numpy as np
 
 
 
-
-
-
+class EISCATAverager:
+    """
+    Class for averaging EISCAT radar measurement data over specified time intervals.
+    """
+    def __init__(self, data: dict):
+        """
+        Initialize with data to be averaged.
+        
+        Attributes (type)    | DESCRIPTION
+        ------------------------------------------------
+        data (dict)          | Dictionary containing the EISCAT data to be averaged.
+        """
+        self.data = data
 
 
 
