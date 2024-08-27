@@ -28,8 +28,18 @@ class EISCATAverager:
         self.data = data
 
 
-
-
+    def average_over_period(self, period_min: int=15):
+        """
+        Average the radar data over a specified time period.
+        
+        Input (type)              | DESCRIPTION
+        ------------------------------------------------
+        period_minutes (int)      | Time period over which to average (in minutes).
+        
+        Return (type)             | DESCRIPTION
+        ------------------------------------------------
+        averaged_data (dict)      | Dictionary containing the averaged data.
+        """
 
 
 
