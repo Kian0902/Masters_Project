@@ -165,41 +165,62 @@ class EISCATDataProcessor:
             nZ = int(most_repeated_value)  # convert to int
             
             
+            print(unique_values)
+            print(most_repeated_value)
             
             shape = (nT, nZ)
             
+            print(shape)
+            print(range_data.shape)
+            print(ind.shape)
+            # print(data['ne'].shape)
+            
+            
             if shape[0]*shape[1] != range_data.size:
-                print("Skipping file")
-            # # Initialize matrices to store interpolated data
-            #     Ne_i = np.full((nT, nZ), np.nan)  # Electron density
-            #     DNe_i = np.full((nT, nZ), np.nan)  # Electron density error
-            #     range_i = np.full((nT, nZ), np.nan)  # Range values
-            #     Te_i = np.full((nT, nZ), np.nan)  # Electron temperature
-            #     Ti_i = np.full((nT, nZ), np.nan)  # Ion temperature
-            #     Vi_i = np.full((nT, nZ), np.nan)  # Ion velocity
-            #     El_i = np.full((nT, nZ), np.nan)  # Elevation angle
-
-            #     # Loop over time steps to process the data
-            #     for iT in range(nT - 1):
-            #         # Define the start and end indices for each time step
-            #         ind_s = ind[iT]
-            #         ind_f = ind[iT + 1]
-            #         # Extract elevation angle for this time range
-            #         El_iT = data['elm'][ind_s:ind_f]
-
-            #         # Check if the mean elevation is close to 90 degrees (indicating data is usable)
-            #         if round(abs(np.mean(El_iT) - 90)) < 6:
-            #             # Store data for this time step
-            #             Ne_i[iT, :len(data['ne'][ind_s:ind_f])] = data['ne'][ind_s:ind_f]
-            #             DNe_i[iT, :len(data['dne'][ind_s:ind_f])] = data['dne'][ind_s:ind_f]
-            #             Vi_i[iT, :len(data['vo'][ind_s:ind_f])] = data['vo'][ind_s:ind_f]
-            #             Te_i[iT, :len(te[ind_s:ind_f])] = te[ind_s:ind_f]
-            #             Ti_i[iT, :len(data['ti'][ind_s:ind_f])] = data['ti'][ind_s:ind_f]
-            #             range_i[iT, :len(data['ne'][ind_s:ind_f])] = range_data[ind_s:ind_f]
-                        
-                # self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-                # self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
                 
+                
+                
+                # Initialize matrices to store interpolated data
+                Ne_i = np.full((nT, nZ), np.nan)  # Electron density
+                DNe_i = np.full((nT, nZ), np.nan)  # Electron density error
+                range_i = np.full((nT, nZ), np.nan)  # Range values
+                Te_i = np.full((nT, nZ), np.nan)  # Electron temperature
+                Ti_i = np.full((nT, nZ), np.nan)  # Ion temperature
+                Vi_i = np.full((nT, nZ), np.nan)  # Ion velocity
+                El_i = np.full((nT, nZ), np.nan)  # Elevation angle
+                
+                print(Ne_i.shape)
+                print(data['ne'].shape)
+                
+                
+                # Loop over time steps to process the data
+                for iT in range(nT - 1):
+                    # Define the start and end indices for each time step
+                    ind_s = ind[iT]
+                    ind_f = ind[iT + 1]
+                    
+                    # Extract elevation angle for this time range
+                    El_iT = data['elm'][ind_s:ind_f]
+                    
+                    # Check if the mean elevation is close to 90 degrees (indicating data is usable)
+                    if round(abs(np.mean(El_iT) - 90)) < 6:
+                        # Determine the number of elements that will fit in the current row of the matrices
+                        num_elements = min(ind_f - ind_s, nZ)  # Truncate to fit within the matrix dimensions
+                        
+                        # Store data for this time step, truncating if necessary
+                        Ne_i[iT, :num_elements] = data['ne'][ind_s:ind_f][:num_elements]
+                        DNe_i[iT, :num_elements] = data['dne'][ind_s:ind_f][:num_elements]
+                        Vi_i[iT, :num_elements] = data['vo'][ind_s:ind_f][:num_elements]
+                        Te_i[iT, :num_elements] = te[ind_s:ind_f][:num_elements]
+                        Ti_i[iT, :num_elements] = data['ti'][ind_s:ind_f][:num_elements]
+                        range_i[iT, :num_elements] = range_data[ind_s:ind_f][:num_elements]
+                                        
+                self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+            
+            
+            
+            
             else:
                 El_it  = data['elm'].reshape(shape)
                 Ne_i  = data['ne'].reshape(shape)
@@ -209,8 +230,8 @@ class EISCATDataProcessor:
                 Ti_i  = data['ti'].reshape(shape)
                 range_i = range_data.reshape(shape)
                 
-                self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+                # self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+                # self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
 
     def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
         # Plot the results for visualization
@@ -275,7 +296,7 @@ class EISCATDataProcessor:
         
 
     def process_all_files(self):
-        for iE in range(self.num_datafiles):
+        for iE in range(3, 5):
             self.process_file(iE)
 
 # Usage example:
