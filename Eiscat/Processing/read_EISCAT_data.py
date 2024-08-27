@@ -281,6 +281,7 @@ class EISCATDataProcessor:
     def process_all_files(self):
         for iE in range(self.num_datafiles):
             self.process_file(iE)
+        print(f"Processing complete. Processed {self.num_datafiles} data files.")
 
 # Usage example:
 datapath = "beata_zenith_data_uhf"
