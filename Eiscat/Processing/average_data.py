@@ -41,13 +41,13 @@ class EISCATAverager:
         averaged_data (dict)      | Dictionary containing the averaged data.
         """
 
-
-
-
-
-
-
-
+        
+        r_time  = self.data['r_time']
+        r_h     = self.data['r_h']
+        r_param = self.data['r_param']
+        r_error = self.data['r_error']
+        
+        print(r_time.shape, r_h.shape, r_param.shape, r_error.shape)
 
 
 
