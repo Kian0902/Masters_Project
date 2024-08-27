@@ -66,38 +66,7 @@ class EISCATDataProcessor:
         return file_names
     
     
-    
-    
-    
-    def fix_shape(self, X, n_rows, n_cols, n_true_cols):
-        """
-        Reshapes a 1D array into a 2D array with specified dimensions and pads it 
-        with NaN values to match the required number of columns.
-        
-        Input (type)        | DESCRIPTION
-        ------------------------------------------------
-        X (np.array)        | The input 1D array to be reshaped.
-        n_rows (int)        | The number of rows of data X.
-        n_cols (int)        | The number of columns of data X.
-        n_true_cols (int)   | The number of columns to reshape to.
-        
-        Return (type)       | DESCRIPTION
-        ------------------------------------------------
-        X_i (np.array)      | The reshaped 2D array with NaN padding to match `n_true_cols`.
-        """
-        
-        X_i_newshape = X[:n_rows * n_cols].reshape(n_rows, n_cols)
-        X_i  = np.full((n_rows, n_true_cols), np.nan)
-        X_i[:, :n_cols] = X_i_newshape
-        
-        return X_i
-    
-    
-    
-    
-    
-    
-    
+
     def process_file(self, file_index):
         """
         Processes a specific .hdf5 file by its index, extracting relevant data,
@@ -126,26 +95,20 @@ class EISCATDataProcessor:
         with h5py.File(file_path, 'r') as f:
             data = f['/Data/Table Layout']
 
-            
             # Extract year, month, and day from the file name
             year = int(file[8:12])
             month = int(file[13:15])
             day = int(file[16:18])
             
-            
             # Convert time data (year, month, day, hour, min, sec) into datetime format
             t = [datetime(year, month, day, int(h), int(m), int(s))
                   for h, m, s in zip(data['hour'], data['min'], data['sec'])]
             
-            
             # Extract the range information
             range_data = data['range'][:]
-            
-            # print(range_data[-36:-1])
-            
+
             # Find indices where range data shows significant drops (indicating a new time step)
             ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
-            
             
             # Get the time steps corresponding to these indices
             t_i = np.array(t)[ind]
@@ -154,12 +117,11 @@ class EISCATDataProcessor:
             te = data['te'][:] * data['ti'][:]
             
             
-            # Number of time-steps
-            nT = len(ind)
+            nT = len(ind)  # number of time-steps
             
-
+            # Find most common value
             unique_values, counts = np.unique(np.diff(ind), return_counts=True)  # find num of unique values  
-            most_repeated_value = unique_values[np.argmax(counts)]  # find the largest unique value
+            most_repeated_value = unique_values[np.argmax(counts)]  # get the most repeated value
             nZ = int(most_repeated_value)  # convert to int
             
 
@@ -254,18 +216,7 @@ class EISCATDataProcessor:
         name = f"{year}-{month}-{day}.png"
         plt.savefig(name)
         plt.close()
-        # Convert the datetime array into a matrix of date/time components
-        # datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
 
-        # # Assign the final values for saving
-        # r_time = datetime_matrix  # Time values
-        # r_h = np.nanmean(range_i, axis=0)  # Range values
-        # r_param = Ne_i  # Electron density
-        # r_error = DNe_i  # Error in electron density
-
-        # # Save the results as a .mat file
-        # name = f"{year}-{month}-{day}.mat"
-        # sio.savemat(name, {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error})
 
     def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, year, month, day):
         datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
