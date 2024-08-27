@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 folder_name = "Ne_vhf"
 A = EISCATDataSorter(folder_name)
 
-A.sort_data(save_data=True)
+A.sort_data(save_data=True, save_filename="Ne_vhf_ready_curvefit")
 
 # data = A.return_data()
 

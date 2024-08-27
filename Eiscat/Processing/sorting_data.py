@@ -98,7 +98,7 @@ class EISCATDataSorter:
     
     
     
-    def sort_data(self, save_data: bool=False):
+    def sort_data(self, save_data: bool=False, save_filename='sorted_data.pkl'):
         """
         Sort the data from folder containing .mat data files.
         """
@@ -111,11 +111,11 @@ class EISCATDataSorter:
             
         
         if save_data == True:
-            self.save_dataset()
+            self.save_dataset(output_file=save_filename)
         
         
     
-    def save_dataset(self, output_file='sorted_data.pkl'):
+    def save_dataset(self, output_file):
         """
         Saves dataset locally as a .pkl file.
         """
