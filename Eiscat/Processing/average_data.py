@@ -68,8 +68,8 @@ class EISCATAverager:
             ind_f = time15_ind[i + 1]
             
             # Averaging between indices
-            r_param_avg = np.mean(r_param[:, ind_s: ind_f], axis=1)
-            r_error_avg = np.mean(r_error[:, ind_s: ind_f], axis=1)
+            r_param_avg = np.nanmean(r_param[:, ind_s: ind_f], axis=1)
+            r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
             
             # Appending averaged values
             avg_data['r_param'].append(r_param_avg)
