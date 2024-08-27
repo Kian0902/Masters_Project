@@ -118,16 +118,14 @@ class EISCATDataProcessor:
             raise ValueError("File index out of range")
         
         file = self.datafiles[file_index]
-        print(f'Processing file {file_index + 1}/{self.num_datafiles}: {file}')
+        print(f'Processing file {file_index + 1}/{self.num_datafiles}: {file}\n')
 
 
 
         file_path = os.path.join(self.datapath, file)
         with h5py.File(file_path, 'r') as f:
             data = f['/Data/Table Layout']
-            # print("Shape:", data.shape)
-            # print("Data Type:", data.dtype)
-            
+
             
             # Extract year, month, and day from the file name
             year = int(file[8:12])
@@ -164,22 +162,11 @@ class EISCATDataProcessor:
             most_repeated_value = unique_values[np.argmax(counts)]  # find the largest unique value
             nZ = int(most_repeated_value)  # convert to int
             
-            
-            print(unique_values)
-            print(most_repeated_value)
-            
+
             shape = (nT, nZ)
-            
-            print(shape)
-            print(range_data.shape)
-            print(ind.shape)
-            # print(data['ne'].shape)
-            
-            
             if shape[0]*shape[1] != range_data.size:
-                
-                
-                
+                print("Warning! Detected unmatching shapes.\nSwitching from vectorized to manual processing.\n")
+
                 # Initialize matrices to store interpolated data
                 Ne_i = np.full((nT, nZ), np.nan)  # Electron density
                 DNe_i = np.full((nT, nZ), np.nan)  # Electron density error
@@ -188,10 +175,6 @@ class EISCATDataProcessor:
                 Ti_i = np.full((nT, nZ), np.nan)  # Ion temperature
                 Vi_i = np.full((nT, nZ), np.nan)  # Ion velocity
                 El_i = np.full((nT, nZ), np.nan)  # Elevation angle
-                
-                print(Ne_i.shape)
-                print(data['ne'].shape)
-                
                 
                 # Loop over time steps to process the data
                 for iT in range(nT - 1):
@@ -214,13 +197,13 @@ class EISCATDataProcessor:
                         Te_i[iT, :num_elements] = te[ind_s:ind_f][:num_elements]
                         Ti_i[iT, :num_elements] = data['ti'][ind_s:ind_f][:num_elements]
                         range_i[iT, :num_elements] = range_data[ind_s:ind_f][:num_elements]
-                                        
+                                                
+                                                
+                
+                print("Manual processing complete.\nSwitching back to vectorized operations...\n")
                 self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
                 self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
-            
-            
-            
-            
+                
             else:
                 El_it  = data['elm'].reshape(shape)
                 Ne_i  = data['ne'].reshape(shape)
@@ -230,8 +213,8 @@ class EISCATDataProcessor:
                 Ti_i  = data['ti'].reshape(shape)
                 range_i = range_data.reshape(shape)
                 
-                # self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-                # self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+                self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
 
     def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
         # Plot the results for visualization
@@ -296,7 +279,7 @@ class EISCATDataProcessor:
         
 
     def process_all_files(self):
-        for iE in range(3, 5):
+        for iE in range(self.num_datafiles):
             self.process_file(iE)
 
 # Usage example:
