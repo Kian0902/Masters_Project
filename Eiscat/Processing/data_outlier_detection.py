@@ -48,31 +48,28 @@ class OutlierDetection:
         return detected_outliers
     
     
-    def iqr_method(self, data: np.array, lower_percent: int=5, upper_percent: int=95):
+    
+    def iqr_method(self, data: np.array, lower_percent: int=10, upper_percent: int=90):
         """
         Detect outliers using the Interquartile Range (IQR) method.
     
         Input (type)             | DESCRIPTION
         ------------------------------------------------
         data (np.ndarray)        | Data from one key to be analyzed.
-        lower_percent (int)      | Percentile to determine the lower bound (default is 5).
-        upper_percent (int)      | Percentile to determine the upper bound (default is 95).
+        lower_percent (int)      | Percentile to determine the lower bound (default is 10).
+        upper_percent (int)      | Percentile to determine the upper bound (default is 90).
     
         Return (type)                    | DESCRIPTION
         ------------------------------------------------
         detected_outliers (np.ndarray)   | Boolean array where True indicates an outlier.
         """
-        
         Q1 = np.percentile(data, lower_percent, axis=0)
         Q3 = np.percentile(data, upper_percent, axis=0)
         
-        
         IQR = Q3 - Q1
         
-        
         lower_fence = Q1 - 1.5*IQR
-        upper_fence = Q1 + 1.5*IQR        
-    
+        upper_fence = Q3 + 1.5*IQR        
         return (data < lower_fence) | (data > upper_fence)
     
     
@@ -106,7 +103,7 @@ class OutlierDetection:
         minutes_with_outliers = np.any(outliers, axis=0)
         outlier_indices = np.where(minutes_with_outliers)[0]
         
-        # print(outlier_indices)
+        print(outlier_indices)
         
         # Option for plotting the outliers
         if plot_outliers is True:
