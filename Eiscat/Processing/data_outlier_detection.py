@@ -25,18 +25,25 @@ class OutlierDetection:
     
     
     
-    
-    def get_zscore(self, data: np.array, threshold: int=3.1):
+    def get_zscore(self, data: np.array, threshold: int=3):
         """
+        Get the z-score of the data with a standard threshold of Z=3.
         
+        Input (type)        | DESCRIPTION
+        ------------------------------------------------
+        data  (np.ndarray)  | Data from one key to be analyzed.
+        threshold (int)     | Z value threshold
         
-        
+        Return (type)                    | DESCRIPTION
+        ------------------------------------------------
+        detected_outliers  (np.ndarray)  | Array with bool values of detected outliers. True if detected.
         """
-        z_score = zscore(data, axis=0)
-        outliers = np.abs(z_score) > threshold
-        return outliers
+        z_score = zscore(data, axis=0)  # get z-scores
+        detected_outliers = np.abs(z_score) > threshold
+        return detected_outliers
     
     
+
     
     def detect_outliers(self):
         
