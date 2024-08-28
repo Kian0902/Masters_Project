@@ -26,13 +26,18 @@ class OutlierDetection:
     
     
     
-    def get_zscore(self, data: np.array, threshold: int=3):
+    def get_zscore(self, data: np.array, threshold: int=3.1):
+        """
+        
+        
+        
+        """
         z_score = zscore(data, axis=0)
         outliers = np.abs(z_score) > threshold
         return outliers
     
     
-        
+    
     def detect_outliers(self):
         
         
@@ -51,14 +56,33 @@ class OutlierDetection:
         print('\n')
         
         
-        ne = r_param[:, 160:171]
+        ne = r_param[:, :]
         
         plt.plot(ne, r_h.flatten())
         plt.show()
         
-        z_scores = self.get_zscore(ne)
+        z_outlier = self.get_zscore(ne)
         
-        print(z_scores)
+        
+        outlier_min = np.any(z_outlier, axis=0)
+        
+        ind_outlier_min = np.where(outlier_min)[0]
+        
+        
+        print(ind_outlier_min)
+        
+        
+        ne_outlier = ne[:, ind_outlier_min]
+        
+        print(ne_outlier)
+        
+        for i, ne in enumerate(ne_outlier.T):
+            # print(ne.shape)
+            plt.plot(ne, r_h.flatten())
+            plt.xscale("log")
+            plt.show()
+        
+        
         
         # for i in np.arange(0, len(z_scores)):
         #     print(ne[i], z_scores[i])
