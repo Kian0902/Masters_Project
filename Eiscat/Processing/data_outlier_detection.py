@@ -29,6 +29,8 @@ class OutlierDetection:
                                   'IQR': self.iqr_method}
     
     
+    
+    # Z-score
     def z_score_method(self, data: np.array, threshold: int=3):
         """
         Detect outliers using the Z-score method.
@@ -49,6 +51,7 @@ class OutlierDetection:
     
     
     
+    # Inter-Quantile Range
     def iqr_method(self, data: np.array, lower_percent: int=10, upper_percent: int=90):
         """
         Detect outliers using the Interquartile Range (IQR) method.
@@ -63,14 +66,20 @@ class OutlierDetection:
         ------------------------------------------------
         detected_outliers (np.ndarray)   | Boolean array where True indicates an outlier.
         """
-        Q1 = np.percentile(data, lower_percent, axis=0)
-        Q3 = np.percentile(data, upper_percent, axis=0)
+        Q1 = np.percentile(data, lower_percent, axis=0)  # first quantile
+        Q3 = np.percentile(data, upper_percent, axis=0)  # second quantile
         
         IQR = Q3 - Q1
         
         lower_fence = Q1 - 1.5*IQR
-        upper_fence = Q3 + 1.5*IQR        
-        return (data < lower_fence) | (data > upper_fence)
+        upper_fence = Q3 + 1.5*IQR
+        
+        detect_outliers = (data < lower_fence) | (data > upper_fence)
+        return detect_outliers
+    
+    
+    
+    
     
     
     def detect_outliers(self, method_name: str, plot_outliers: bool=False):
@@ -103,7 +112,6 @@ class OutlierDetection:
         minutes_with_outliers = np.any(outliers, axis=0)
         outlier_indices = np.where(minutes_with_outliers)[0]
         
-        print(outlier_indices)
         
         # Option for plotting the outliers
         if plot_outliers is True:
