@@ -7,7 +7,10 @@ Created on Wed Aug 28 11:04:56 2024
 
 import numpy as np
 from scipy.stats import zscore
+from datetime import datetime
 import matplotlib.pyplot as plt
+
+
 
 class OutlierDetection:
     """
@@ -22,31 +25,55 @@ class OutlierDetection:
         dataset (dict)    | Dictionary containing the NaN filtered EISCAT data
         """
         self.dataset = dataset
+        self.detection_methods = {'z-score': self.z_score_method,
+                                  'IQR': self.iqr_method}
     
     
-    
-    def get_zscore(self, data: np.array, threshold: int=3):
+    def z_score_method(self, data: np.array, threshold: int=3):
         """
-        Get the z-score of the data with a standard threshold of Z=3.
+        Detect outliers using the Z-score method.
         
         Input (type)        | DESCRIPTION
         ------------------------------------------------
         data  (np.ndarray)  | Data from one key to be analyzed.
-        threshold (int)     | Z value threshold
+        threshold (int)     | Z-score threshold for identifying outliers (default is 3).
+        
         
         Return (type)                    | DESCRIPTION
         ------------------------------------------------
-        detected_outliers  (np.ndarray)  | Array with bool values of detected outliers. True if detected.
+        detected_outliers  (np.ndarray)  | Boolean array where True indicates an outlier.
         """
         z_score = zscore(data, axis=0)  # get z-scores
         detected_outliers = np.abs(z_score) > threshold
         return detected_outliers
     
     
+    def iqr_method(self, data: np.array):
+        
+        Q1 = np.percentile(data, 5, axis=0)
+        Q3 = np.percentile(data, 95, axis=0)
+        
+        
+        IQR = Q3 - Q1
+        
+        
+        lower_fence = Q1 - 1.5*IQR
+        upper_fence = Q1 + 1.5*IQR        
+        
+        # print(lower_fence)
+        # print(upper_fence)
+        print((data < lower_fence) | (data > upper_fence))
+        
+        return (data < lower_fence) | (data > upper_fence)
 
     
-    def detect_outliers(self):
+    def detect_outliers(self, method_name: str, plot_outliers: bool=False):
+        """
+        Detects outliers using the specified method.
+        """
         
+        if method_name not in self.detection_methods:
+            raise ValueError(f"Method {method_name} not recognized.")
         
         
         
@@ -55,51 +82,42 @@ class OutlierDetection:
         r_param = self.dataset['r_param']
         r_error = self.dataset['r_error']
         
-        print('\n')
-        print(f'r_time:  {r_time.shape}')
-        print(f'r_h:     {r_h.shape}')
-        print(f'r_param: {r_param.shape}')
-        print(f'r_error: {r_error.shape}')
-        print('\n')
+        # print('\n')
+        # print(f'r_time:  {r_time.shape}')
+        # print(f'r_h:     {r_h.shape}')
+        # print(f'r_param: {r_param.shape}')
+        # print(f'r_error: {r_error.shape}')
+        # print('\n')
         
         
-        ne = r_param[:, :]
+        r_param = self.dataset['r_param']
+        outliers = self.detection_methods[method_name](r_param[:, :])
         
-        plt.plot(ne, r_h.flatten())
-        plt.show()
+        # Find indices of minutes (rows) where any outlier is detected
+        minutes_with_outliers = np.any(outliers, axis=0)
+        outlier_indices = np.where(minutes_with_outliers)[0]
         
-        z_outlier = self.get_zscore(ne)
+        # print(outlier_indices)
         
-        
-        outlier_min = np.any(z_outlier, axis=0)
-        
-        ind_outlier_min = np.where(outlier_min)[0]
-        
-        
-        print(ind_outlier_min)
-        
-        
-        ne_outlier = ne[:, ind_outlier_min]
-        
-        print(ne_outlier)
-        
-        for i, ne in enumerate(ne_outlier.T):
-            # print(ne.shape)
-            plt.plot(ne, r_h.flatten())
-            plt.xscale("log")
-            plt.show()
-        
-        
-        
-        # for i in np.arange(0, len(z_scores)):
-        #     print(ne[i], z_scores[i])
+        # Option for plotting the outliers
+        if plot_outliers is True:
+            for i, ind in enumerate(outlier_indices):
+                plt.plot(r_param[:, ind], self.dataset['r_h'].flatten(), label='ne')
+                plt.xlabel('Electron Density')
+                plt.ylabel('Altitude')
+                plt.title(f'Outlier Detected using {method_name}   time: {datetime(*self.dataset["r_time"][ind])}')
+                plt.xscale('log')
+                plt.legend()
+                plt.show()
         
         
         
         
-
-
-
+        
+        
+        
+        
+        
 
 
 
