@@ -81,15 +81,6 @@ class EISCATDataSorter:
         data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
 
 
-
-        # # if detecting different shapes
-        # if data['r_h'].shape != data["r_param"].shape:
-        #     data['r_h'] = np.tile(data['r_h'], (data["r_param"].shape[1], 1)).T  # copying r_h such that is has the same shape as r_param
-        # else:
-        #     pass
-        
-
-
         # Applying filers
         filt = DataFiltering(data)
         filt.filter_range('r_h', 90, 400)    
@@ -134,7 +125,7 @@ class EISCATDataSorter:
 
 
 
-    def test_dataflow(self):
+    def test_dataflow(self, return_data: bool=False):
         """
         Tests the dataflow through the entire process using one file.
         Prints the type and shape of the data at each step.
@@ -143,57 +134,68 @@ class EISCATDataSorter:
 
         if not files:
             return print("No .mat files found in the specified directory.")
-
-
-
-        # Use the first file for testing
+        
+        
         test_file = files[0]
-        print(f"Testing with file: {os.path.basename(test_file)}")
-
-
-        # Step 1 get_file path
-        print("\nStep 1: get_file_paths()\n")
-        print(f"Output Type: {type(files)}")
-        print(f"Output Length: {len(files)}")
-        print(f"First File Path: {files[0] if files else 'None'}")
-        print("_____________________________________________")
-        
-        
-        # Step 2 process_file
-        print("\nStep 2: process_file()\n")
         data = self.process_file(test_file, testing=True)
-        print(f"Input Type: {type(test_file)}")
-        print(f"Input: {test_file}")
-        print(f"Output Type: {type(data)}")
-        print(f"Output Keys: {list(data.keys())}")
-        for key in data:
-            print(f" - {key}: Shape = {data[key].shape}")
-        print("_____________________________________________")
-        
-        
-        # Step 3 sort_data
-        print("\nStep 3: sort_data()\n")
         self.dataset = {}  # Reset the dataset for the test
         self.dataset[os.path.basename(test_file)[:-4]] = data
-        print(f"Dataset Keys: {list(self.dataset.keys())}")
-        for key in self.dataset:
-            print(f" - {key}: Type = {type(self.dataset[key])}")
-            for k in self.dataset[key]:
-                print(f" - {k}: Shape = {self.dataset[key][k].shape}")
-                
-                
-                
-        print("_____________________________________________")
-        # Return the sorted data
-        print("\nFinal Data:")
         final_data = self.return_data()
-        print(f"Type: {type(final_data)}")
-        print(f"Number of Entries: {len(final_data)}")
-        for key in final_data:
-            print(f" - {key}: Type = {type(final_data[key])}, Keys = {list(final_data[key].keys())}")
+        
+        
+        if return_data is True:
+            return final_data
 
-
-
+        else:
+            # Use the first file for testing
+            test_file = files[0]
+            print(f"Testing with file: {os.path.basename(test_file)}")
+    
+    
+            # Step 1 get_file path
+            print("\nStep 1: get_file_paths()\n")
+            print(f"Output Type: {type(files)}")
+            print(f"Output Length: {len(files)}")
+            print(f"First File Path: {files[0] if files else 'None'}")
+            print("_____________________________________________")
+            
+            
+            # Step 2 process_file
+            print("\nStep 2: process_file()\n")
+            data = self.process_file(test_file, testing=True)
+            print(f"Input Type: {type(test_file)}")
+            print(f"Input: {test_file}")
+            print(f"Output Type: {type(data)}")
+            print(f"Output Keys: {list(data.keys())}")
+            for key in data:
+                print(f" - {key}: Shape = {data[key].shape}")
+            print("_____________________________________________")
+            
+            
+            # Step 3 sort_data
+            print("\nStep 3: sort_data()\n")
+            self.dataset = {}  # Reset the dataset for the test
+            self.dataset[os.path.basename(test_file)[:-4]] = data
+            print(f"Dataset Keys: {list(self.dataset.keys())}")
+            for key in self.dataset:
+                print(f" - {key}: Type = {type(self.dataset[key])}")
+                for k in self.dataset[key]:
+                    print(f" - {k}: Shape = {self.dataset[key][k].shape}")
+                    
+                    
+                    
+            print("_____________________________________________")
+            # Return the sorted data
+            print("\nFinal Data:")
+            final_data = self.return_data()
+            print(f"Type: {type(final_data)}")
+            print(f"Number of Entries: {len(final_data)}")
+            for key in final_data:
+                print(f" - {key}: Type = {type(final_data[key])}, Keys = {list(final_data[key].keys())}")
+            
+                
+            
+    
 
 
 
