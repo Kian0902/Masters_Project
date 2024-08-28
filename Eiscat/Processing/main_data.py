@@ -17,21 +17,36 @@ import numpy as np
 
 # Use the local folder name instead of the full path
 folder_name = "Ne_vhf"
-A = EISCATDataSorter(folder_name)
+A = EISCATDataSorter(folder_name, filter_nan=True, filter_outliers=False, average_data=True)
 
-A.sort_data(save_data=True, save_filename="Ne_vhf_ready_curvefit")
+A.sort_data(save_data=False)
 
-data1 = A.return_data()['2018-11-10']
-data2 = A.return_data()['2018-11-11']
-data3 = A.return_data()['2018-12-1']
-data4 = A.return_data()['2022-12-19']
+data1 = A.return_data()
+
+
+
+
+# for key in data1:
+#     print(key)
+#     data1 = A.return_data()[key]
+#     for row in data1['r_param']:
+#         # Check for NaN using numpy
+#         if np.isnan(row.any()):  # This works for numerical data types (e.g., float)
+#             print(f"NaN detected in {key}: {row}")
+
+
+
+
+
+# data2 = A.return_data()['2018-11-11']
+# data3 = A.return_data()['2018-12-1']
+# data4 = A.return_data()['2022-12-19']
 # data = A.test_dataflow(return_data=True)['2018-11-10']
 
 
-B = OutlierDetection(data1)
+# B = OutlierDetection(data1)
 # B.detect_outliers('z-score', plot_outliers=True)
 # B.detect_outliers('IQR', plot_outliers=True)
-B.detect_outliers('LOF', plot_outliers=True)
 
 
 

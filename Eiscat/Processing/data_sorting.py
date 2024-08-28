@@ -14,8 +14,8 @@ from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
 from data_filtering import DataFiltering
-
-
+from data_outlier_detection import OutlierDetection
+from data_averaging import EISCATAverager
 
 class EISCATDataSorter:
     """
@@ -23,7 +23,10 @@ class EISCATDataSorter:
     data to be processed consists of .mat files where each file contains a
     whole day worth of measurements.
     """
-    def __init__(self, folder_name: str):
+    def __init__(self, folder_name: str,
+                 filter_nan: bool=False,
+                 filter_outliers: bool=False,
+                 average_data: bool=False):
         """
         Attributes (type)   | DESCRIPTION
         ------------------------------------------------
@@ -31,6 +34,9 @@ class EISCATDataSorter:
         dataset     (dict)  | Dict for storing processed data.
         """
         self.full_path = os.path.abspath(os.path.join(os.getcwd(), folder_name))  # Find full dir path
+        self.filter_nan = filter_nan
+        self.filter_outliers = filter_outliers
+        self.average_data = average_data
         self.dataset = {}
 
 
@@ -79,12 +85,25 @@ class EISCATDataSorter:
         
         # includes keys in same order as in the include list
         data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
+        
+        
+        
 
-
-        # Applying filers
-        filt = DataFiltering(data)
-        filt.filter_range('r_h', 90, 400)    
-        filt.filter_nan()
+        if self.filter_nan is True:
+            # Applying filers
+            filt = DataFiltering(data)
+            filt.filter_range('r_h', 90, 400)
+            filt.filter_nan()
+            data = filt.return_data()
+        
+        if self.filter_outliers is True:
+            outlier = OutlierDetection(data)
+            outlier.detect_outliers('IQR', plot_outliers=True)
+            
+        if self.average_data is True:
+            avg = EISCATAverager(data)
+            data = avg.average_over_period(period_min=15)
+            # data = avg.return_data()
         return data
     
     
@@ -99,7 +118,7 @@ class EISCATDataSorter:
             data = self.process_file(file)           # open and convert matlab file to dict
             file_name = os.path.basename(file)[:-4]  # only get date from filename
             self.dataset[file_name] = data           # assign data to date of measurement
-            
+        
         
         if save_data == True:
             self.save_dataset(output_file=save_filename)
@@ -131,7 +150,7 @@ class EISCATDataSorter:
         Prints the type and shape of the data at each step.
         """
         files = self.get_file_paths()
-
+        
         if not files:
             return print("No .mat files found in the specified directory.")
         
@@ -145,13 +164,13 @@ class EISCATDataSorter:
         
         if return_data is True:
             return final_data
-
+        
         else:
             # Use the first file for testing
             test_file = files[0]
             print(f"Testing with file: {os.path.basename(test_file)}")
-    
-    
+            
+            
             # Step 1 get_file path
             print("\nStep 1: get_file_paths()\n")
             print(f"Output Type: {type(files)}")

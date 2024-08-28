@@ -17,15 +17,15 @@ class EISCATAverager:
     """
     Class for averaging EISCAT radar measurement data over specified time intervals.
     """
-    def __init__(self, data: dict):
+    def __init__(self, dataset: dict):
         """
         Initialize with data to be averaged.
         
         Attributes (type)    | DESCRIPTION
         ------------------------------------------------
-        data (dict)          | Dictionary containing the EISCAT data to be averaged.
+        dataset (dict)       | Dictionary containing the EISCAT data to be averaged.
         """
-        self.data = data
+        self.dataset = dataset
 
 
     def average_over_period(self, period_min: int=15):
@@ -42,10 +42,10 @@ class EISCATAverager:
         """
 
         # Definin keys
-        r_time  = self.data['r_time']
-        r_h     = self.data['r_h']
-        r_param = self.data['r_param']
-        r_error = self.data['r_error']
+        r_time  = self.dataset['r_time']
+        r_h     = self.dataset['r_h']
+        r_param = self.dataset['r_param']
+        r_error = self.dataset['r_error']
         
         
         # Making new dict for storing averaged data
@@ -83,4 +83,20 @@ class EISCATAverager:
         return avg_data
         
         
+
+    # def return_data(self):
+    #     """
+    #     Returns self.data
+    #     """
+    #     return self.dataset
+
+
+
+
+
+
+
+
+
+
 

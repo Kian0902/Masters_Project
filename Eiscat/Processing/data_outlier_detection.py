@@ -9,7 +9,7 @@ import numpy as np
 from scipy.stats import zscore
 from datetime import datetime
 import matplotlib.pyplot as plt
-
+from sklearn.manifold import TSNE
 
 
 class OutlierDetection:
@@ -52,7 +52,7 @@ class OutlierDetection:
     
     
     # Inter-Quantile Range
-    def iqr_method(self, data: np.array, lower_percent: int=10, upper_percent: int=90):
+    def iqr_method(self, data: np.array, lower_percent: int=5, upper_percent: int=95):
         """
         Detect outliers using the Interquartile Range (IQR) method.
     
@@ -90,21 +90,6 @@ class OutlierDetection:
         if method_name not in self.detection_methods:
             raise ValueError(f"Method {method_name} not recognized.")
         
-        
-        
-        r_time  = self.dataset['r_time']
-        r_h     = self.dataset['r_h']
-        r_param = self.dataset['r_param']
-        r_error = self.dataset['r_error']
-        
-        # print('\n')
-        # print(f'r_time:  {r_time.shape}')
-        # print(f'r_h:     {r_h.shape}')
-        # print(f'r_param: {r_param.shape}')
-        # print(f'r_error: {r_error.shape}')
-        # print('\n')
-        
-        
         r_param = self.dataset['r_param']
         outliers = self.detection_methods[method_name](r_param[:, :])
         
@@ -123,9 +108,6 @@ class OutlierDetection:
                 plt.xscale('log')
                 plt.legend()
                 plt.show()
-        
-        
-        
         
         
         
