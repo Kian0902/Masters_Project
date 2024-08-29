@@ -17,16 +17,16 @@ from data_filtering import DataFiltering
 from data_outlier_detection import OutlierDetection
 from data_averaging import EISCATAverager
 
+
+
+
 class EISCATDataSorter:
     """
     Class for importing and sorting EISCAT data. Here it is assumed that the
     data to be processed consists of .mat files where each file contains a
     whole day worth of measurements.
     """
-    def __init__(self, folder_name: str,
-                 filter_nan: bool=False,
-                 filter_outliers: bool=False,
-                 average_data: bool=False):
+    def __init__(self, folder_name: str):
         """
         Attributes (type)   | DESCRIPTION
         ------------------------------------------------
@@ -34,9 +34,6 @@ class EISCATDataSorter:
         dataset     (dict)  | Dict for storing processed data.
         """
         self.full_path = os.path.abspath(os.path.join(os.getcwd(), folder_name))  # Find full dir path
-        self.filter_nan = filter_nan
-        self.filter_outliers = filter_outliers
-        self.average_data = average_data
         self.dataset = {}
 
 
@@ -85,30 +82,11 @@ class EISCATDataSorter:
         
         # includes keys in same order as in the include list
         data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
-        
-        
-        
-
-        if self.filter_nan is True:
-            # Applying filers
-            filt = DataFiltering(data)
-            filt.filter_range('r_h', 90, 400)
-            filt.filter_nan()
-            data = filt.return_data()
-        
-        if self.filter_outliers is True:
-            outlier = OutlierDetection(data)
-            outlier.detect_outliers('IQR', plot_outliers=True)
-            
-        if self.average_data is True:
-            avg = EISCATAverager(data)
-            data = avg.average_over_period(period_min=15)
-            # data = avg.return_data()
         return data
     
     
     
-    def sort_data(self, save_data: bool=False, save_filename='sorted_data.pkl'):
+    def sort_data(self):
         """
         Sort the data from folder containing .mat data files.
         """
@@ -119,17 +97,14 @@ class EISCATDataSorter:
             file_name = os.path.basename(file)[:-4]  # only get date from filename
             self.dataset[file_name] = data           # assign data to date of measurement
         
-        
-        if save_data == True:
-            self.save_dataset(output_file=save_filename)
-        
-        
     
-    def save_dataset(self, output_file):
+    
+    
+    def save_dataset(self, output_filename):
         """
         Saves dataset locally as a .pkl file.
         """
-        with open(output_file, 'wb') as file:
+        with open(output_filename, 'wb') as file:
             pickle.dump(self.dataset, file)
 
 
@@ -217,4 +192,21 @@ class EISCATDataSorter:
     
 
 
-
+        # Old code (29.08.2024) #
+        # -----------------------
+        # if self.filter_nan is True:
+        #     # Applying filers
+        #     filt = DataFiltering(data)
+        #     filt.filter_range('r_h', 90, 400)
+        #     filt.filter_nan()
+        #     data = filt.return_data()
+        
+        # if self.filter_outliers is True:
+        #     outlier = OutlierDetection(data)
+        #     outlier.detect_outliers('IQR', plot_outliers=True)
+            
+        # if self.average_data is True:
+        #     avg = EISCATAverager(data)
+        #     data = avg.average_over_period(period_min=15)
+        #     # data = avg.return_data()
+        # return data
