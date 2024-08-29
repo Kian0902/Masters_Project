@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from read_EISCAT_data import EISCATDataProcessor
 from data_sorting import EISCATDataSorter
 from data_averaging import EISCATAverager
-
+from data_filtering import DataFiltering
 
 
 
@@ -28,15 +28,20 @@ folder_name = "Ne_vhf"
 
 # Initialize data sorting for VHF
 VHF = EISCATDataSorter(folder_name)
-# VHF.sort_data()  # sort data
+VHF.sort_data()  # sort data
 
-# X_vhf = VHF.return_data()  # returning dict data
+X_vhf = VHF.return_data()  # returning dict data
 
-VHF.test_dataflow()
+filt = DataFiltering(X_vhf) 
+filt.batch_filtering()
+X_filt = filt.return_data()
 
 
-# for day in X_vhf:
-    # detect_nan_in_arrays(X_vhf[day])
+# VHF.test_dataflow()
+print(X_filt['2018-11-10']['r_h'].shape)
+
+for day in X_filt:
+    detect_nan_in_arrays(X_filt[day])
 
 
 
