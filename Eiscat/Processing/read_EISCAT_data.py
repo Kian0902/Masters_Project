@@ -50,7 +50,7 @@ class EISCATDataProcessor:
         self.resultpath = os.path.abspath(os.path.join(os.getcwd(), folder_name_out))
         self.datafiles = self._find_data_files()
         self.num_datafiles = len(self.datafiles)
-        
+    
     
     
     def _find_data_files(self):
@@ -67,7 +67,7 @@ class EISCATDataProcessor:
     
     
 
-    def process_file(self, file_index: int):
+    def process_file(self, file_index):
         """
         Processes a specific .hdf5 file by its index, extracting relevant data,
         generating plots, and saving the processed data.
@@ -177,27 +177,7 @@ class EISCATDataProcessor:
                 
                 self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
                 self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
-    
-    
-    
-    def process_all_files(self):
-        for i in range(self.num_datafiles):
-            self.process_file(i)
-        print(f"Processing complete. Processed {self.num_datafiles} data files.")
-    
-    
-    
-    def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, year, month, day):
-        datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
-        r_time = datetime_matrix
-        r_h = range_i
-        r_param = Ne_i
-        r_error = DNe_i
 
-        name = f"{year}-{month}-{day}.mat"
-        sio.savemat(os.path.join(self.resultpath, name), {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error})
-    
-    
     def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
         # Plot the results for visualization
         plt.figure()
@@ -238,7 +218,21 @@ class EISCATDataProcessor:
         plt.close()
 
 
-    
+    def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, year, month, day):
+        datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
+        r_time = datetime_matrix
+        r_h = np.nanmean(range_i, axis=0)
+        r_param = Ne_i
+        r_error = DNe_i
+
+        name = f"{year}-{month}-{day}.mat"
+        sio.savemat(os.path.join(self.resultpath, name), {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error})
+        
+
+    def process_all_files(self):
+        for iE in range(self.num_datafiles):
+            self.process_file(iE)
+        print(f"Processing complete. Processed {self.num_datafiles} data files.")
 
 # # Usage example:
 # datapath = "beata_zenith_data_uhf"
