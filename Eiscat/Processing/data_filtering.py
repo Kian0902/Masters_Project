@@ -27,8 +27,18 @@ class DataFiltering:
         self.dataset = dataset
     
     
+    def batch_filtering(self):
+        
+        # Loop through day
+        for key in list(self.dataset.keys()):
+            
+            filt_range_data = self.filter_range(self.dataset[key], 'r_h', 90, 400)
+            self.dataset[key] = filt_range_data
+        
     
-    def filter_range(self, key: str, min_val: float, max_val: float):
+    
+    
+    def filter_range(self, data, key: str, min_val: float, max_val: float):
         """
         Filters out values that lie outside an interval [min_val, max_mal]
         specified by the user.
@@ -44,13 +54,16 @@ class DataFiltering:
         
         
         # Mask for filtered values. False outside and True inside interval
-        mask = np.any((self.dataset[key] >= min_val) & (self.dataset[key] <= max_val), axis=1)
+        mask = np.any((data[key] >= min_val) & (data[key] <= max_val), axis=1)
         
         # Applying mask to all keys except "r_time"
-        for key in list(self.dataset.keys())[1:]:
-            self.dataset[key] = self.dataset[key][mask,:]
-            
-    
+        for key in list(data.keys())[1:]:
+            data[key] = data[key][mask,:]
+        
+        return data
+        
+        
+        
     
     def filter_nan(self, replace_val=111):
         """

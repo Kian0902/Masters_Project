@@ -84,8 +84,6 @@ class EISCATDataSorter:
         data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
         
         filt = DataFiltering(data)
-        filt.filter_range('r_h', 90, 400)
-        filt.filter_nan()
         data = filt.return_data()
         return data
     
