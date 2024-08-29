@@ -58,7 +58,7 @@ class EISCATAverager:
         # Finding indices where minute = 00, 15, 30 and 45
         time15_ind = np.where(r_time[:, 4] % period_min == 0)[0]
 
-        print(f'Num 15min intervals:  {time15_ind.shape}')
+        print(f'Num of 15min:  {time15_ind.shape}   Num of 1min {r_time.shape} ')
 
         
         for i in range(0, len(time15_ind) - 1):

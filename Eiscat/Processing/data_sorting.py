@@ -81,7 +81,10 @@ class EISCATDataSorter:
         include = ["r_time", "r_h", "r_param", "r_error"]
         
         # includes keys in same order as in the include list
-        data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
+        # data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
+        data = {key: data[key] for key in include if key in data}
+        
+        
         return data
     
     
@@ -188,25 +191,3 @@ class EISCATDataSorter:
                 print(f" - {key}: Type = {type(final_data[key])}, Keys = {list(final_data[key].keys())}")
             
                 
-            
-    
-
-
-        # Old code (29.08.2024) #
-        # -----------------------
-        # if self.filter_nan is True:
-        #     # Applying filers
-        #     filt = DataFiltering(data)
-        #     filt.filter_range('r_h', 90, 400)
-        #     filt.filter_nan()
-        #     data = filt.return_data()
-        
-        # if self.filter_outliers is True:
-        #     outlier = OutlierDetection(data)
-        #     outlier.detect_outliers('IQR', plot_outliers=True)
-            
-        # if self.average_data is True:
-        #     avg = EISCATAverager(data)
-        #     data = avg.average_over_period(period_min=15)
-        #     # data = avg.return_data()
-        # return data
