@@ -54,7 +54,7 @@ class EISCATOutlierDetection:
     
     
     # Inter-Quantile Range
-    def iqr_method(self, data: np.array, lower_percent: int=5, upper_percent: int=95):
+    def iqr_method(self, data, lower_percent: int=10, upper_percent: int=90):
         """
         Detect outliers using the Interquartile Range (IQR) method.
     
@@ -68,20 +68,37 @@ class EISCATOutlierDetection:
         ------------------------------------------------
         detected_outliers (np.ndarray)   | Boolean array where True indicates an outlier.
         """
-        Q1 = np.percentile(data, lower_percent, axis=0)  # first quantile
-        Q3 = np.percentile(data, upper_percent, axis=0)  # second quantile
+        Q1 = np.percentile(data, lower_percent, axis=1)  # first quantile
+        Q3 = np.percentile(data, upper_percent, axis=1)  # second quantile
+        
         
         IQR = Q3 - Q1
         
         lower_fence = Q1 - 1.5*IQR
         upper_fence = Q3 + 1.5*IQR
         
-        detect_outliers = (data < lower_fence) | (data > upper_fence)
+        detect_outliers = (data < lower_fence.reshape(-1, 1)) | (data > upper_fence.reshape(-1, 1))
         return detect_outliers
     
     
-
     
+    def pca(self, data):
+        
+        
+        PCA_model = PCA(n_components = 2)
+        
+        pca_data = PCA_model.fit_transform(data.T)
+        
+        return pca_data.T
+        
+        
+        
+        
+        
+        
+        
+        
+        
     def detect_outliers(self, method_name: str):
         """
         Detects outliers using the specified method.
@@ -90,77 +107,36 @@ class EISCATOutlierDetection:
         if method_name not in self.detection_methods:
             raise ValueError(f"Method {method_name} not recognized.")
         
+        
+        r_h = self.dataset['r_h'].flatten()
         r_param = self.dataset['r_param']
-        outliers = self.detection_methods[method_name](r_param[:, :])
+        
+        
+        pca_r_param = self.pca(r_param)
+        
+        outliers = self.detection_methods[method_name](pca_r_param)
+        
         
         # Find indices of minutes (rows) where any outlier is detected
         minutes_with_outliers = np.any(outliers, axis=0)
         outlier_indices = np.where(minutes_with_outliers)[0]
         
-        print(outlier_indices)
+        
+        # print(pca_r_param.shape)
+        
+        plt.scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
+        plt.scatter(pca_r_param[0, outlier_indices], pca_r_param[1, outlier_indices], zorder=1, color="red")
+        plt.show()
+        
+        
+        for i in outlier_indices:
+            plt.plot(r_param[:, i], r_h)
+            plt.show()
+        
+        
+        # print(outlier_indices)
         return outlier_indices
     
     
-    
-    
-    
-    def t_sne(self, ind_bad):
-        
-        r_h     = self.dataset['r_h'].flatten()
-        r_param = self.dataset['r_param']
-        
-        
-        model = TSNE(n_components=2, random_state=0, max_iter=1000, perplexity=15)
-        tsne_data = model.fit_transform(r_param.T)
-        
-        print(tsne_data.shape)
-        
-
-        
-        
-        # Scatter plot
-        plt.figure(figsize=(10, 8))
-        plt.scatter(tsne_data[:, 0], tsne_data[:, 1], s=50, zorder=0)
-        plt.scatter(tsne_data[ind_bad, 0], tsne_data[ind_bad, 1], s=50, color="red", zorder=1)
-        # Labels and title
-        plt.title('t-SNE Scatter Plot')
-        plt.xlabel('t-SNE 1')
-        plt.ylabel('t-SNE 2')
-        
-        # Show plot
-        plt.show()
-    
-
-    def pca(self, ind_bad):
-        
-        r_h     = self.dataset['r_h'].flatten()
-        r_param = self.dataset['r_param']
-        
-        
-        plt.plot(r_param[:, ind_bad], r_h)
-        plt.show()
-        
-        # print(r_param.shape)
-        
-        model = PCA(n_components=2)
-        pca_data = model.fit_transform(r_param.T)
-        
-        print(pca_data.shape)
-        
-
-        
-        
-        # Scatter plot
-        plt.figure(figsize=(10, 8))
-        plt.scatter(pca_data[:, 0], pca_data[:, 1], s=50, zorder=0)
-        plt.scatter(pca_data[ind_bad, 0], pca_data[ind_bad, 1], s=50, color="red", zorder=1)
-        # Labels and title
-        plt.title('PCA Scatter Plot')
-        plt.xlabel('PCA 1')
-        plt.ylabel('PCA 2')
-        
-        # Show plot
-        plt.show()
-
 
 
