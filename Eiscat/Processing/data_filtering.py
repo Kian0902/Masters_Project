@@ -23,6 +23,8 @@ class EISCATDataFilter:
         Attributes (type)  | DESCRIPTION
         ------------------------------------------------
         dataset (dict)     | Single dictionary containing processed data.
+        filt_range (bool)  | Argument for allowing range filtering. Standard set to True.
+        filt_nan   (bool)  | Argument for allowing nan filtering. Standard set to True.
         """
         self.dataset = dataset
         self.apply_range_filter = filt_range
@@ -30,6 +32,10 @@ class EISCATDataFilter:
         
     
     def batch_filtering(self):
+        """
+        Function for applying the filtering to the entire dataset by looping
+        through the global keys (days).
+        """
         # Loop through day
         for key in list(self.dataset.keys()):
             
