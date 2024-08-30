@@ -18,18 +18,23 @@ class EISCATDataFilter:
     """
     Class for clipping and filtering dict data.
     """
-    def __init__(self, dataset: dict, filt_range: bool=True, filt_nan: bool=True):
+    def __init__(self, dataset: dict, filt_range: bool=True, filt_nan: bool=True, min_val=90, max_val=400):
         """
         Attributes (type)  | DESCRIPTION
         ------------------------------------------------
         dataset (dict)     | Single dictionary containing processed data.
-        filt_range (bool)  | Argument for allowing range filtering. Standard set to True.
-        filt_nan   (bool)  | Argument for allowing nan filtering. Standard set to True.
+        filt_range (bool)  | Whether to apply range filtering.
+        filt_nan   (bool)  | Whether to apply NaN filtering.
+        range_key (str)    | Key to apply range filtering on.
+        min_val (float)    | Minimum value for range filtering. Default = 90km
+        max_val (float)    | Maximum value for range filtering. Default = 400km
         """
         self.dataset = dataset
         self.apply_range_filter = filt_range
         self.apply_nan_filter = filt_nan
-        
+        self.min_val = min_val
+        self.max_val = max_val
+    
     
     def batch_filtering(self):
         """
@@ -41,12 +46,16 @@ class EISCATDataFilter:
             
             # Filter range
             if self.apply_range_filter:
-                self.dataset[key] = self.filter_range(self.dataset[key], 'r_h', 90, 400)
+                self.dataset[key] = self.filter_range(self.dataset[key], 'r_h', self.min_val, self.max_val)
             
             # Filter nans
             if self.apply_nan_filter:
                 self.dataset[key] = self.filter_nan(self.dataset[key])
-    
+        
+        
+        
+        
+        
     
     def filter_range(self, data: dict, key: str, min_val: float, max_val: float):
         """
@@ -118,52 +127,6 @@ class EISCATDataFilter:
        
         return data
     
-    
-    # def filter_nan(self, replace_val=111):
-    #     """
-    #     Function for handling numpy.ndarrays with NaN values. This method
-    #     interpolates and/or extrapolates way NaNs. If more than half of the
-    #     array contains NaNs, then user has the choice of picking a fill value
-    #     to replace the entire array. This is so it becomes easier later to 
-    #     distinguish faulty arrays from healthy ones.
-        
-    #     Input (type)            | DESCRIPTION
-    #     ------------------------------------------------
-    #     replace_val (int/float) | Value to replace nans with
-    #     """
-        
-    #     # Looping through keys except "r_time"
-    #     for key in list(self.dataset.keys())[1:]:
-    #         data = self.dataset[key]
-            
-    #         # Check if there are any NaNs in the data
-    #         if np.isnan(data).any():
-    #             # Find the indices of NaN values
-    #             nan_mask = np.isnan(data)
-                
-    #             # If more than half of the elements in the array are NaN
-    #             if np.sum(nan_mask) > (data.shape[0] * data.shape[1]) / 2:
-    #                 # Fill the entire array with replace_val
-    #                 self.dataset[key].fill(replace_val)
-    #             else:
-    #                 # Interpolate/extrapolate the NaNs for each column (minute)
-    #                 x = np.arange(data.shape[0])  # Indexes for rows (altitude measurements)
-                    
-    #                 for j in range(data.shape[1]):  # Iterate over each column (minute)
-    #                     col = data[:, j]
-    #                     valid_mask = ~nan_mask[:, j]
-    #                     if np.any(valid_mask):  # Check if there's at least one valid point
-    #                         interp_func = interp1d(x[valid_mask], col[valid_mask], 
-    #                                                kind='linear', fill_value="extrapolate")
-    #                         col[~valid_mask] = interp_func(x[~valid_mask])
-    #                     else:
-    #                         # If the entire column is NaN, fill it with replace_val
-    #                         data[:, j].fill(replace_val)
-                    
-    #                 self.dataset[key] = data
-
-
-
 
     def return_data(self):
         """
