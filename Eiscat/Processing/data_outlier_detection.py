@@ -10,9 +10,9 @@ from scipy.stats import zscore
 from datetime import datetime
 import matplotlib.pyplot as plt
 from sklearn.manifold import TSNE
+from sklearn.decomposition import PCA
 
-
-class OutlierDetection:
+class EISCATOutlierDetection:
     """
     Class for detecting outliers present in EISCAT data.
     """
@@ -22,11 +22,13 @@ class OutlierDetection:
         
         Attributes (type) | DESCRIPTION
         ------------------------------------------------
-        dataset (dict)    | Dictionary containing the NaN filtered EISCAT data
+        dataset (dict)    | Dictionary containing the filtered EISCAT data
         """
         self.dataset = dataset
         self.detection_methods = {'z-score': self.z_score_method,
                                   'IQR': self.iqr_method}
+    
+    
     
     
     
@@ -78,11 +80,9 @@ class OutlierDetection:
         return detect_outliers
     
     
+
     
-    
-    
-    
-    def detect_outliers(self, method_name: str, plot_outliers: bool=False):
+    def detect_outliers(self, method_name: str):
         """
         Detects outliers using the specified method.
         """
@@ -97,36 +97,70 @@ class OutlierDetection:
         minutes_with_outliers = np.any(outliers, axis=0)
         outlier_indices = np.where(minutes_with_outliers)[0]
         
+        print(outlier_indices)
+        return outlier_indices
+    
+    
+    
+    
+    
+    def t_sne(self, ind_bad):
         
-        # Option for plotting the outliers
-        if plot_outliers is True:
-            for i, ind in enumerate(outlier_indices):
-                plt.plot(r_param[:, ind], self.dataset['r_h'].flatten(), label='ne')
-                plt.xlabel('Electron Density')
-                plt.ylabel('Altitude')
-                plt.title(f'Outlier Detected using {method_name}   time: {datetime(*self.dataset["r_time"][ind])}')
-                plt.xscale('log')
-                plt.legend()
-                plt.show()
-        
-        
+        r_h     = self.dataset['r_h'].flatten()
+        r_param = self.dataset['r_param']
         
         
+        model = TSNE(n_components=2, random_state=0, max_iter=1000, perplexity=15)
+        tsne_data = model.fit_transform(r_param.T)
+        
+        print(tsne_data.shape)
+        
+
         
         
+        # Scatter plot
+        plt.figure(figsize=(10, 8))
+        plt.scatter(tsne_data[:, 0], tsne_data[:, 1], s=50, zorder=0)
+        plt.scatter(tsne_data[ind_bad, 0], tsne_data[ind_bad, 1], s=50, color="red", zorder=1)
+        # Labels and title
+        plt.title('t-SNE Scatter Plot')
+        plt.xlabel('t-SNE 1')
+        plt.ylabel('t-SNE 2')
+        
+        # Show plot
+        plt.show()
+    
 
+    def pca(self, ind_bad):
+        
+        r_h     = self.dataset['r_h'].flatten()
+        r_param = self.dataset['r_param']
+        
+        
+        plt.plot(r_param[:, ind_bad], r_h)
+        plt.show()
+        
+        # print(r_param.shape)
+        
+        model = PCA(n_components=2)
+        pca_data = model.fit_transform(r_param.T)
+        
+        print(pca_data.shape)
+        
 
-
-
-
-
-
-
-
-
-
-
-
+        
+        
+        # Scatter plot
+        plt.figure(figsize=(10, 8))
+        plt.scatter(pca_data[:, 0], pca_data[:, 1], s=50, zorder=0)
+        plt.scatter(pca_data[ind_bad, 0], pca_data[ind_bad, 1], s=50, color="red", zorder=1)
+        # Labels and title
+        plt.title('PCA Scatter Plot')
+        plt.xlabel('PCA 1')
+        plt.ylabel('PCA 2')
+        
+        # Show plot
+        plt.show()
 
 
 

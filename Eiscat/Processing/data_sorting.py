@@ -13,7 +13,6 @@ import numpy as np
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
-from data_outlier_detection import OutlierDetection
 from data_averaging import EISCATAverager
 
 
