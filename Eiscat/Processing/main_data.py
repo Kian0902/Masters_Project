@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 from read_EISCAT_data import EISCATDataProcessor
 from data_sorting import EISCATDataSorter
 from data_averaging import EISCATAverager
-from data_filtering import DataFiltering
-
+from data_filtering import EISCATDataFilter
+from data_outlier_detection import EISCATOutlierDetection
 
 
 def detect_nan_in_arrays(data_dict):
@@ -32,16 +32,34 @@ VHF.sort_data()  # sort data
 
 X_vhf = VHF.return_data()  # returning dict data
 
-filt = DataFiltering(X_vhf) 
+filt = EISCATDataFilter(X_vhf, filt_range=True, filt_nan=True) 
 filt.batch_filtering()
-X_filt = filt.return_data()
+X_filtered = filt.return_data()
+
+# X = X_filtered['2018-11-10']['r_error']
+X = X_filtered['2018-11-11']
 
 
-# VHF.test_dataflow()
-print(X_filt['2018-11-10']['r_h'].shape)
 
-for day in X_filt:
-    detect_nan_in_arrays(X_filt[day])
+Outlier = EISCATOutlierDetection(X)
+
+Outlier.detect_outliers(method_name="IQR")
+
+
+# Outlier.t_sne(bad_ind)
+# Outlier.pca()
+
+# Outlier.t_sne(X)
+
+
+
+
+
+# # VHF.test_dataflow()
+# print(X_filt['2018-11-10']['r_h'].shape)
+
+# for day in X:
+#     detect_nan_in_arrays(X)
 
 
 

@@ -33,7 +33,7 @@ class EISCATOutlierDetection:
     
     
     # Z-score
-    def z_score_method(self, data: np.array, threshold: int=3):
+    def z_score_method(self, data: np.array, threshold: int=6):
         """
         Detect outliers using the Z-score method.
         
@@ -47,14 +47,14 @@ class EISCATOutlierDetection:
         ------------------------------------------------
         detected_outliers  (np.ndarray)  | Boolean array where True indicates an outlier.
         """
-        z_score = zscore(data, axis=0)  # get z-scores
+        z_score = zscore(data, axis=1)  # get z-scores
         detected_outliers = np.abs(z_score) > threshold
         return detected_outliers
     
     
     
     # Inter-Quantile Range
-    def iqr_method(self, data, lower_percent: int=10, upper_percent: int=90):
+    def iqr_method(self, data, lower_percent: int=5, upper_percent: int=95):
         """
         Detect outliers using the Interquartile Range (IQR) method.
     
@@ -110,22 +110,36 @@ class EISCATOutlierDetection:
         
         r_h = self.dataset['r_h'].flatten()
         r_param = self.dataset['r_param']
+        r_error = self.dataset['r_error']
         
         
         pca_r_param = self.pca(r_param)
+        pca_r_error = self.pca(r_error)
+        
         
         outliers = self.detection_methods[method_name](pca_r_param)
+        outliers_err = self.detection_methods[method_name](pca_r_error)
+        
+        # print(outliers, outliers_err)
+        
         
         
         # Find indices of minutes (rows) where any outlier is detected
         minutes_with_outliers = np.any(outliers, axis=0)
-        outlier_indices = np.where(minutes_with_outliers)[0]
+        minutes_with_outliers_err = np.any(outliers_err, axis=0)
         
+        outlier_indices = np.where(minutes_with_outliers)[0]
+        outlier_indices_err = np.where(minutes_with_outliers_err)[0]
         
         # print(pca_r_param.shape)
         
         plt.scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
         plt.scatter(pca_r_param[0, outlier_indices], pca_r_param[1, outlier_indices], zorder=1, color="red")
+        plt.show()
+        
+        
+        plt.scatter(pca_r_error[0, :], pca_r_error[1, :], zorder=0)
+        plt.scatter(pca_r_error[0, outlier_indices_err], pca_r_error[1, outlier_indices_err], zorder=1, color="red")
         plt.show()
         
         
