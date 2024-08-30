@@ -13,7 +13,6 @@ import numpy as np
 from scipy.io import loadmat
 import matplotlib.pyplot as plt
 
-from data_filtering import DataFiltering
 from data_outlier_detection import OutlierDetection
 from data_averaging import EISCATAverager
 
@@ -82,9 +81,6 @@ class EISCATDataSorter:
         
         # includes keys in same order as in the include list
         data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
-        
-        filt = DataFiltering(data)
-        data = filt.return_data()
         return data
     
     
