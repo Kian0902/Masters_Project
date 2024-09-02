@@ -29,6 +29,16 @@ class EISCATAverager:
     
     
     
+    def batch_averaging(self):
+        """
+        Function for applying the averaging to the entire dataset by looping
+        through the global keys (days).
+        """
+        # Loop through day
+        for key in list(self.dataset.keys()):
+            self.dataset[key] = self.average_over_period(self.dataset[key])
+            
+    
     def round_time(self, data_time):
         """
         Rounds the data time array to the nearest minute.
@@ -56,8 +66,8 @@ class EISCATAverager:
         return rounded_dates_array
     
     
-
-    def average_over_period(self, period_min: int=15):
+    
+    def average_over_period(self, data: dict, period_min: int=15):
         """
         Average the radar data over a specified time period.
         
@@ -71,12 +81,12 @@ class EISCATAverager:
         """
 
         # Definin keys
-        r_time  = self.round_time(self.dataset['r_time'])
-        r_h     = self.dataset['r_h']
-        r_param = self.dataset['r_param']
-        r_error = self.dataset['r_error']
+        r_time  = data['r_time']
+        r_h     = data['r_h']
+        r_param = data['r_param']
+        r_error = data['r_error']
         
-        
+    
         # Making new dict for storing averaged data
         avg_data = {'r_time': [],
             'r_h': r_h,
@@ -87,8 +97,21 @@ class EISCATAverager:
         # Finding indices where minute = 00, 15, 30 and 45
         time15_ind = np.where(r_time[:, 4] % period_min == 0)[0]
 
-        print(f'Num of 15min:  {time15_ind.shape}   Num of 1min {r_time.shape} ')
         
+        # Handle the first interval separately (from start to the first 15-minute mark)
+        if time15_ind[0] > 0:
+            ind_s = 0
+            ind_f = time15_ind[0]
+            
+            # Averaging between indices
+            r_param_avg = np.nanmean(r_param[:, ind_s: ind_f], axis=1)
+            r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
+            
+            # Appending averaged values
+            avg_data['r_param'].append(r_param_avg)
+            avg_data['r_error'].append(r_error_avg)
+            avg_data['r_time'].append(r_time[ind_f])
+            
         
         for i in range(0, len(time15_ind) - 1):
             
@@ -104,7 +127,8 @@ class EISCATAverager:
             avg_data['r_param'].append(r_param_avg)
             avg_data['r_error'].append(r_error_avg)
             avg_data['r_time'].append(r_time[ind_f])
-        
+            
+            
         # Handling the leftover data at the end of the time array
         if time15_ind[-1] < len(r_time) - 1:
             ind_s = time15_ind[-1]
@@ -123,6 +147,9 @@ class EISCATAverager:
         avg_data['r_param'] = np.array(avg_data['r_param']).T
         avg_data['r_error'] = np.array(avg_data['r_error']).T
         avg_data['r_time'] = np.array(avg_data['r_time'])
+        
+        print(f'Num of 15min:  {avg_data["r_time"].shape}   Num of 1min {r_time.shape} ')
+        
         return avg_data
     
     
