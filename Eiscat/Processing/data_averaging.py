@@ -30,20 +30,29 @@ class EISCATAverager:
     
     
     def round_time(self, data_time):
+        """
+        Rounds the data time array to the nearest minute.
         
+        Input (type)             | DESCRIPTION
+        ------------------------------------------------
+        data_time (np.ndarray)   | Array with dates and times.
         
+        Return (type)                      | DESCRIPTION
+        ------------------------------------------------
+        rounded_dates_array (np.ndarray)   | Array with rounded dates and times.
+        """
+        # Convert each row with date and time into datetime objects
         datetimes = [datetime(year, month, day, hour, minute, second) 
              for year, month, day, hour, minute, second in data_time]
         
+        # Rounding datetimes into closest minute
         rounded_datetimes = [dt.replace(second=0, microsecond=0) + timedelta(minutes=1) if dt.second >= 30 
                      else dt.replace(second=0, microsecond=0) 
                      for dt in datetimes]
         
-        # Convert back to numpy array (if necessary)
+        # Convert back to numpy array
         rounded_dates_array = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] 
                                         for dt in rounded_datetimes])
-        
-        
         return rounded_dates_array
     
     
