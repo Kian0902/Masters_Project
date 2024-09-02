@@ -11,7 +11,7 @@ Created on Tue Aug 27 15:58:50 2024
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
-
+from matplotlib.dates import DateFormatter
 
 class EISCATAverager:
     """
@@ -29,14 +29,15 @@ class EISCATAverager:
     
     
     
-    def batch_averaging(self):
+    def batch_averaging(self, save_plot=False):
         """
         Function for applying the averaging to the entire dataset by looping
         through the global keys (days).
         """
         # Loop through day
         for key in list(self.dataset.keys()):
-            self.dataset[key] = self.average_over_period(self.dataset[key])
+            self.dataset[key] = self.average_over_period(self.dataset[key], save_plot=save_plot)
+
             
     
     def round_time(self, data_time):
@@ -67,7 +68,7 @@ class EISCATAverager:
     
     
     
-    def average_over_period(self, data: dict, period_min: int=15):
+    def average_over_period(self, data: dict, period_min: int=15, save_plot=False):
         """
         Average the radar data over a specified time period.
         
@@ -150,7 +151,102 @@ class EISCATAverager:
         
         print(f'Num of 15min:  {avg_data["r_time"].shape}   Num of 1min {r_time.shape} ')
         
+        if save_plot is True:
+            self.plot_and_save_comparison(data, avg_data)
+        
+        
         return avg_data
+    
+    
+    def plot_and_save_comparison(self, original_data: dict, averaged_data: dict):
+        """
+        Plot a comparison of original and averaged data using pcolormesh.
+
+        Input (type)                 | DESCRIPTION
+        ------------------------------------------------
+        original_data (dict)         | Dictionary containing the original data.
+        averaged_data (dict)         | Dictionary containing the averaged data.
+        """
+        
+        
+        
+        # # Extracting the necessary data
+        # r_time_orig = original_data['r_time'][:, 3] + original_data['r_time'][:, 4] / 60.0  # Convert to hours
+        # r_time_avg = averaged_data['r_time'][:, 3] + averaged_data['r_time'][:, 4] / 60.0  # Convert to hours
+        # r_h = original_data['r_h']  # Altitude data (same for original and averaged)
+        
+        # # Select the parameter to plot
+        # r_param_orig = original_data['r_param'][param_index, :]
+        # r_param_avg = averaged_data['r_param'][param_index, :]
+        
+        
+        
+        # Convert time arrays to datetime objects
+        r_time_orig = np.array([datetime(year, month, day, hour, minute) 
+                                for year, month, day, hour, minute, second in original_data['r_time']])
+        
+        # r_time_orig = original_data['r_time'][:, 3] + original_data['r_time'][:, 4] / 60.0  # Convert to hours
+        # r_time_orig = original_data['r_time']
+        r_h_orig = original_data['r_h']
+        r_param_orig = original_data['r_param']
+        
+        print("Original")
+        print(r_time_orig.shape)
+        print(r_h_orig.shape)
+        print(r_param_orig.shape)
+        
+        r_time_avg = np.array([datetime(year, month, day, hour, minute) 
+                               for year, month, day, hour, minute, second in averaged_data['r_time']])
+        # r_time_avg = averaged_data['r_time'][:, 3] + averaged_data['r_time'][:, 4] / 60.0  # Convert to hours
+        # r_time_avg = averaged_data['r_time']
+        r_h_avg = averaged_data['r_h']
+        r_param_avg = averaged_data['r_param']
+        
+        print("\nAveraged")
+        print(r_time_avg.shape)
+        print(r_h_avg.shape)
+        print(r_param_avg.shape)
+        
+        
+        # Determine the color scale limits based on the original data
+        vmin = np.nanmin(r_param_orig)
+        vmax = np.nanmax(r_param_orig)
+        
+        # Determine the overall time range to ensure both plots show the same x-axis
+        time_min = min(r_time_orig[0], r_time_avg[0])
+        time_max = max(r_time_orig[-1], r_time_avg[-1])
+        
+        
+        # Creating the plots
+        fig, ax = plt.subplots(1, 2, figsize=(14, 6), constrained_layout=True)
+
+        # Plotting original data
+        pcm_orig = ax[0].pcolormesh(r_time_orig, r_h_orig.flatten(), r_param_orig, shading='auto', cmap='turbo', vmin=vmin, vmax=vmax)
+        ax[0].set_title('Original Data')
+        ax[0].set_xlabel('Time (hours)')
+        ax[0].set_ylabel('Altitude (km)')
+        ax[0].set_xlim(time_min, time_max)
+        ax[0].xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+        fig.autofmt_xdate()
+        # fig.colorbar(pcm_orig, ax=ax[0], label='Parameter Value')
+        
+        
+        # Add colorbar for the original data
+        cbar = fig.colorbar(pcm_orig, ax=ax, orientation='vertical', fraction=0.03, pad=0.04, aspect=40, shrink=1)
+        cbar.set_label('Parameter Value')
+        
+        # Plotting averaged data
+        pcm_avg = ax[1].pcolormesh(r_time_avg, r_h_avg.flatten(), r_param_avg, shading='auto', cmap='turbo', vmin=vmin, vmax=vmax)
+        ax[1].set_title('Averaged Data')
+        ax[1].set_xlabel('Time (hours)')
+        ax[1].set_ylabel('Altitude (km)')
+        ax[1].set_xlim(time_min, time_max)
+        ax[1].xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+        fig.autofmt_xdate()
+        # fig.colorbar(pcm_avg, ax=ax[1], label='Parameter Value')
+        
+        # Display the plots
+        plt.show()
     
     
     
