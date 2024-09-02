@@ -71,64 +71,68 @@ class EISCATAverager:
         """
 
         # Definin keys
-        r_time  = self.dataset['r_time']
+        r_time  = self.round_time(self.dataset['r_time'])
         r_h     = self.dataset['r_h']
         r_param = self.dataset['r_param']
         r_error = self.dataset['r_error']
         
         
-        # print(r_time.shape)
+        # Making new dict for storing averaged data
+        avg_data = {'r_time': [],
+            'r_h': r_h,
+            'r_param': [],
+            'r_error': []}
         
-        r_time_new = self.round_time(r_time)
         
-        
-        for i in range(0, len(r_time)):
-            print(r_time[i,:], r_time_new[i,:])
-            print("\n")
-        
+        # Finding indices where minute = 00, 15, 30 and 45
+        time15_ind = np.where(r_time[:, 4] % period_min == 0)[0]
 
-        
-        # # Making new dict for storing averaged data
-        # avg_data = {'r_time': [],
-        #     'r_h': r_h,
-        #     'r_param': [],
-        #     'r_error': []}
+        print(f'Num of 15min:  {time15_ind.shape}   Num of 1min {r_time.shape} ')
         
         
-        # # Finding indices where minute = 00, 15, 30 and 45
-        # time15_ind = np.where(r_time[:, 4] % period_min == 0)[0]
-
-        # print(f'Num of 15min:  {time15_ind.shape}   Num of 1min {r_time.shape} ')
-
-        
-        # for i in range(0, len(time15_ind) - 1):
+        for i in range(0, len(time15_ind) - 1):
             
-        #     # Index for current and next 15 min interval
-        #     ind_s = time15_ind[i]
-        #     ind_f = time15_ind[i + 1]
+            # Index for current and next 15 min interval
+            ind_s = time15_ind[i]
+            ind_f = time15_ind[i + 1]
             
-        #     # Averaging between indices
-        #     r_param_avg = np.nanmean(r_param[:, ind_s: ind_f], axis=1)
-        #     r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
+            # Averaging between indices
+            r_param_avg = np.nanmean(r_param[:, ind_s: ind_f], axis=1)
+            r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
             
-        #     # Appending averaged values
-        #     avg_data['r_param'].append(r_param_avg)
-        #     avg_data['r_error'].append(r_error_avg)
-        #     avg_data['r_time'].append(r_time[ind_f])
+            # Appending averaged values
+            avg_data['r_param'].append(r_param_avg)
+            avg_data['r_error'].append(r_error_avg)
+            avg_data['r_time'].append(r_time[ind_f])
         
-        # # Converting list to numpy arrays for consistancy
-        # avg_data['r_param'] = np.array(avg_data['r_param']).T
-        # avg_data['r_error'] = np.array(avg_data['r_error']).T
-        # avg_data['r_time'] = np.array(avg_data['r_time'])
-        # return avg_data
+        # Handling the leftover data at the end of the time array
+        if time15_ind[-1] < len(r_time) - 1:
+            ind_s = time15_ind[-1]
+            ind_f = len(r_time)  # end of the array
+            
+            # Averaging the leftover data
+            r_param_avg = np.nanmean(r_param[:, ind_s: ind_f], axis=1)
+            r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
+            
+            # Appending the last averaged values
+            avg_data['r_param'].append(r_param_avg)
+            avg_data['r_error'].append(r_error_avg)
+            avg_data['r_time'].append(r_time[-1])
         
-        
-
-    # def return_data(self):
-    #     """
-    #     Returns self.data
-    #     """
-    #     return self.dataset
+        # Converting list to numpy arrays for consistency
+        avg_data['r_param'] = np.array(avg_data['r_param']).T
+        avg_data['r_error'] = np.array(avg_data['r_error']).T
+        avg_data['r_time'] = np.array(avg_data['r_time'])
+        return avg_data
+    
+    
+    
+    
+    def return_data(self):
+        """
+        Returns self.data
+        """
+        return self.dataset
 
 
 
