@@ -26,24 +26,40 @@ def detect_nan_in_arrays(data_dict):
 folder_name = "Ne_vhf"
 
 
-# Initialize data sorting for VHF
+# Sorting data
 VHF = EISCATDataSorter(folder_name)
 VHF.sort_data()  # sort data
 
+
+# VHF data
 X_vhf = VHF.return_data()  # returning dict data
 
+# Filtering data
 filt = EISCATDataFilter(X_vhf, filt_range=True, filt_nan=True) 
 filt.batch_filtering()
 X_filtered = filt.return_data()
 
-# X = X_filtered['2018-11-10']['r_error']
-X = X_filtered['2018-11-11']
+
+
+first_two_global_keys = list(X_filtered.keys())[:]
+X = {key: X_filtered[key] for key in first_two_global_keys}
+
+
+# Averaging data
+AVG = EISCATAverager(X)
+AVG.batch_averaging(save_plot=True)
+X_avg = AVG.return_data()
 
 
 
-Outlier = EISCATOutlierDetection(X)
 
-Outlier.detect_outliers(method_name="IQR")
+
+
+
+
+# Outlier = EISCATOutlierDetection(X)
+
+# Outlier.detect_outliers(method_name="IQR")
 
 
 # Outlier.t_sne(bad_ind)
