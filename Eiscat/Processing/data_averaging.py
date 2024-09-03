@@ -67,6 +67,14 @@ class EISCATAverager:
         return rounded_dates_array
     
     
+    def get_weights(self, errors: np.ndarray, eps: float = 1e-10)-> np.ndarray:
+
+        weights = 1 / (errors + eps)  # calculate weights
+        weights /= np.sum(weights, axis=1, keepdims=True)  # Normalize weights such that they sum up to 1
+        return weights
+        
+        
+    
     
     def average_over_period(self, data: dict, period_min: int=15, save_plot=False):
         """
