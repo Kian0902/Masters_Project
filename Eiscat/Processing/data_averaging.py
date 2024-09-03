@@ -97,15 +97,23 @@ class EISCATAverager:
         
         # Finding indices where minute = 00, 15, 30 and 45
         time15_ind = np.where(r_time[:, 4] % period_min == 0)[0]
-
         
+        
+        
+        
+        eps = 1e-10
         # Handle the first interval separately (from start to the first 15-minute mark)
         if time15_ind[0] > 0:
             ind_s = 0
             ind_f = time15_ind[0]
             
+            
+            weights = 1 / (r_error[:, ind_s:ind_f] + eps)
+            weights /= np.sum(weights, axis=1, keepdims=True)
+            
+
             # Averaging between indices
-            r_param_avg = np.nanmean(r_param[:, ind_s: ind_f], axis=1)
+            r_param_avg = np.nansum(r_param[:, ind_s: ind_f] * weights, axis=1)
             r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
             
             # Appending averaged values
@@ -113,15 +121,25 @@ class EISCATAverager:
             avg_data['r_error'].append(r_error_avg)
             avg_data['r_time'].append(r_time[ind_f])
             
-        
+        print(r_error.shape)
         for i in range(0, len(time15_ind) - 1):
             
             # Index for current and next 15 min interval
             ind_s = time15_ind[i]
             ind_f = time15_ind[i + 1]
             
+            
+            
+            
+            # Inverse of the errors as weights
+            weights = 1/(r_error[:, ind_s:ind_f] + eps)
+            
+            # Normalize weights
+            weights /= np.sum(weights, axis=1, keepdims=True)
+            
+            
             # Averaging between indices
-            r_param_avg = np.nanmean(r_param[:, ind_s: ind_f], axis=1)
+            r_param_avg = np.nansum(r_param[:, ind_s: ind_f] * weights, axis=1)
             r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
             
             # Appending averaged values
@@ -135,8 +153,13 @@ class EISCATAverager:
             ind_s = time15_ind[-1]
             ind_f = len(r_time)  # end of the array
             
+            # Calculate weights
+            weights = 1 / (r_error[:, ind_s:ind_f] + eps)
+            weights /= np.sum(weights, axis=1, keepdims=True)
+                
+            
             # Averaging the leftover data
-            r_param_avg = np.nanmean(r_param[:, ind_s: ind_f], axis=1)
+            r_param_avg = np.nansum(r_param[:, ind_s: ind_f] * weights, axis=1)
             r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
             
             # Appending the last averaged values
@@ -178,7 +201,7 @@ class EISCATAverager:
         
         
         r_time_avg = np.array([datetime(year, month, day, hour, minute) 
-                               for year, month, day, hour, minute, second in averaged_data['r_time']])
+                                for year, month, day, hour, minute, second in averaged_data['r_time']])
         r_h_avg = averaged_data['r_h']
         r_param_avg = averaged_data['r_param']
         
