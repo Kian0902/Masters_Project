@@ -47,7 +47,7 @@ X = {key: X_filtered[key] for key in first_two_global_keys}
 
 # Averaging data
 AVG = EISCATAverager(X)
-AVG.batch_averaging(save_plot=True)
+AVG.batch_averaging(save_plot=True, weighted=True)
 X_avg = AVG.return_data()
 
 
