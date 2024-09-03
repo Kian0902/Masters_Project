@@ -28,14 +28,14 @@ class EISCATAverager:
         self.dataset = dataset
     
     
-    def batch_averaging(self, save_plot=False, weighted=False):
+    def batch_averaging(self, save_plot=False, weighted=False, log_scale=False):
         """
         Function for applying the averaging to the entire dataset by looping
         through the global keys (days).
         """
         # Loop through day
         for key in list(self.dataset.keys()):
-            self.dataset[key] = self.average_over_period(self.dataset[key], save_plot=save_plot, weighted=weighted)
+            self.dataset[key] = self.average_over_period(self.dataset[key], save_plot=save_plot, weighted=weighted, log_scale=log_scale)
 
             
     
@@ -88,7 +88,7 @@ class EISCATAverager:
         
     
     
-    def average_over_period(self, data: dict, period_min: int=15, save_plot=False, weighted=False) -> dict:
+    def average_over_period(self, data: dict, period_min: int=15, save_plot=False, weighted=False, log_scale=False) -> dict:
         """
         Average the radar data over a specified time period.
         
@@ -175,13 +175,13 @@ class EISCATAverager:
         print(f'Num of 15min:  {avg_data["r_time"].shape}   Num of 1min {r_time.shape} ')
             
         if save_plot is True:
-            self.plot_and_save_comparison(data, avg_data)
+            self.plot_and_save_comparison(data, avg_data, log_scale=log_scale)
         
         
         return avg_data
     
     
-    def plot_and_save_comparison(self, original_data: dict, averaged_data: dict):
+    def plot_and_save_comparison(self, original_data: dict, averaged_data: dict, log_scale=False):
         """
         Plot a comparison of original and averaged data using pcolormesh.
 
@@ -189,8 +189,8 @@ class EISCATAverager:
         ------------------------------------------------
         original_data (dict)         | Dictionary containing the original data.
         averaged_data (dict)         | Dictionary containing the averaged data.
+        log_scale (bool)             | Whether to use a logarithmic scale for the color mapping.
         """
-        
         
         # Convert time arrays to datetime objects
         r_time_orig = np.array([datetime(year, month, day, hour, minute) 
@@ -198,18 +198,19 @@ class EISCATAverager:
         r_h_orig = original_data['r_h']
         r_param_orig = original_data['r_param']
         
-        
-        
         r_time_avg = np.array([datetime(year, month, day, hour, minute) 
                                 for year, month, day, hour, minute, second in averaged_data['r_time']])
         r_h_avg = averaged_data['r_h']
         r_param_avg = averaged_data['r_param']
         
-        
-        
-        # Determine the color scale limits based on the original data
-        vmin = 1e9 #np.nanmin(r_param_orig)
-        vmax = 6e11 #np.nanmax(r_param_orig)
+        if log_scale:
+            r_param_orig = np.log10(r_param_orig)
+            r_param_avg = np.log10(r_param_avg)
+            vmin = 10  # Logarithmic scale, adjust as necessary
+            vmax = 11  # Logarithmic scale, adjust as necessary
+        else:
+            vmin = 1e9  # Linear scale, adjust as necessary
+            vmax = 6e11  # Linear scale, adjust as necessary
         
         # Date
         date_str = r_time_orig[0].strftime('%Y-%m-%d')
@@ -226,19 +227,17 @@ class EISCATAverager:
         ax[0].xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
         fig.autofmt_xdate()
         
-        
         # Add colorbar for the original data
         cbar = fig.colorbar(pcm_orig, ax=ax, orientation='vertical', fraction=0.03, pad=0.04, aspect=20, shrink=1)
-        cbar.set_label('Parameter Value')
+        cbar.set_label('Parameter Value' + (' (log scale)' if log_scale else ''))
         
         # Plotting averaged data
-        pcm_avg = ax[1].pcolormesh(r_time_avg, r_h_avg.flatten(), r_param_avg, shading='autu', cmap='turbo', vmin=vmin, vmax=vmax)
+        pcm_avg = ax[1].pcolormesh(r_time_avg, r_h_avg.flatten(), r_param_avg, shading='auto', cmap='turbo', vmin=vmin, vmax=vmax)
         ax[1].set_title('Averaged Data')
         ax[1].set_xlabel('Time (hours)')
         ax[1].set_ylabel('Altitude (km)')
         ax[1].xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
         fig.autofmt_xdate()
-        
         
         # Display the plots
         plt.show()
