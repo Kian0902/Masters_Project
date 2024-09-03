@@ -28,15 +28,14 @@ class EISCATAverager:
         self.dataset = dataset
     
     
-    
-    def batch_averaging(self, save_plot=False):
+    def batch_averaging(self, save_plot=False, weighted=False):
         """
         Function for applying the averaging to the entire dataset by looping
         through the global keys (days).
         """
         # Loop through day
         for key in list(self.dataset.keys()):
-            self.dataset[key] = self.average_over_period(self.dataset[key], save_plot=save_plot)
+            self.dataset[key] = self.average_over_period(self.dataset[key], save_plot=save_plot, weighted=weighted)
 
             
     
@@ -76,7 +75,7 @@ class EISCATAverager:
         
     
     
-    def average_over_period(self, data: dict, period_min: int=15, save_plot=False):
+    def average_over_period(self, data: dict, period_min: int=15, save_plot=False, weighted=False) -> dict:
         """
         Average the radar data over a specified time period.
         
@@ -107,81 +106,61 @@ class EISCATAverager:
         time15_ind = np.where(r_time[:, 4] % period_min == 0)[0]
         
         
-        
-        
-        eps = 1e-10
         # Handle the first interval separately (from start to the first 15-minute mark)
         if time15_ind[0] > 0:
             ind_s = 0
             ind_f = time15_ind[0]
             
+            if weighted:
+                weights = self.get_weights(r_error[:, ind_s:ind_f])
+                r_param_avg = np.nansum(r_param[:, ind_s:ind_f] * weights, axis=1)
+            else:
+                r_param_avg = np.nanmean(r_param[:, ind_s:ind_f], axis=1)
             
-            weights = 1 / (r_error[:, ind_s:ind_f] + eps)
-            weights /= np.sum(weights, axis=1, keepdims=True)
+            r_error_avg = np.nanmean(r_error[:, ind_s:ind_f], axis=1)
             
-
-            # Averaging between indices
-            r_param_avg = np.nansum(r_param[:, ind_s: ind_f] * weights, axis=1)
-            r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
-            
-            # Appending averaged values
             avg_data['r_param'].append(r_param_avg)
             avg_data['r_error'].append(r_error_avg)
             avg_data['r_time'].append(r_time[ind_f])
-            
-        print(r_error.shape)
+        
         for i in range(0, len(time15_ind) - 1):
-            
-            # Index for current and next 15 min interval
             ind_s = time15_ind[i]
             ind_f = time15_ind[i + 1]
             
+            if weighted:
+                weights = self.get_weights(r_error[:, ind_s:ind_f])
+                r_param_avg = np.nansum(r_param[:, ind_s:ind_f] * weights, axis=1)
+            else:
+                r_param_avg = np.nanmean(r_param[:, ind_s:ind_f], axis=1)
             
+            r_error_avg = np.nanmean(r_error[:, ind_s:ind_f], axis=1)
             
-            
-            # Inverse of the errors as weights
-            weights = 1/(r_error[:, ind_s:ind_f] + eps)
-            
-            # Normalize weights
-            weights /= np.sum(weights, axis=1, keepdims=True)
-            
-            
-            # Averaging between indices
-            r_param_avg = np.nansum(r_param[:, ind_s: ind_f] * weights, axis=1)
-            r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
-            
-            # Appending averaged values
             avg_data['r_param'].append(r_param_avg)
             avg_data['r_error'].append(r_error_avg)
             avg_data['r_time'].append(r_time[ind_f])
-            
-            
-        # Handling the leftover data at the end of the time array
+        
         if time15_ind[-1] < len(r_time) - 1:
             ind_s = time15_ind[-1]
-            ind_f = len(r_time)  # end of the array
+            ind_f = len(r_time)
             
-            # Calculate weights
-            weights = 1 / (r_error[:, ind_s:ind_f] + eps)
-            weights /= np.sum(weights, axis=1, keepdims=True)
-                
+            if weighted:
+                weights = self.get_weights(r_error[:, ind_s:ind_f])
+                r_param_avg = np.nansum(r_param[:, ind_s:ind_f] * weights, axis=1)
+            else:
+                r_param_avg = np.nanmean(r_param[:, ind_s:ind_f], axis=1)
             
-            # Averaging the leftover data
-            r_param_avg = np.nansum(r_param[:, ind_s: ind_f] * weights, axis=1)
-            r_error_avg = np.nanmean(r_error[:, ind_s: ind_f], axis=1)
+            r_error_avg = np.nanmean(r_error[:, ind_s:ind_f], axis=1)
             
-            # Appending the last averaged values
             avg_data['r_param'].append(r_param_avg)
             avg_data['r_error'].append(r_error_avg)
             avg_data['r_time'].append(r_time[-1])
         
-        # Converting list to numpy arrays for consistency
         avg_data['r_param'] = np.array(avg_data['r_param']).T
         avg_data['r_error'] = np.array(avg_data['r_error']).T
         avg_data['r_time'] = np.array(avg_data['r_time'])
         
         print(f'Num of 15min:  {avg_data["r_time"].shape}   Num of 1min {r_time.shape} ')
-        
+            
         if save_plot is True:
             self.plot_and_save_comparison(data, avg_data)
         
