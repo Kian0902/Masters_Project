@@ -67,7 +67,20 @@ class EISCATAverager:
     
     
     def get_weights(self, errors: np.ndarray, eps: float = 1e-10)-> np.ndarray:
-
+        """
+        Calculate and normalize weights inversely proportional to the errors.
+        
+        Input (type)           | DESCRIPTION
+        ------------------------------------------------
+        errors (np.ndarray)    | Array of error measurements.
+        eps (float)            | Constant to avoid division by zero. Default is 1e-10.
+        
+        Return (type)              | DESCRIPTION
+        ------------------------------------------------
+        weights (np.ndarray)       | Array of calculated normalized weights.
+        
+        
+        """
         weights = 1 / (errors + eps)  # calculate weights
         weights /= np.sum(weights, axis=1, keepdims=True)  # Normalize weights such that they sum up to 1
         return weights
