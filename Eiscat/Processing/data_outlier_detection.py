@@ -131,25 +131,62 @@ class EISCATOutlierDetection:
         outlier_indices = np.where(minutes_with_outliers)[0]
         outlier_indices_err = np.where(minutes_with_outliers_err)[0]
         
-        # print(pca_r_param.shape)
+        print(outlier_indices, outlier_indices_err)
         
-        plt.scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
-        plt.scatter(pca_r_param[0, outlier_indices], pca_r_param[1, outlier_indices], zorder=1, color="red")
+        bad_ind =  np.intersect1d(outlier_indices, outlier_indices_err)
+        
+        if len(bad_ind) == 0:
+            bad_ind = outlier_indices
+        
+        
+        print(bad_ind)
+        
+        fig, ax = plt.subplots(1, 2)
+        
+        ax[0].set_title('Electron Density')
+        ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
+        ax[0].scatter(pca_r_param[0, outlier_indices], pca_r_param[1, outlier_indices], zorder=1, color="red")
+        
+        ax[1].set_title('Error')
+        ax[1].scatter(pca_r_error[0, :], pca_r_error[1, :], zorder=0)
+        ax[1].scatter(pca_r_error[0, outlier_indices_err], pca_r_error[1, outlier_indices_err], zorder=1, color="red")
         plt.show()
         
         
-        plt.scatter(pca_r_error[0, :], pca_r_error[1, :], zorder=0)
-        plt.scatter(pca_r_error[0, outlier_indices_err], pca_r_error[1, outlier_indices_err], zorder=1, color="red")
+        
+        num_plots = len(bad_ind)
+        
+        fig, ax = plt.subplots(1, num_plots)
+        
+        ax[0].set_title('Bad Samples')
+        ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
+        ax[0].scatter(pca_r_param[0, bad_ind], pca_r_param[1, bad_ind], zorder=1, color="red")
+        
+        for num_ax in range(1, num_plots):
+            
+            
+            print(num_ax)
+            print(bad_ind[num_ax-1])
+            
+            
+            ax[num_ax].set_title(f'sample index: {bad_ind[num_ax-1]}')
+            ax[num_ax].plot(r_param[:, bad_ind[num_ax-1]], r_h)
+            ax[num_ax].plot()
+        
         plt.show()
         
         
-        for i in outlier_indices:
-            plt.plot(r_param[:, i], r_h)
-            plt.show()
+        
+        
+        
+        # for i in outlier_indices:
+        #     plt.plot(r_param[:, i], r_h)
+        #     plt.xscale('log')
+        #     plt.show()
         
         
         # print(outlier_indices)
-        return outlier_indices
+        return bad_ind
     
     
 

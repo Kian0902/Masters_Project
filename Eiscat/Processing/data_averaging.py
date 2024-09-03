@@ -107,7 +107,7 @@ class EISCATAverager:
         r_param = data['r_param']
         r_error = data['r_error']
         
-    
+        
         # Making new dict for storing averaged data
         avg_data = {'r_time': [],
             'r_h': r_h,
@@ -117,6 +117,12 @@ class EISCATAverager:
         
         # Finding indices where minute = 00, 15, 30 and 45
         time15_ind = np.where(r_time[:, 4] % period_min == 0)[0]
+        
+        
+        # Check if time15_ind is empty, if so, skip processing
+        if len(time15_ind) == 0:
+            print(f"No 15-minute time increment found. Skipping data with date: {r_time[0, :3]}")
+            return data
         
         
         # Handle the first interval separately (from start to the first 15-minute mark)
@@ -221,7 +227,7 @@ class EISCATAverager:
         
         # Plotting original data
         pcm_orig = ax[0].pcolormesh(r_time_orig, r_h_orig.flatten(), r_param_orig, shading='auto', cmap='turbo', vmin=vmin, vmax=vmax)
-        ax[0].set_title('Original Data')
+        ax[0].set_title(f'Original Data {r_param_orig.shape}')
         ax[0].set_xlabel('Time (hours)')
         ax[0].set_ylabel('Altitude (km)')
         ax[0].xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
@@ -233,7 +239,7 @@ class EISCATAverager:
         
         # Plotting averaged data
         pcm_avg = ax[1].pcolormesh(r_time_avg, r_h_avg.flatten(), r_param_avg, shading='auto', cmap='turbo', vmin=vmin, vmax=vmax)
-        ax[1].set_title('Averaged Data')
+        ax[1].set_title(f'Averaged Data {r_param_avg.shape}')
         ax[1].set_xlabel('Time (hours)')
         ax[1].set_ylabel('Altitude (km)')
         ax[1].xaxis.set_major_formatter(DateFormatter('%d %H:%M'))

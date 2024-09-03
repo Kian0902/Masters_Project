@@ -41,7 +41,8 @@ X_filtered = filt.return_data()
 
 
 
-first_two_global_keys = list(X_filtered.keys())[:]
+
+first_two_global_keys = list(X_filtered.keys())[5:6]
 X = {key: X_filtered[key] for key in first_two_global_keys}
 
 
@@ -54,12 +55,9 @@ X_avg = AVG.return_data()
 
 
 
+Outlier = EISCATOutlierDetection(X_filtered['2018-12-1'])
+Outlier.detect_outliers(method_name="IQR")
 
-
-
-# Outlier = EISCATOutlierDetection(X)
-
-# Outlier.detect_outliers(method_name="IQR")
 
 
 # Outlier.t_sne(bad_ind)
