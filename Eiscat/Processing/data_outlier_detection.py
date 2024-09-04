@@ -83,22 +83,31 @@ class EISCATOutlierDetection:
     
     
     def pca(self, data):
+        """
+        Reduces the data features into 2 dimensions.
         
+        
+        Input (type)    | DESCRIPTION
+        ------------------------------------------------
+        data (np.array) | Data to be reduced.
+        
+        
+        Return (type)          | DESCRIPTION
+        ------------------------------------------------
+        pca_data (np.ndarray)  | Reduced data.
+        """
         
         PCA_model = PCA(n_components = 2)
         
         pca_data = PCA_model.fit_transform(data.T)
         
         return pca_data.T
-        
-        
-        
-        
-        
-        
-        
-        
-        
+    
+    
+    
+    
+    
+    
     def detect_outliers(self, method_name: str):
         """
         Detects outliers using the specified method.
@@ -129,16 +138,16 @@ class EISCATOutlierDetection:
         if len(bad_ind) == 0:
             bad_ind = outlier_indices
         
-        fig, ax = plt.subplots(1, 2)
+        # fig, ax = plt.subplots(1, 2)
         
-        ax[0].set_title('Electron Density')
-        ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
-        ax[0].scatter(pca_r_param[0, outlier_indices], pca_r_param[1, outlier_indices], zorder=1, color="red")
+        # ax[0].set_title('Electron Density')
+        # ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
+        # ax[0].scatter(pca_r_param[0, outlier_indices], pca_r_param[1, outlier_indices], zorder=1, color="red")
         
-        ax[1].set_title('Error')
-        ax[1].scatter(pca_r_error[0, :], pca_r_error[1, :], zorder=0)
-        ax[1].scatter(pca_r_error[0, outlier_indices_err], pca_r_error[1, outlier_indices_err], zorder=1, color="red")
-        plt.show()
+        # ax[1].set_title('Error')
+        # ax[1].scatter(pca_r_error[0, :], pca_r_error[1, :], zorder=0)
+        # ax[1].scatter(pca_r_error[0, outlier_indices_err], pca_r_error[1, outlier_indices_err], zorder=1, color="red")
+        # plt.show()
         
         num_plots = len(bad_ind) + 1  # One for the "Bad Samples" plot, plus one for each bad index
         
