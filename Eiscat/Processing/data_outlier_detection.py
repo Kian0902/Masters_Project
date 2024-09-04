@@ -26,7 +26,8 @@ class EISCATOutlierDetection:
         """
         self.dataset = dataset
         self.detection_methods = {'z-score': self.z_score_method,
-                                  'IQR': self.iqr_method}
+                                  'IQR': self.iqr_method,
+                                  'Isolation Forest': self.isolation_forest_method}
         
         self.dataset_outliers = {}
     
@@ -34,9 +35,6 @@ class EISCATOutlierDetection:
     def batch_detection(self, method_name: str, save_plot=False):
         
         for key in list(self.dataset.keys()):
-            
-            
-            print(key)
             
             self.dataset_outliers[key] = self.detect_outliers(self.dataset[key], method_name=method_name, save_plot=save_plot)
             
@@ -64,15 +62,15 @@ class EISCATOutlierDetection:
     
     
     # Inter-Quantile Range
-    def iqr_method(self, data: np.ndarray, lower_percent: int=5, upper_percent: int=95):
+    def iqr_method(self, data: np.ndarray, lower_percent: int=1, upper_percent: int=99):
         """
         Detect outliers using the Interquartile Range (IQR) method.
     
         Input (type)             | DESCRIPTION
         ------------------------------------------------
         data (np.ndarray)        | Data from one key to be analyzed.
-        lower_percent (int)      | Percentile to determine the lower bound (default is 10).
-        upper_percent (int)      | Percentile to determine the upper bound (default is 90).
+        lower_percent (int)      | Percentile to determine the lower bound (default is 1).
+        upper_percent (int)      | Percentile to determine the upper bound (default is 99).
     
         Return (type)                    | DESCRIPTION
         ------------------------------------------------
@@ -90,6 +88,9 @@ class EISCATOutlierDetection:
         detect_outliers = (data < lower_fence.reshape(-1, 1)) | (data > upper_fence.reshape(-1, 1))
         return detect_outliers
     
+    
+    def isolation_forest_method(self):
+        ...
     
     
     def pca(self, data: np.ndarray, reduce_to_dim: int=2):
@@ -167,8 +168,10 @@ class EISCATOutlierDetection:
         
         bad_ind = np.intersect1d(outlier_indices, outlier_indices_err)
         
-        if len(bad_ind) == 0:
-            bad_ind = outlier_indices
+        # bad_ind = outlier_indices
+        
+        # if len(bad_ind) == 0:
+            # bad_ind = outlier_indices
         
         
         # Check if bad_ind is still empty
@@ -196,7 +199,7 @@ class EISCATOutlierDetection:
             fig, ax = plt.subplots(1, num_plots, figsize=(5 * num_plots, 5))
             
             # First plot: "Bad Samples"
-            ax[0].set_title('Outliers in day: {date_of_day}')
+            ax[0].set_title(f'Outliers in day: {date_of_day}')
             ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
             ax[0].scatter(pca_r_param[0, bad_ind], pca_r_param[1, bad_ind], zorder=1, color="red")
             
