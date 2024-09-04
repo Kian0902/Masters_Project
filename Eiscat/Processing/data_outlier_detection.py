@@ -98,9 +98,7 @@ class EISCATOutlierDetection:
         """
         
         PCA_model = PCA(n_components = 2)
-        
         pca_data = PCA_model.fit_transform(data.T)
-        
         return pca_data.T
     
     
@@ -108,9 +106,25 @@ class EISCATOutlierDetection:
     
     
     
-    def detect_outliers(self, method_name: str):
+    def detect_outliers(self, method_name: str, save_plot: bool=False):
         """
-        Detects outliers using the specified method.
+        Detects outliers in the dataset using the specified method.
+        
+        Input (type)    | DESCRIPTION
+        ------------------------------------------------
+        method_name (str) | The name of the outlier detection method to use.
+        save_plot (bool)  | If True, generates and displays plots showing detected outliers. Default is False.
+        
+        
+        Return (type)          | DESCRIPTION
+        ------------------------------------------------
+        bad_ind (np.ndarray)  | Indices of the detected outliers.
+        
+
+        Raises
+        ------
+        ValueError
+            If the specified method is not recognized.
         """
         
         if method_name not in self.detection_methods:
@@ -149,37 +163,30 @@ class EISCATOutlierDetection:
         # ax[1].scatter(pca_r_error[0, outlier_indices_err], pca_r_error[1, outlier_indices_err], zorder=1, color="red")
         # plt.show()
         
-        num_plots = len(bad_ind) + 1  # One for the "Bad Samples" plot, plus one for each bad index
-        
-        fig, ax = plt.subplots(1, num_plots, figsize=(5 * num_plots, 5))
-        
-        # First plot: "Bad Samples"
-        ax[0].set_title('Bad Samples')
-        ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
-        ax[0].scatter(pca_r_param[0, bad_ind], pca_r_param[1, bad_ind], zorder=1, color="red")
-        
-        # Subsequent plots: one for each bad index
-        for num_ax in range(1, num_plots):
-            ax[num_ax].set_title(f'Sample Index: {bad_ind[num_ax-1]}')
-            ax[num_ax].plot(r_param[:, bad_ind[num_ax-1]], r_h, label=f'Index {bad_ind[num_ax-1]}')
-            ax[num_ax].set_xscale('log')
-            ax[num_ax].legend()
-        
-        plt.tight_layout()
-        plt.show()
-
         
         
+        # Option for the user to view plot of outliers
+        if save_plot:
+            num_plots = len(bad_ind) + 1  # One for the "Bad Samples" plot, plus one for each bad index
+            
+            fig, ax = plt.subplots(1, num_plots, figsize=(5 * num_plots, 5))
+            
+            # First plot: "Bad Samples"
+            ax[0].set_title('Bad Samples')
+            ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
+            ax[0].scatter(pca_r_param[0, bad_ind], pca_r_param[1, bad_ind], zorder=1, color="red")
+            
+            # Subsequent plots: one for each bad index
+            for num_ax in range(1, num_plots):
+                ax[num_ax].set_title(f'Sample Index: {bad_ind[num_ax-1]}')
+                ax[num_ax].plot(r_param[:, bad_ind[num_ax-1]], r_h, label=f'Index {bad_ind[num_ax-1]}')
+                ax[num_ax].set_xscale('log')
+                ax[num_ax].legend()
+            
+            plt.tight_layout()
+            plt.show()
         
         
-        
-        # for i in outlier_indices:
-        #     plt.plot(r_param[:, i], r_h)
-        #     plt.xscale('log')
-        #     plt.show()
-        
-        
-        # print(outlier_indices)
         return bad_ind
     
     
