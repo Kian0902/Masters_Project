@@ -27,13 +27,23 @@ class EISCATOutlierDetection:
         self.dataset = dataset
         self.detection_methods = {'z-score': self.z_score_method,
                                   'IQR': self.iqr_method}
+        
+        self.dataset_outliers = {}
     
     
-    
+    def batch_detection(self, method_name: str, save_plot=False):
+        
+        for key in list(self.dataset.keys()):
+            
+            
+            print(key)
+            
+            self.dataset_outliers[key] = self.detect_outliers(self.dataset[key], method_name=method_name, save_plot=save_plot)
+            
     
     
     # Z-score
-    def z_score_method(self, data: np.array, threshold: int=6):
+    def z_score_method(self, data: np.ndarray, threshold: int=6):
         """
         Detect outliers using the Z-score method.
         
@@ -54,7 +64,7 @@ class EISCATOutlierDetection:
     
     
     # Inter-Quantile Range
-    def iqr_method(self, data, lower_percent: int=5, upper_percent: int=95):
+    def iqr_method(self, data: np.ndarray, lower_percent: int=5, upper_percent: int=95):
         """
         Detect outliers using the Interquartile Range (IQR) method.
     
@@ -106,7 +116,7 @@ class EISCATOutlierDetection:
     
     
     
-    def detect_outliers(self, method_name: str, save_plot: bool=False):
+    def detect_outliers(self, data: dict, method_name: str, save_plot: bool=False):
         """
         Detects outliers in the dataset using the specified method.
         
@@ -130,9 +140,9 @@ class EISCATOutlierDetection:
         if method_name not in self.detection_methods:
             raise ValueError(f"Method {method_name} not recognized.")
         
-        r_h = self.dataset['r_h'].flatten()
-        r_param = self.dataset['r_param']
-        r_error = self.dataset['r_error']
+        r_h = data['r_h'].flatten()
+        r_param = data['r_param']
+        r_error = data['r_error']
         
         pca_r_param = self.pca(r_param)
         pca_r_error = self.pca(r_error)
@@ -190,5 +200,32 @@ class EISCATOutlierDetection:
         return bad_ind
     
     
+    
+    def return_outliers(self):
+        """
+        Returns self.dataset_outliers
+        """
+        return self.dataset_outliers
+        
+        
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
