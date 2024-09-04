@@ -18,7 +18,7 @@ class EISCATDataFilter:
     """
     Class for clipping and filtering dict data.
     """
-    def __init__(self, dataset: dict, filt_range: bool=True, filt_nan: bool=True, min_val=90, max_val=400):
+    def __init__(self, dataset: dict, filt_range: bool=False, filt_nan: bool=False):
         """
         Attributes (type)  | DESCRIPTION
         ------------------------------------------------
@@ -32,11 +32,10 @@ class EISCATDataFilter:
         self.dataset = dataset
         self.apply_range_filter = filt_range
         self.apply_nan_filter = filt_nan
-        self.min_val = min_val
-        self.max_val = max_val
+        
     
     
-    def batch_filtering(self):
+    def batch_filtering(self, min_val=90, max_val=400):
         """
         Function for applying the filtering to the entire dataset by looping
         through the global keys (days).
@@ -46,14 +45,14 @@ class EISCATDataFilter:
             
             # Filter range
             if self.apply_range_filter:
-                self.dataset[key] = self.filter_range(self.dataset[key], 'r_h', self.min_val, self.max_val)
+                self.dataset[key] = self.filter_range(self.dataset[key], 'r_h', min_val, max_val)
             
             # Filter nans
             if self.apply_nan_filter:
                 self.dataset[key] = self.filter_nan(self.dataset[key])
         
         
-        
+            
         
         
     
@@ -133,6 +132,27 @@ class EISCATDataFilter:
         Returns self.data
         """
         return self.dataset
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
