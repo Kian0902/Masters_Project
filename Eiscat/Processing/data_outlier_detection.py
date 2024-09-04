@@ -26,9 +26,8 @@ class EISCATOutlierDetection:
         """
         self.dataset = dataset
         self.detection_methods = {'z-score': self.z_score_method,
-                                  'IQR': self.iqr_method,
-                                  'Isolation Forest': self.isolation_forest_method}
-        
+                                  'IQR': self.iqr_method}
+
         self.dataset_outliers = {}
     
     
@@ -62,7 +61,7 @@ class EISCATOutlierDetection:
     
     
     # Inter-Quantile Range
-    def iqr_method(self, data: np.ndarray, lower_percent: int=1, upper_percent: int=99):
+    def iqr_method(self, data: np.ndarray, lower_percent: int=0.5, upper_percent: int=99.5):
         """
         Detect outliers using the Interquartile Range (IQR) method.
     
@@ -87,10 +86,8 @@ class EISCATOutlierDetection:
         
         detect_outliers = (data < lower_fence.reshape(-1, 1)) | (data > upper_fence.reshape(-1, 1))
         return detect_outliers
-    
-    
-    def isolation_forest_method(self):
-        ...
+       
+
     
     
     def pca(self, data: np.ndarray, reduce_to_dim: int=2):
@@ -142,7 +139,7 @@ class EISCATOutlierDetection:
             raise ValueError(f"Method {method_name} not recognized.")
         
         r_t = data['r_time'] 
-        r_h = data['r_h'].flatten()
+        r_h = data['r_h']
         r_param = data['r_param']
         r_error = data['r_error']
         
@@ -151,9 +148,14 @@ class EISCATOutlierDetection:
         r_time, date_of_day = self._to_datetime(data['r_time'])
         
         
+        
+        # Mask for filtered values. False outside and True inside interval
+        mask = np.any((r_h >= 140) & (r_h <= 300), axis=1)
+        
+        
         # Perform PCA on Ne and errors
-        pca_r_param = self.pca(r_param)
-        pca_r_error = self.pca(r_error)
+        pca_r_param = self.pca(r_param[mask,:])
+        pca_r_error = self.pca(r_error[mask,:])
         
         
         outliers = self.detection_methods[method_name](pca_r_param)
@@ -206,12 +208,13 @@ class EISCATOutlierDetection:
             # Subsequent plots: one for each bad index
             for num_ax in range(1, num_plots):
                 ax[num_ax].set_title(f'Sample Index: {bad_ind[num_ax-1]}')
-                ax[num_ax].plot(r_param[:, bad_ind[num_ax-1]], r_h, label=f'Index {bad_ind[num_ax-1]}')
+                ax[num_ax].plot(r_param[:, bad_ind[num_ax-1]], r_h.flatten(), label=f'Index {bad_ind[num_ax-1]}')
                 ax[num_ax].set_xscale('log')
                 ax[num_ax].legend()
             
             plt.tight_layout()
             plt.show()
+        
         
         
         return bad_ind
