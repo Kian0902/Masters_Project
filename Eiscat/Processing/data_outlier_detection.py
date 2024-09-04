@@ -92,7 +92,7 @@ class EISCATOutlierDetection:
     
     
     
-    def pca(self, data):
+    def pca(self, data: np.ndarray, reduce_to_dim: int=2):
         """
         Reduces the data features into 2 dimensions.
         
@@ -107,7 +107,7 @@ class EISCATOutlierDetection:
         pca_data (np.ndarray)  | Reduced data.
         """
         
-        PCA_model = PCA(n_components = 2)
+        PCA_model = PCA(n_components = reduce_to_dim)
         pca_data = PCA_model.fit_transform(data.T)
         return pca_data.T
     
@@ -140,12 +140,22 @@ class EISCATOutlierDetection:
         if method_name not in self.detection_methods:
             raise ValueError(f"Method {method_name} not recognized.")
         
+        r_t = data['r_time'] 
         r_h = data['r_h'].flatten()
         r_param = data['r_param']
         r_error = data['r_error']
         
+        
+        # Convert date and time to datetime objects
+        r_time, date_of_day = self._to_datetime(data['r_time'])
+        
+        
+        # Perform PCA on Ne and errors
         pca_r_param = self.pca(r_param)
         pca_r_error = self.pca(r_error)
+        
+        
+        
         
         outliers = self.detection_methods[method_name](pca_r_param)
         outliers_err = self.detection_methods[method_name](pca_r_error)
@@ -161,6 +171,12 @@ class EISCATOutlierDetection:
         
         if len(bad_ind) == 0:
             bad_ind = outlier_indices
+        
+        
+        # Check if bad_ind is still empty
+        if len(bad_ind) == 0:
+            print(f"No outliers detected in day: {}")
+            return bad_ind
         
         # fig, ax = plt.subplots(1, 2)
         
@@ -201,6 +217,20 @@ class EISCATOutlierDetection:
     
     
     
+    def _to_datetime(self, time_array: np.ndarray):
+        
+        # Convert time arrays to datetime objects
+        time_converted = np.array([datetime(year, month, day, hour, minute) 
+                                   for year, month, day, hour, minute, second in time_array])
+        
+        # Date of 
+        date_str = time_converted[0].strftime('%Y-%m-%d')
+        
+        return time_converted, date_str
+        
+        
+        
+        
     def return_outliers(self):
         """
         Returns self.dataset_outliers
