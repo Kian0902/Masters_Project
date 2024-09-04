@@ -155,8 +155,6 @@ class EISCATOutlierDetection:
         pca_r_error = self.pca(r_error)
         
         
-        
-        
         outliers = self.detection_methods[method_name](pca_r_param)
         outliers_err = self.detection_methods[method_name](pca_r_error)
         
@@ -175,7 +173,7 @@ class EISCATOutlierDetection:
         
         # Check if bad_ind is still empty
         if len(bad_ind) == 0:
-            print(f"No outliers detected in day: {}")
+            print(f"No outliers detected in day: {date_of_day}")
             return bad_ind
         
         # fig, ax = plt.subplots(1, 2)
@@ -198,7 +196,7 @@ class EISCATOutlierDetection:
             fig, ax = plt.subplots(1, num_plots, figsize=(5 * num_plots, 5))
             
             # First plot: "Bad Samples"
-            ax[0].set_title('Bad Samples')
+            ax[0].set_title('Outliers in day: {date_of_day}')
             ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)
             ax[0].scatter(pca_r_param[0, bad_ind], pca_r_param[1, bad_ind], zorder=1, color="red")
             
