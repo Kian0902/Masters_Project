@@ -11,8 +11,8 @@ import pickle
 import numpy as np
 from scipy.io import loadmat
 from scipy.interpolate import interp1d
-
-
+from scipy.signal import medfilt
+import matplotlib.pyplot as plt
 
 class EISCATDataFilter:
     """
@@ -36,7 +36,7 @@ class EISCATDataFilter:
         
         
     
-    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=3):
+    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=5):
         """
         Function for applying the filtering to the entire dataset by looping
         through the global keys (days).
@@ -132,24 +132,56 @@ class EISCATDataFilter:
     
     
     
-    def filter_outlier(self, data: dict, outlier_indices, filter_size: int=3):
+    def filter_outlier(self, data: dict, outlier_indices, filter_size: int=5):
+        
+        
+        
+        
+        
         
         
         
         # Check if outlier_indices is empty
         if outlier_indices.size == 0:
             return data
-            
-            
+        
+        
+        
+        
+        plt.plot(data['r_param'][:, [outlier_indices[0]-1, outlier_indices[0], outlier_indices[0]+1]], data['r_h'].flatten())
+        plt.xscale('log')
+        plt.show()
+        
+        # print(data["r_param"].shape)    
         
         for key in list(data.keys())[2:]:
             X = data[key]
             
+            X_medfilt = medfilt(X, kernel_size = filter_size)
             
+            for idx in outlier_indices:
+                
+                X[:, idx] = X_medfilt[:, idx]
+            
+            data[key] = X
             
         
+
         
         
+        plt.plot(data['r_param'][:, [outlier_indices[0]-1, outlier_indices[0], outlier_indices[0]+1]], data['r_h'].flatten())
+        plt.xscale('log')
+        plt.show()
+        
+        
+        
+        
+        
+            
+        return data
+    
+    
+    
     
     
     
