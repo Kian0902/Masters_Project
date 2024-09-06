@@ -135,10 +135,17 @@ class EISCATDataFilter:
     def filter_outlier(self, data: dict, outlier_indices, filter_size: int=3):
         
         
-        for key in list(data.keys())[1:]:
+        
+        # Check if outlier_indices is empty
+        if outlier_indices.size == 0:
+            return data
+            
+            
+        
+        for key in list(data.keys())[2:]:
             X = data[key]
             
-            # print(key)
+            
             
         
         
