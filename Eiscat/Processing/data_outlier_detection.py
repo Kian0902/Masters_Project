@@ -176,12 +176,12 @@ class EISCATOutlierDetection:
             # bad_ind = outlier_indices
         
         
-        # Check if bad_ind is still empty
-        if len(bad_ind) == 0:
-            print(f"No outliers detected in day: {date_of_day}")
-            return bad_ind
-        else:
-            print(f"Outliers detected in day: {date_of_day}")
+        # # Check if bad_ind is still empty
+        # if len(bad_ind) == 0:
+        #     print(f"No outliers detected in day: {date_of_day}")
+        #     return bad_ind
+        # else:
+        #     print(f"Outliers detected in day: {date_of_day}")
             
         # fig, ax = plt.subplots(1, 2)
         

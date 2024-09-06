@@ -34,11 +34,10 @@ VHF.sort_data()  # sort data
 # VHF data
 X_vhf = VHF.return_data()  # returning dict data
 
-# Filtering data
+# Clipping range and Filtering data for nan
 filt = EISCATDataFilter(X_vhf, filt_range=True, filt_nan=True) 
 filt.batch_filtering()
 X_filtered = filt.return_data()
-
 
 
 
@@ -56,6 +55,13 @@ Outlier = EISCATOutlierDetection(X)
 Outlier.batch_detection(method_name="IQR", save_plot=False)
 
 X_outliers = Outlier.return_outliers()
+
+print("-----")
+
+# Filtering outliers
+outlier_filter = EISCATDataFilter(X, filt_outlier=True)
+outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3)
+
 
 
 

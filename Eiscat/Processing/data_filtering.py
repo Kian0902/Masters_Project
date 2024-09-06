@@ -33,13 +33,16 @@ class EISCATDataFilter:
         self.apply_range_filter = filt_range
         self.apply_nan_filter = filt_nan
         self.apply_outlier_filter = filt_outlier
+        
+        
     
-    
-    def batch_filtering(self, min_val=90, max_val=400):
+    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=3):
         """
         Function for applying the filtering to the entire dataset by looping
         through the global keys (days).
         """
+        
+        
         # Loop through day
         for key in list(self.dataset.keys()):
             
@@ -53,10 +56,9 @@ class EISCATDataFilter:
         
         
             # Filter outliers
-            if self.apply_outlier_filter:
-                ...
-        
-        
+            if self.apply_outlier_filter and dataset_outliers is not None:
+                self.dataset[key] = self.filter_outlier(self.dataset[key], dataset_outliers[key], filter_size=3)
+            
     
     def filter_range(self, data: dict, key: str, min_val: float, max_val: float):
         """
@@ -128,6 +130,19 @@ class EISCATDataFilter:
        
         return data
     
+    
+    
+    def filter_outlier(self, data: dict, outlier_indices, filter_size: int=3):
+        
+        
+        for key in list(data.keys())[1:]:
+            X = data[key]
+            
+            # print(key)
+            
+        
+        
+        
     
     
     
