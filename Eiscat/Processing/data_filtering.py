@@ -18,7 +18,7 @@ class EISCATDataFilter:
     """
     Class for clipping and filtering dict data.
     """
-    def __init__(self, dataset: dict, filt_range: bool=False, filt_nan: bool=False):
+    def __init__(self, dataset: dict, filt_range: bool=False, filt_nan: bool=False, filt_outlier: bool=False):
         """
         Attributes (type)  | DESCRIPTION
         ------------------------------------------------
@@ -32,7 +32,7 @@ class EISCATDataFilter:
         self.dataset = dataset
         self.apply_range_filter = filt_range
         self.apply_nan_filter = filt_nan
-        
+        self.apply_outlier_filter = filt_outlier
     
     
     def batch_filtering(self, min_val=90, max_val=400):
@@ -52,7 +52,9 @@ class EISCATDataFilter:
                 self.dataset[key] = self.filter_nan(self.dataset[key])
         
         
-            
+            # Filter outliers
+            if self.apply_outlier_filter:
+                ...
         
         
     
@@ -126,7 +128,10 @@ class EISCATDataFilter:
        
         return data
     
-
+    
+    
+    
+    
     def return_data(self):
         """
         Returns self.data
