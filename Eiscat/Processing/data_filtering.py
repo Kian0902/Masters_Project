@@ -179,7 +179,36 @@ class EISCATDataFilter:
     
     
     def plot_data(self, outlier_indices):
-        ...
+        # Determine the number of columns for the plot grid
+        num_plots = len(outlier_indices)
+        
+        # Create a plotting grid with 2 rows and num_plots columns
+        fig, axes = plt.subplots(2, num_plots, figsize=(num_plots * 4, 8))
+        
+        # Loop over each outlier index to plot
+        for i, idx in enumerate(outlier_indices):
+            for key in list(self.dataset.keys())[2:]:
+                X = self.dataset[key]
+                
+                # Plot the original data (outliers)
+                axes[0, i].plot(X[:, idx], label=f"Outlier at index {idx}")
+                axes[0, i].set_title(f"Original Data (Outlier at {idx})")
+                axes[0, i].set_xlabel("Altitude")
+                axes[0, i].set_ylabel("Electron Density")
+                
+                # Plot the filtered data
+                X_filtered = self.filter_outlier({key: X}, np.array([idx]))[key]
+                axes[1, i].plot(X_filtered[:, idx], label=f"Filtered at index {idx}", color='orange')
+                axes[1, i].set_title(f"Filtered Data (at {idx})")
+                axes[1, i].set_xlabel("Altitude")
+                axes[1, i].set_ylabel("Electron Density")
+                
+                # Show legends
+                axes[0, i].legend()
+                axes[1, i].legend()
+    
+        plt.tight_layout()
+        plt.show()
 
     
     
