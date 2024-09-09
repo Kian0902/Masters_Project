@@ -36,7 +36,7 @@ class EISCATDataFilter:
         
         
     
-    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=5):
+    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=3):
         """
         Function for applying the filtering to the entire dataset by looping
         through the global keys (days).
@@ -57,7 +57,7 @@ class EISCATDataFilter:
         
             # Filter outliers
             if self.apply_outlier_filter and dataset_outliers is not None:
-                self.dataset[key] = self.filter_outlier(self.dataset[key], dataset_outliers[key], filter_size=3)
+                self.dataset[key] = self.filter_outlier(self.dataset[key], dataset_outliers[key], filter_size)
             
     
     def filter_range(self, data: dict, key: str, min_val: float, max_val: float):
@@ -133,8 +133,23 @@ class EISCATDataFilter:
     
     
     def filter_outlier(self, data: dict, outlier_indices, filter_size: int=3):
+        """
+        This method detects and replaces outliers in radar measurement data
+        using a median filter. Padding is applied in the N (altitude) dimension
+        to handle edge effects, ensuring the original shape of the data is
+        preserved after filtering.
+        
+        Input (type)            | DESCRIPTION
+        ------------------------------------------------
+        data (dict)             | Radar measurement data with shape (N, M).
+        outlier_indices (array) | Indices of columns containing outliers.
+        filter_size (int)       | Median filter kernel size. Default is 3.
         
         
+        Return (type)  | DESCRIPTION
+        ------------------------------------------------
+        data (dict)    | Data with outliers replaced by median filtered values.
+        """
         # Check if outlier_indices is empty
         if outlier_indices.size == 0:
             return data
@@ -142,57 +157,28 @@ class EISCATDataFilter:
         
         pad_size = filter_size // 2  # half of filters floored
         
-        plt.plot(data['r_param'][:, [outlier_indices[0]-1, outlier_indices[0], outlier_indices[0]+1]], data['r_h'].flatten())
-        plt.xscale('log')
-        plt.show()
-        
-        plt.plot(data['r_param'][:, [outlier_indices[-1]-1, outlier_indices[-1], outlier_indices[-1]+1]], data['r_h'].flatten())
-        plt.xscale('log')
-        plt.show()
-        
         
         for key in list(data.keys())[2:]:
             X = data[key]
             
-            
-            print(X.shape)
-            
             X_padded = np.pad(X, ((pad_size, pad_size), (0, 0)), mode='edge')
-            
-            print(X_padded.shape)
-            
+
             X_medfilt = medfilt(X_padded, kernel_size = filter_size)
-            
-            print(X_medfilt.shape)
-            
+
             # Remove the padding after filtering
             X_medfilt = X_medfilt[pad_size:-pad_size, :]
-            print(X_medfilt.shape)
-            
-            print("-------")
-            
-            
+
+ 
             for idx in outlier_indices:
                 
                 X[:, idx] = X_medfilt[:, idx]
             
             data[key] = X
-            
-            
-            
-        plt.plot(data['r_param'][:, [outlier_indices[0]-1, outlier_indices[0], outlier_indices[0]+1]], data['r_h'].flatten())
-        plt.xscale('log')
-        plt.show()
-            
-        plt.plot(data['r_param'][:, [outlier_indices[-1]-1, outlier_indices[-1], outlier_indices[-1]+1]], data['r_h'].flatten())
-        plt.xscale('log')
-        plt.show()
-        # return data
+        
+        return data
     
     
-    
-    
-    
+
     
     
     def return_data(self):
