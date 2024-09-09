@@ -190,6 +190,24 @@ class EISCATDataFilter:
     
     
     def plot_data(self, original_data, filtered_data, outlier_indices, date):
+        """
+        Plots the original and filtered data for specific outlier indices in a grid of subplots.
+
+        This function generates a 2xN grid of plots, where N is the number of outlier indices provided.
+        The top row displays the original data, and the bottom row displays the filtered data. Each column
+        corresponds to a specific outlier index, showing how the data around that index compares between 
+        the original and filtered datasets.
+        
+        Input (type)                | DESCRIPTION
+        ------------------------------------------------
+        original_data (dict)        | A dictionary containing the original dataset. 
+                                    | It must include 'r_param' (electron density) and 'r_h' (altitude) as keys.
+        filtered_data (dict)        | A dictionary containing the filtered dataset. 
+                                    | It must include 'r_param' (electron density) and 'r_h' (altitude) as keys.
+        outlier_indices (list[int]) | A list of indices corresponding to outliers in the dataset. 
+                                    | These indices will determine which data points are plotted.
+        """
+        
         
         # Check if there are no outliers
         if len(outlier_indices) == 0:
