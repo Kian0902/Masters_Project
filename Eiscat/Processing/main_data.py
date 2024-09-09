@@ -23,7 +23,7 @@ def detect_nan_in_arrays(data_dict):
 
 
 # Use the local folder name containing data
-folder_name = "Ne_uhf"
+folder_name = "Ne_vhf"
 
 
 # Sorting data
@@ -41,8 +41,12 @@ X_filtered = filt.return_data()
 
 
 
-key_choise = list(X_filtered.keys())[:]
+key_choise = list(X_filtered.keys())[5:6]
 X = {key: X_filtered[key] for key in key_choise}
+
+
+
+
 
 
 # # Averaging data
@@ -52,7 +56,7 @@ X = {key: X_filtered[key] for key in key_choise}
 
 
 Outlier = EISCATOutlierDetection(X)
-Outlier.batch_detection(method_name="IQR", save_plot=False)
+Outlier.batch_detection(method_name="IQR", save_plot=True)
 
 X_outliers = Outlier.return_outliers()
 
@@ -61,6 +65,11 @@ print("-----")
 # Filtering outliers
 outlier_filter = EISCATDataFilter(X, filt_outlier=True)
 outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3)
+
+
+
+
+
 
 
 

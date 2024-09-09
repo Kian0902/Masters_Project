@@ -132,13 +132,7 @@ class EISCATDataFilter:
     
     
     
-    def filter_outlier(self, data: dict, outlier_indices, filter_size: int=5):
-        
-        
-        
-        
-        
-        
+    def filter_outlier(self, data: dict, outlier_indices, filter_size: int=3):
         
         
         # Check if outlier_indices is empty
@@ -146,18 +140,37 @@ class EISCATDataFilter:
             return data
         
         
-        
+        pad_size = filter_size // 2  # half of filters floored
         
         plt.plot(data['r_param'][:, [outlier_indices[0]-1, outlier_indices[0], outlier_indices[0]+1]], data['r_h'].flatten())
         plt.xscale('log')
         plt.show()
         
-        # print(data["r_param"].shape)    
+        plt.plot(data['r_param'][:, [outlier_indices[-1]-1, outlier_indices[-1], outlier_indices[-1]+1]], data['r_h'].flatten())
+        plt.xscale('log')
+        plt.show()
+        
         
         for key in list(data.keys())[2:]:
             X = data[key]
             
-            X_medfilt = medfilt(X, kernel_size = filter_size)
+            
+            print(X.shape)
+            
+            X_padded = np.pad(X, ((pad_size, pad_size), (0, 0)), mode='edge')
+            
+            print(X_padded.shape)
+            
+            X_medfilt = medfilt(X_padded, kernel_size = filter_size)
+            
+            print(X_medfilt.shape)
+            
+            # Remove the padding after filtering
+            X_medfilt = X_medfilt[pad_size:-pad_size, :]
+            print(X_medfilt.shape)
+            
+            print("-------")
+            
             
             for idx in outlier_indices:
                 
@@ -165,20 +178,16 @@ class EISCATDataFilter:
             
             data[key] = X
             
-        
-
-        
-        
+            
+            
         plt.plot(data['r_param'][:, [outlier_indices[0]-1, outlier_indices[0], outlier_indices[0]+1]], data['r_h'].flatten())
         plt.xscale('log')
         plt.show()
-        
-        
-        
-        
-        
             
-        return data
+        plt.plot(data['r_param'][:, [outlier_indices[-1]-1, outlier_indices[-1], outlier_indices[-1]+1]], data['r_h'].flatten())
+        plt.xscale('log')
+        plt.show()
+        # return data
     
     
     
