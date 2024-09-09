@@ -68,7 +68,7 @@ class EISCATDataFilter:
             # Plotting after filtering for each day if requested
             if plot_after_each_day:
                 # self.plot_data(key, self.dataset[key], dataset_outliers[key])
-                self.plot_data(original_data, self.dataset[key], dataset_outliers[key])
+                self.plot_data(original_data, self.dataset[key], dataset_outliers[key], key)
     
     
     def filter_range(self, data: dict, key: str, min_val: float, max_val: float):
@@ -189,7 +189,7 @@ class EISCATDataFilter:
         return data
     
     
-    def plot_data(self, original_data, filtered_data, outlier_indices):
+    def plot_data(self, original_data, filtered_data, outlier_indices, date):
         
         # Check if there are no outliers
         if len(outlier_indices) == 0:
@@ -217,7 +217,7 @@ class EISCATDataFilter:
             
             axes[0, i].plot(X_orig[:, idx - 1], original_data['r_h'].flatten(), label=f"Data at {idx-1}", color="C0", zorder=0)
             axes[0, i].plot(X_orig[:, idx], original_data['r_h'].flatten(), label="Outlier", color="C1", zorder=2)
-            axes[0, i].plot(X_orig[:, idx + 1], original_data['r_h'].flatten(), label="Data at {idx+1}", color="C2", zorder=1)
+            axes[0, i].plot(X_orig[:, idx + 1], original_data['r_h'].flatten(), label=f"Data at {idx+1}", color="C2", zorder=1)
             axes[0, i].set_title(f"Original Data (Outlier at {idx})")
             axes[0, i].set_ylabel("Altitude")
             axes[0, i].set_xlabel("Electron Density")
@@ -226,7 +226,7 @@ class EISCATDataFilter:
             # Plot the filtered data
             axes[1, i].plot(X_filt[:, idx - 1], filtered_data['r_h'].flatten(), label=f"Data at {idx-1}", color="C0", zorder=0)
             axes[1, i].plot(X_filt[:, idx], filtered_data['r_h'].flatten(), label="Filtered", color="C1", zorder=2)
-            axes[1, i].plot(X_filt[:, idx + 1], filtered_data['r_h'].flatten(), label="Data at {idx+1}", color="C2", zorder=1)
+            axes[1, i].plot(X_filt[:, idx + 1], filtered_data['r_h'].flatten(), label=f"Data at {idx+1}", color="C2", zorder=1)
             axes[1, i].set_title(f"Filtered Data (at {idx})")
             axes[1, i].set_ylabel("Altitude")
             axes[1, i].set_xlabel("Electron Density")
@@ -236,7 +236,11 @@ class EISCATDataFilter:
             axes[0, i].legend()
             axes[1, i].legend()
     
+        # Add a global title for the entire figure
+        fig.suptitle(f'Original vs Filtered Data.\nDate {date}', fontsize=16)
         plt.tight_layout()
+        plt.subplots_adjust(top=0.87)  # Adjust the top to make room for the suptitle
+        
         plt.show()
 
     
