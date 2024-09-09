@@ -190,35 +190,48 @@ class EISCATDataFilter:
     
     
     def plot_data(self, original_data, filtered_data, outlier_indices):
+        
+        # Check if there are no outliers
+        if len(outlier_indices) == 0:
+            print("No outliers to plot.")
+            return
+            
         # Determine the number of columns for the plot grid
         num_plots = len(outlier_indices)
         
         # Create a plotting grid with 2 rows and num_plots columns
         fig, axes = plt.subplots(2, num_plots, figsize=(num_plots * 4, 8))
         
+        # If there's only one outlier, adjust axes to be a 2D list for consistency
+        if num_plots == 1:
+            axes = np.array([[axes[0]], [axes[1]]])
+        
+        
+        # Plot the original data (outliers)
+        X_orig = original_data['r_param']
+        X_filt = filtered_data['r_param']
+        
+        
         # Loop over each outlier index to plot
         for i, idx in enumerate(outlier_indices):
-            # Plot the original data (outliers)
             
-            X_orig = original_data['r_param']
-            X_filt = filtered_data['r_param']
-            
-            print(X_orig.shape)
-            print(X_filt.shape)
-            
-            axes[0, i].plot(X_orig[:, [idx - 1, idx, idx + 1]], original_data['r_h'].flatten(), label=f"Outlier at index {idx}")
+            axes[0, i].plot(X_orig[:, idx - 1], original_data['r_h'].flatten(), label=f"Data at {idx-1}", color="C0", zorder=0)
+            axes[0, i].plot(X_orig[:, idx], original_data['r_h'].flatten(), label="Outlier", color="C1", zorder=2)
+            axes[0, i].plot(X_orig[:, idx + 1], original_data['r_h'].flatten(), label="Data at {idx+1}", color="C2", zorder=1)
             axes[0, i].set_title(f"Original Data (Outlier at {idx})")
             axes[0, i].set_ylabel("Altitude")
             axes[0, i].set_xlabel("Electron Density")
             axes[0, i].set_xscale('log')
-            
+    
             # Plot the filtered data
-            axes[1, i].plot(X_filt[:, [idx - 1, idx, idx + 1]], filtered_data['r_h'].flatten(), label=f"Filtered at index {idx}")
+            axes[1, i].plot(X_filt[:, idx - 1], filtered_data['r_h'].flatten(), label=f"Data at {idx-1}", color="C0", zorder=0)
+            axes[1, i].plot(X_filt[:, idx], filtered_data['r_h'].flatten(), label="Filtered", color="C1", zorder=2)
+            axes[1, i].plot(X_filt[:, idx + 1], filtered_data['r_h'].flatten(), label="Data at {idx+1}", color="C2", zorder=1)
             axes[1, i].set_title(f"Filtered Data (at {idx})")
             axes[1, i].set_ylabel("Altitude")
             axes[1, i].set_xlabel("Electron Density")
             axes[1, i].set_xscale('log')
-            
+    
             # Show legends
             axes[0, i].legend()
             axes[1, i].legend()
