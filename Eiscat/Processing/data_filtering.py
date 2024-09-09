@@ -178,6 +178,8 @@ class EISCATDataFilter:
         return data
     
     
+    def plot_data(self, outlier_indices):
+        ...
 
     
     
