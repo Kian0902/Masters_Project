@@ -47,26 +47,22 @@ X = {key: X_filtered[key] for key in key_choise}
 
 
 
-
-
-# # Averaging data
-# AVG = EISCATAverager(X)
-# AVG.batch_averaging(save_plot=True, weighted=True)
-# X_avg = AVG.return_data()
-
-
+# Detecting outliers
 Outlier = EISCATOutlierDetection(X)
-Outlier.batch_detection(method_name="IQR", save_plot=True)
-
+Outlier.batch_detection(method_name="IQR", save_plot=False)
 X_outliers = Outlier.return_outliers()
 
-print("-----")
 
 # Filtering outliers
 outlier_filter = EISCATDataFilter(X, filt_outlier=True)
-outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3)
+outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=True)
+X_outliers_filtered = outlier_filter.return_data()
 
 
+# Averaging data
+AVG = EISCATAverager(X_outliers_filtered)
+AVG.batch_averaging(save_plot=False, weighted=False)
+X_avg = AVG.return_data()
 
 
 

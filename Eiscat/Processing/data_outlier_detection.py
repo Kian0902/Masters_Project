@@ -150,7 +150,7 @@ class EISCATOutlierDetection:
         
         
         # Mask for filtered values. False outside and True inside interval
-        mask = np.any((r_h >= 140) & (r_h <= 300), axis=1)
+        mask = np.any((r_h >= 110) & (r_h <= 350), axis=1)
         
         
         # Perform PCA on Ne and errors
@@ -168,9 +168,9 @@ class EISCATOutlierDetection:
         outlier_indices = np.where(minutes_with_outliers)[0]
         outlier_indices_err = np.where(minutes_with_outliers_err)[0]
         
-        bad_ind = np.intersect1d(outlier_indices, outlier_indices_err)
+        # bad_ind = np.intersect1d(outlier_indices, outlier_indices_err)
         
-        # bad_ind = outlier_indices
+        bad_ind = outlier_indices
         
         # if len(bad_ind) == 0:
             # bad_ind = outlier_indices
@@ -199,6 +199,10 @@ class EISCATOutlierDetection:
         # Option for the user to view plot of outliers
         if save_plot:
             num_plots = len(bad_ind) + 1  # One for the "Bad Samples" plot, plus one for each bad index
+            
+            
+            print(num_plots)
+            
             
             fig, ax = plt.subplots(1, num_plots, figsize=(5 * num_plots, 5))
             
