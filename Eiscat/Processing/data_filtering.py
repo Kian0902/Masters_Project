@@ -36,7 +36,7 @@ class EISCATDataFilter:
         
         
     
-    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=3):
+    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=3, plot_after_each_day=False):
         """
         Function for applying the filtering to the entire dataset by looping
         through the global keys (days).
@@ -45,6 +45,11 @@ class EISCATDataFilter:
         
         # Loop through day
         for key in list(self.dataset.keys()):
+            
+            
+            # Store the original data separately for plotting
+            original_data = {k: v.copy() for k, v in self.dataset[key].items()}
+            
             
             # Filter range
             if self.apply_range_filter:
@@ -59,6 +64,12 @@ class EISCATDataFilter:
             if self.apply_outlier_filter and dataset_outliers is not None:
                 self.dataset[key] = self.filter_outlier(self.dataset[key], dataset_outliers[key], filter_size)
             
+            
+            # Plotting after filtering for each day if requested
+            if plot_after_each_day:
+                # self.plot_data(key, self.dataset[key], dataset_outliers[key])
+                self.plot_data(original_data, self.dataset[key], dataset_outliers[key])
+    
     
     def filter_range(self, data: dict, key: str, min_val: float, max_val: float):
         """
@@ -132,7 +143,7 @@ class EISCATDataFilter:
     
     
     
-    def filter_outlier(self, data: dict, outlier_indices, filter_size: int=3):
+    def filter_outlier(self, data: dict, outlier_indices, filter_size: int=3, save_plot: bool=False):
         """
         This method detects and replaces outliers in radar measurement data
         using a median filter. Padding is applied in the N (altitude) dimension
@@ -178,7 +189,7 @@ class EISCATDataFilter:
         return data
     
     
-    def plot_data(self, outlier_indices):
+    def plot_data(self, original_data, filtered_data, outlier_indices):
         # Determine the number of columns for the plot grid
         num_plots = len(outlier_indices)
         
@@ -187,25 +198,30 @@ class EISCATDataFilter:
         
         # Loop over each outlier index to plot
         for i, idx in enumerate(outlier_indices):
-            for key in list(self.dataset.keys())[2:]:
-                X = self.dataset[key]
-                
-                # Plot the original data (outliers)
-                axes[0, i].plot(X[:, idx], label=f"Outlier at index {idx}")
-                axes[0, i].set_title(f"Original Data (Outlier at {idx})")
-                axes[0, i].set_xlabel("Altitude")
-                axes[0, i].set_ylabel("Electron Density")
-                
-                # Plot the filtered data
-                X_filtered = self.filter_outlier({key: X}, np.array([idx]))[key]
-                axes[1, i].plot(X_filtered[:, idx], label=f"Filtered at index {idx}", color='orange')
-                axes[1, i].set_title(f"Filtered Data (at {idx})")
-                axes[1, i].set_xlabel("Altitude")
-                axes[1, i].set_ylabel("Electron Density")
-                
-                # Show legends
-                axes[0, i].legend()
-                axes[1, i].legend()
+            # Plot the original data (outliers)
+            
+            X_orig = original_data['r_param']
+            X_filt = filtered_data['r_param']
+            
+            print(X_orig.shape)
+            print(X_filt.shape)
+            
+            axes[0, i].plot(X_orig[:, [idx - 1, idx, idx + 1]], original_data['r_h'].flatten(), label=f"Outlier at index {idx}")
+            axes[0, i].set_title(f"Original Data (Outlier at {idx})")
+            axes[0, i].set_ylabel("Altitude")
+            axes[0, i].set_xlabel("Electron Density")
+            axes[0, i].set_xscale('log')
+            
+            # Plot the filtered data
+            axes[1, i].plot(X_filt[:, [idx - 1, idx, idx + 1]], filtered_data['r_h'].flatten(), label=f"Filtered at index {idx}")
+            axes[1, i].set_title(f"Filtered Data (at {idx})")
+            axes[1, i].set_ylabel("Altitude")
+            axes[1, i].set_xlabel("Electron Density")
+            axes[1, i].set_xscale('log')
+            
+            # Show legends
+            axes[0, i].legend()
+            axes[1, i].legend()
     
         plt.tight_layout()
         plt.show()
