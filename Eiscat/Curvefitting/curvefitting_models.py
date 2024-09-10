@@ -20,7 +20,11 @@ class Curvefitting:
     - torch
     """
     def __init__(self):
-        ...
+        
+        self.curvefitting_model = {'scipy': self.curvefit_scipy,
+                                   'lmfit': self.curvefit_lmfit,
+                                   'NN': self.curvefit_neural_network}
+        
     
     def curvefit_scipy(self):
         ...

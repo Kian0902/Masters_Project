@@ -9,13 +9,10 @@ Created on Tue Sep 10 11:45:37 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
-from lmfit import Model
+from scipy.optimize import curve_fit
 
-
-
-# Defining simple chapman model function
-def double_chapman(z, zE_peak, zF_peak, neE_peak, neF_peak, HEd, HEu, HFd, HFu):
-    
+# Defining the double Chapman model function
+def double_chapman(z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak):
     HE = np.where(z <= zE_peak, HEd, HEu)
     HF = np.where(z <= zF_peak, HFd, HFu)
     
@@ -23,42 +20,27 @@ def double_chapman(z, zE_peak, zF_peak, neE_peak, neF_peak, HEd, HEu, HFd, HFu):
     neF = neF_peak * np.exp(1 - ((z - zF_peak)/HF) - np.exp(-((z - zF_peak)/HF)))
     return neE + neF
 
+# Wrapper function for curve fitting
+def fit_double_chapman(z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak):
+    return double_chapman(z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak)
 
-
+# Example data
 x = np.linspace(90, 450, 38)
-y = double_chapman(x, zE_peak=130, zF_peak=290, neE_peak=5e8, neF_peak=1e9, HEd=20, HEu=55, HFd=45, HFu=70)
+y = double_chapman(x, HEd=20, HEu=55, HFd=45, HFu=70, zE_peak=130, zF_peak=290, neE_peak=5e8, neF_peak=1e9)
 
+# Constants
+zE_peak = 130
+zF_peak = 290
+neE_peak = 5e8
+neF_peak = 1e9
 
-# Plot the synthetic data
-plt.plot(y, x, label='Chapman', color='C0')
-plt.xlabel('Ne')
-plt.ylabel('z')
-plt.xscale('log')
-plt.legend()
-plt.show()
+# Curve fitting
+popt, pcov = curve_fit(lambda z, HEd, HEu, HFd, HFu: fit_double_chapman(z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak), x, y, p0=[20, 55, 45, 70])
 
+# Extracting fitted parameters
+HEd_fitted, HEu_fitted, HFd_fitted, HFu_fitted = popt
 
-
-
-
-
-curvefit_model = Model(double_chapman)
-params = curvefit_model.make_params(HEd=10, HEu=35, HFd=25, HFu=40)
-
-params.add('zE_peak', value=150, vary=True)
-params.add('neE_peak', value=5e8, vary=True)
-params.add('zF_peak', value=290, vary=True)
-params.add('neF_peak', value=1e9, vary=True)
-
-
-result = curvefit_model.fit(y, params, z=x)
-
-y_fit = result.best_fit
-
-print(result.fit_report())
-
-
-
+y_fit = fit_double_chapman(x, HEd_fitted, HEu_fitted, HFd_fitted, HFu_fitted, zE_peak, zF_peak, neE_peak, neF_peak)
 
 # Plot the synthetic data
 plt.plot(y, x, label='Chapman', color='C0')
@@ -67,6 +49,43 @@ plt.xlabel('Ne')
 plt.ylabel('z')
 plt.legend()
 plt.show()
+
+
+
+# params, covariance = curve_fit(
+#     double_chapman, 
+#     xdata=x, 
+#     ydata=y, 
+#     p0=[20, 55, 45, 70]
+# )
+
+
+
+# curvefit_model = Model(double_chapman)
+# params = curvefit_model.make_params(HEd=10, HEu=35, HFd=25, HFu=40)
+
+# params.add('zE_peak', value=150, vary=True)
+# params.add('neE_peak', value=5e8, vary=True)
+# params.add('zF_peak', value=290, vary=True)
+# params.add('neF_peak', value=1e9, vary=True)
+
+
+# result = curvefit_model.fit(y, params, z=x)
+
+# y_fit = result.best_fit
+
+# print(result.fit_report())
+
+
+
+
+# # Plot the synthetic data
+# plt.plot(y, x, label='Chapman', color='C0')
+# plt.plot(y_fit, x, label='Curvefit', color='C1')
+# plt.xlabel('Ne')
+# plt.ylabel('z')
+# plt.legend()
+# plt.show()
 
 
 
