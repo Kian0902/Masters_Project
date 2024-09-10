@@ -14,16 +14,18 @@ from lmfit import Model
 
 
 # Defining simple chapman model function
-def chapman(z, z_peak, ne_peak, H):
+def chapman(z, z_peak, ne_peak, Hd, Hu):
     
-    y = (z - z_peak)/H
-    ne = ne_peak * np.exp(1 - y - np.exp(-y))
+    H = np.where(z <= z_peak, Hd, Hu)
+    
+    
+    ne = ne_peak * np.exp(1 - ((z - z_peak)/H) - np.exp(-((z - z_peak)/H)))
     return ne
 
 
 
-x = np.linspace(90, 300, 22)
-y = chapman(x, z_peak=130, ne_peak=1e8, H=25)
+x = np.linspace(90, 400, 32)
+y = chapman(x, z_peak=150, ne_peak=1e8, Hd=20, Hu=55)
 
 
 # Plot the synthetic data
@@ -39,9 +41,9 @@ plt.show()
 
 
 curvefit_model = Model(chapman)
-params = curvefit_model.make_params(H=10)
+params = curvefit_model.make_params(Hd=10, Hu=35)
 
-params.add('z_peak', value=130, vary=False)
+params.add('z_peak', value=150, vary=False)
 params.add('ne_peak', value=1e8, vary=False)
 
 result = curvefit_model.fit(y, params, z=x)
