@@ -29,8 +29,22 @@ class Curvefit(nn.Module):
 
 
     def forward(self, x, nE_peak, nF_peak, zE_peak, zF_peak):
-
-
+        """
+        Forward propagation function.
+        
+        Input (type) | DESCRIPTION
+        ------------------------------------------------
+        x            | Altitude measurements.
+        nE_peak      | E-region Peak electron density.
+        nF_peak      | F-region Peak electron density.
+        zE_peak      | E-region Peak altitude.
+        zF_peak      | F-region Peak altitude.
+        
+        Return (type) | DESCRIPTION
+        ------------------------------------------------
+        neE + neF     | Double Chapman model
+        """
+        
         # Converting numpy.float64 to torch.float64
         nE_peak = torch.tensor([nE_peak], dtype=torch.float64)
         nF_peak = torch.tensor([nF_peak], dtype=torch.float64)
