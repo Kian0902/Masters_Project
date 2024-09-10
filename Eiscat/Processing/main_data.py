@@ -7,13 +7,23 @@ Created on Tue Aug 20 14:13:45 2024
 
 
 import numpy as np
+import pickle
 import matplotlib.pyplot as plt
+
 
 from read_EISCAT_data import EISCATDataProcessor
 from data_sorting import EISCATDataSorter
 from data_averaging import EISCATAverager
 from data_filtering import EISCATDataFilter
 from data_outlier_detection import EISCATOutlierDetection
+
+
+
+
+def save_data(dataset: dict, file_name: str):
+    with open(file_name, 'wb') as file:
+        pickle.dump(dataset, file)
+
 
 
 def detect_nan_in_arrays(data_dict):
@@ -23,7 +33,7 @@ def detect_nan_in_arrays(data_dict):
 
 
 # Use the local folder name containing data
-folder_name = "Ne_vhf"
+folder_name = "Ne_uhf"
 
 
 # Sorting data
@@ -41,7 +51,7 @@ X_filtered = filt.return_data()
 
 
 
-key_choise = list(X_filtered.keys())[5:6]
+key_choise = list(X_filtered.keys())[:]
 X = {key: X_filtered[key] for key in key_choise}
 
 
@@ -55,7 +65,7 @@ X_outliers = Outlier.return_outliers()
 
 # Filtering outliers
 outlier_filter = EISCATDataFilter(X, filt_outlier=True)
-outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=True)
+outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
 X_outliers_filtered = outlier_filter.return_data()
 
 
@@ -66,7 +76,7 @@ X_avg = AVG.return_data()
 
 
 
-
+save_data(X_avg, file_name=folder_name + "_avg")
 
 
 
