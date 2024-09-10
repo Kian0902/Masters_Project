@@ -14,24 +14,26 @@ from lmfit import Model
 
 
 # Defining simple chapman model function
-def chapman(z, z_peak, ne_peak, Hd, Hu):
+def double_chapman(z, zE_peak, zF_peak, neE_peak, neF_peak, HEd, HEu, HFd, HFu):
     
-    H = np.where(z <= z_peak, Hd, Hu)
+    HE = np.where(z <= zE_peak, HEd, HEu)
+    HF = np.where(z <= zF_peak, HFd, HFu)
     
-    
-    ne = ne_peak * np.exp(1 - ((z - z_peak)/H) - np.exp(-((z - z_peak)/H)))
-    return ne
+    neE = neE_peak * np.exp(1 - ((z - zE_peak)/HE) - np.exp(-((z - zE_peak)/HE)))
+    neF = neF_peak * np.exp(1 - ((z - zF_peak)/HF) - np.exp(-((z - zF_peak)/HF)))
+    return neE + neF
 
 
 
-x = np.linspace(90, 400, 32)
-y = chapman(x, z_peak=150, ne_peak=1e8, Hd=20, Hu=55)
+x = np.linspace(90, 450, 38)
+y = double_chapman(x, zE_peak=130, zF_peak=290, neE_peak=5e8, neF_peak=1e9, HEd=20, HEu=55, HFd=45, HFu=70)
 
 
 # Plot the synthetic data
 plt.plot(y, x, label='Chapman', color='C0')
 plt.xlabel('Ne')
 plt.ylabel('z')
+plt.xscale('log')
 plt.legend()
 plt.show()
 
@@ -40,11 +42,14 @@ plt.show()
 
 
 
-curvefit_model = Model(chapman)
-params = curvefit_model.make_params(Hd=10, Hu=35)
+curvefit_model = Model(double_chapman)
+params = curvefit_model.make_params(HEd=10, HEu=35, HFd=25, HFu=40)
 
-params.add('z_peak', value=150, vary=False)
-params.add('ne_peak', value=1e8, vary=False)
+params.add('zE_peak', value=150, vary=True)
+params.add('neE_peak', value=5e8, vary=True)
+params.add('zF_peak', value=290, vary=True)
+params.add('neF_peak', value=1e9, vary=True)
+
 
 result = curvefit_model.fit(y, params, z=x)
 
