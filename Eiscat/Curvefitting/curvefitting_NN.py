@@ -13,13 +13,13 @@ import torch.nn as nn
 
 
 
-class Curvefit(nn.Module):
+class Curvefit_NN(nn.Module):
     """
     Class for curvefitting using a Neural Network. 
     """
     
     def __init__(self):
-        super(Curvefit, self).__init__()
+        super(Curvefit_NN, self).__init__()
         
         # Setting up parameters to be optimized
         self.HE_below = nn.Parameter(torch.tensor([np.log(5)], dtype=torch.float64), requires_grad=True)
