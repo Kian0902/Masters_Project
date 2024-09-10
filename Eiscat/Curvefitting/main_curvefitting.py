@@ -14,7 +14,7 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 
-from curvefit_data import Curvefit
+from curvefitting_NN import Curvefit_NN
 
 import torch
 import torch.nn as nn
@@ -22,7 +22,7 @@ import torch.nn as nn
 
 
 # Importing processed dataset
-custom_file_path = "C:\\Users\\kian0\\OneDrive\\Desktop\\UiT Courses\\FYS_3931\\Scripts\\Masters_Project\\Eiscat\\Curvefitting\\Sorted_data.pkl"
+custom_file_path = "Ne_vhf_avg"
 with open(custom_file_path, 'rb') as f:
     dataset = pickle.load(f)
 
@@ -36,7 +36,7 @@ for day in dataset.keys():
     
 
     # True EISCAT data
-    Z_true = np.tile(np.array(data_day["r_h"]), 479).T        # altitude [km] 
+    Z_true = np.tile(np.array(data_day["r_h"]), 32).T        # altitude [km] 
     Ne_true = np.array(data_day["r_param"]).T   # electron density []
     print(Z_true.shape)
     print(Ne_true.shape)
@@ -59,7 +59,7 @@ for day in dataset.keys():
         
         
         # Model, criterion, and optimizer
-        model = Curvefit()
+        model = Curvefit_NN()
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         
@@ -67,7 +67,7 @@ for day in dataset.keys():
         Z = torch.from_numpy(z_true).double().view(-1, 1)
         Ne = torch.from_numpy(ne_true).double().view(-1, 1)
         
-        for epoch in range(1001):
+        for epoch in range(2001):
             
             output = model(Z, neE_peak, neF_peak, zE_peak, zF_peak)
             loss   = criterion(output, Ne)
