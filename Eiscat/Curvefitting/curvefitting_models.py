@@ -47,112 +47,110 @@ class CurvefittingChapman:
             raise ValueError(f"Curvefitting model '{model_name}' not recognized.")
         
         
+        time = data['r_time']
+        z    = data['r_h'].flatten()
+        Ne   = data['r_param'].T
         
-        y_peaks = self.get_peaks(data)
-        
-        y_fit = self.curvefitting_model[model_name]()  # Calling curvefitting model
-        
-        
-        
-    
-    def get_peaks(self, data: dict):
-        
-        z = data['r_h'].flatten()
-        Ne = data['r_param'].T
-        
-        # print(Ne.shape)
-        # print(Ne.T)
         
         for i in range(0, len(Ne)):
             
             # Indexing time of measurement (averaged over 15 min)
             ne = Ne[i]
-            print(i)
             
-            neE_peak = np.max(ne[(150 >= z) & (z > 100)])
-            neF_peak = np.max(ne[(300 >= z) & (z > 150)])
+            # Getting peaks
+            e_peaks_z, e_peaks_ne, f_peaks_z, f_peaks_ne = self.get_peaks(z, ne)
             
-            
-            
-            zE_peak = z[ne==neE_peak]
-            zF_peak = z[ne==neF_peak]
+            # Calling curvefitting model
+            y_fit = self.curvefitting_model[model_name](z, ne, e_peaks_z, f_peaks_z, e_peaks_ne, f_peaks_ne)
             
             
-            # Defining E and F-region altitudes
-            e_reg = (150 >= z) & (90 < z)
-            f_reg = (300 >= z) & (150 < z)
             
-            # Finding E and F-region peaks
-            e_peaks, e_properties = find_peaks(ne[e_reg], prominence=True)
-            f_peaks, f_properties = find_peaks(ne[f_reg], prominence=True)
             
-            # Handling E-region
-            if e_peaks.size > 0:
-                e_peak_index = e_properties['prominences'].argmax()
-                e_peaks_z = z[e_reg][e_peaks][e_peak_index]
-                e_peaks_ne = ne[e_reg][e_peaks][e_peak_index]
-            else:
-                e_peaks_z = z[e_reg][ne[e_reg].argmax()]
-                e_peaks_ne = ne[e_reg].max()
             
-            # Handling F-region
-            if f_peaks.size > 0:
-                f_peak_index = f_properties['prominences'].argmax()
-                f_peaks_z = z[f_reg][f_peaks][f_peak_index]
-                f_peaks_ne = ne[f_reg][f_peaks][f_peak_index]
-            else:
-                f_peaks_z = z[f_reg][ne[f_reg].argmax()]
-                f_peaks_ne = ne[f_reg].max()
-                    
-                
-            # print(len(e_peaks), len(f_peaks))
-            # print(e_peaks_z, f_peaks_z)
-            # print(e_properties['prominences'], f_properties['prominences'])
-            # # print(e_peak_index, f_peak_index)
-            # print("\n")
-            
-            plt.plot(ne, z, color='green', label="Ne")
-            plt.scatter([e_peaks_ne, f_peaks_ne], [e_peaks_z, f_peaks_z], color="red", label="scipy")
-            plt.scatter([neE_peak, neF_peak], [zE_peak, zF_peak], color="C0", label="normal", marker="x")
+            plt.plot(ne, z, color='C0', label="Ne")
+            plt.plot(y_fit, z, color='C1', label="fitted")
+            plt.scatter([e_peaks_ne, f_peaks_ne], [e_peaks_z, f_peaks_z], color="red", label="Peaks")
             plt.xscale('log')
             plt.legend()
             plt.show()
             
-            
-            
-            
-            
-        # # True EISCAT data
-        # Z_true = np.tile(np.array(data_day["r_h"]), 32).T        # altitude [km] 
-        # Ne_true = np.array(data_day["r_param"]).T   # electron density []
-        # print(Z_true.shape)
-        # print(Ne_true.shape)
-        
-        # # Loop though time of day
-        # for i in np.arange(0, len(Z_true)):
-            
-            
-        #     # Indexing time of measurement (averaged over 15 min)
-        #     z_true = Z_true[i]
-        #     ne_true = Ne_true[i]
-            
-        #     # Finding peak electron densities
-        #     neE_peak = np.max(ne_true[(150 >= z_true) & (z_true > 100)])
-        #     neF_peak = np.max(ne_true[(300 >= z_true) & (z_true > 150)])
-            
-        #     # Finding altitude at peak
-        #     zE_peak = z_true[ne_true==neE_peak]
-        #     zF_peak = z_true[ne_true==neF_peak]
-    
-        
     
     
-    def curvefit_scipy(self):
+    
+    def get_peaks(self, z, ne):
+        """
+        Function for finding E and F-region electron density peaks and their
+        corresponding altitudes.
         
-        print("scipy")
+        Input (type)  | DESCRIPTION
+        ------------------------------------------------
+        z  (np.array) | Altitude values.
+        ne (np.array) | Electron density values.
         
+        Return (type) | DESCRIPTION
+        ------------------------------------------------
+        e_peaks_z     | E-region altitude peak.
+        e_peaks_ne    | E-region electron density peak.
+        f_peaks_z     | F-region altitude peak.
+        f_peaks_ne    | F-region electron density peak.
+        """
+        # Defining E and F-region altitudes
+        e_reg = (150 >= z) & (90 < z)
+        f_reg = (300 >= z) & (150 < z)
         
+        # Finding E and F-region peaks
+        e_peaks, e_properties = find_peaks(ne[e_reg], prominence=True)
+        f_peaks, f_properties = find_peaks(ne[f_reg], prominence=True)
+        
+        # Handling E-region
+        if e_peaks.size > 0:
+            e_peak_index = e_properties['prominences'].argmax()
+            e_peaks_z = z[e_reg][e_peaks][e_peak_index]
+            e_peaks_ne = ne[e_reg][e_peaks][e_peak_index]
+        else:
+            e_peaks_z = z[e_reg][ne[e_reg].argmax()]
+            e_peaks_ne = ne[e_reg].max()
+        
+        # Handling F-region
+        if f_peaks.size > 0:
+            f_peak_index = f_properties['prominences'].argmax()
+            f_peaks_z = z[f_reg][f_peaks][f_peak_index]
+            f_peaks_ne = ne[f_reg][f_peaks][f_peak_index]
+        else:
+            f_peaks_z = z[f_reg][ne[f_reg].argmax()]
+            f_peaks_ne = ne[f_reg].max()
+        
+        return e_peaks_z, e_peaks_ne, f_peaks_z, f_peaks_ne
+            
+    
+    
+    def curvefit_scipy(self, z, ne, zE_peak, zF_peak, neE_peak, neF_peak):
+        
+        # Curve fitting
+        popt, pcov = curve_fit(lambda z, HEd, HEu, HFd, HFu: self.double_chapman_wrapper(z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak), z, ne, p0=[20, 55, 45, 70], bounds=(5, [200, 200, 200, 200]), maxfev=10000)
+        
+        # Extracting fitted parameters
+        HEd_fitted, HEu_fitted, HFd_fitted, HFu_fitted = popt
+
+        y_fit = self.double_chapman_wrapper(z, HEd_fitted, HEu_fitted, HFd_fitted, HFu_fitted, zE_peak, zF_peak, neE_peak, neF_peak)
+        return y_fit
+    
+    
+    
+    
     def curvefit_lmfit(self):
+        # curvefit_model = Model(double_chapman)
+        # params = curvefit_model.make_params(HEd=10, HEu=35, HFd=25, HFu=40)
+
+        # params.add('zE_peak', value=150, vary=True)
+        # params.add('neE_peak', value=5e8, vary=True)
+        # params.add('zF_peak', value=290, vary=True)
+        # params.add('neF_peak', value=1e9, vary=True)
+
+
+        # result = curvefit_model.fit(y, params, z=x)
+
+        # y_fit = result.best_fit
         
         print("lmfit")
         
@@ -163,14 +161,14 @@ class CurvefittingChapman:
     
 
 
-    def _double_chapman_wrapper(self, z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak):
+    def double_chapman_wrapper(self, z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak):
         """
         Wrapper function for the double chapman.
         """
         return self.double_chapman(z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak)
     
     
-    def double_chapman(self, z, HEd, HEu, HFd, HFu, zE_peak, neE_peak, zF_peak, neF_peak):
+    def double_chapman(self, z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak):
         """
         Function for the double chapman electron density model.
         
@@ -211,7 +209,7 @@ with open(custom_file_path, 'rb') as f:
 
 
 
-X = dataset['2018-11-9']
+X = dataset['2018-11-10']
 
 
 m = 'scipy'
