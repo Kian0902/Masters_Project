@@ -8,6 +8,7 @@ Created on Tue Sep 10 13:02:05 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
 from lmfit import Model
 
 
@@ -27,6 +28,29 @@ class Curvefitting:
         
     
     def double_chapman(self, z, HEd, HEu, HFd, HFu, zE_peak, neE_peak, zF_peak, neF_peak):
+        """
+        Function for the double chapman electron density model.
+        
+        Input (type) | DESCRIPTION
+        ------------------------------------------------
+        z            | Altitude values.
+        
+        HEd          | E-reg lower scale-height.
+        HEu          | E-reg upper scale-height.
+        HFd          | F-reg lower scale-height.
+        HFu          | F-reg upper scale-height.
+        
+        neE_peak     | E-region Peak electron density.
+        neF_peak     | F-region Peak electron density.
+        zE_peak      | E-region Peak altitude.
+        zF_peak      | F-region Peak altitude.
+        
+        Return (type) | DESCRIPTION
+        ------------------------------------------------
+        neE + neF     | Double Chapman electron density.
+        """
+        
+        
         HE = np.where(z <= zE_peak, HEd, HEu)
         HF = np.where(z <= zF_peak, HFd, HFu)
         
