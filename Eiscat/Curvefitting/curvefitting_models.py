@@ -20,12 +20,14 @@ class Curvefitting:
     - lmfit
     - torch
     """
-    def __init__(self):
+    def __init__(self, dataset):
+        
+        self.dataset = dataset
         
         self.curvefitting_model = {'scipy': self.curvefit_scipy,
                                    'lmfit': self.curvefit_lmfit,
                                    'NN': self.curvefit_neural_network}
-        
+    
     
     def _double_chapman_wrapper(self, z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak):
         """
@@ -65,17 +67,27 @@ class Curvefitting:
     
     
     def curvefit_scipy(self):
+        
+        print("scipy")
         ...
         
     def curvefit_lmfit(self):
+        
+        print("lmfit")
         ...
     
     def curvefit_neural_network(self):
-        ...
         
+        print("NN")
+        ...
 
-
-
+    
+    def get_curvefits(self, data: dict, model_name: str, save_plot: bool=False):
+        
+        
+        if model_name not in self.curvefitting_model:
+            raise ValueError(f"Curvefitting model '{model_name}' not recognized.")
+        
 
 
 
