@@ -26,6 +26,10 @@ class Curvefitting:
                                    'NN': self.curvefit_neural_network}
         
     
+    def double_chapman(self):
+        ...
+    
+    
     def curvefit_scipy(self):
         ...
         
