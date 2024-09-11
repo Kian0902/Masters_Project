@@ -13,7 +13,7 @@ from lmfit import Model
 
 
 
-class Curvefitting:
+class CurvefittingChapman:
     """
     Class for choosing between 3 different curvefitting models:
     - SciPy
@@ -21,12 +21,21 @@ class Curvefitting:
     - torch
     """
     def __init__(self, dataset):
+        """
+        Initialize with dataset containing processed EISCAT data of one or
+        multiple days.
+        
+        
+        Attributes (type) | DESCRIPTION
+        ------------------------------------------------
+        dataset (dict)    | Global dictionary containing the EISCAT data.
+        """
         
         self.dataset = dataset
-        
         self.curvefitting_model = {'scipy': self.curvefit_scipy,
                                    'lmfit': self.curvefit_lmfit,
                                    'NN': self.curvefit_neural_network}
+    
     
     
     def _double_chapman_wrapper(self, z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak):
@@ -69,36 +78,37 @@ class Curvefitting:
     def curvefit_scipy(self):
         
         print("scipy")
-        ...
+        
         
     def curvefit_lmfit(self):
         
         print("lmfit")
-        ...
+        
     
     def curvefit_neural_network(self):
         
         print("NN")
-        ...
-
+    
+    
     
     def get_curvefits(self, data: dict, model_name: str, save_plot: bool=False):
         
         
+        # Value error 
         if model_name not in self.curvefitting_model:
             raise ValueError(f"Curvefitting model '{model_name}' not recognized.")
+        
+        
+        
+        y_fit = self.curvefitting_model[model_name]()
         
 
 
 
 
 
-
-
-
-
-
-
+A = CurvefittingChapman(1)
+A.get_curvefits(2, "NN")
 
 
 
