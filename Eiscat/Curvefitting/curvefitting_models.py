@@ -57,40 +57,70 @@ class CurvefittingChapman:
     
     def get_peaks(self, data: dict):
         
-        print("\nget_peaks")
-        print("---------------------")
-        
-        print(data.keys())
-        
         z = data['r_h'].flatten()
-        print(type(z), z.shape)
-        
         Ne = data['r_param'].T
-        print(type(Ne), Ne.shape)
-        print("\n")
         
-        print("Inside Loop")
-        print("---------------------")
-        for i in range(0, len(Ne.T)):
+        # print(Ne.shape)
+        # print(Ne.T)
+        
+        for i in range(0, len(Ne)):
             
             # Indexing time of measurement (averaged over 15 min)
-            ne = Ne[i+11]
+            ne = Ne[i]
+            print(i)
             
-            print(ne.shape)
-            
-            
-            plt.plot(ne, z)
-            plt.xscale('log')
-            plt.show()
-            
-            
-            # Finding peak electron densities
             neE_peak = np.max(ne[(150 >= z) & (z > 100)])
             neF_peak = np.max(ne[(300 >= z) & (z > 150)])
             
-            print(neE_peak)
-            print(neF_peak)
-            break
+            
+            
+            zE_peak = z[ne==neE_peak]
+            zF_peak = z[ne==neF_peak]
+            
+            
+            # Defining E and F-region altitudes
+            e_reg = (150 >= z) & (90 < z)
+            f_reg = (300 >= z) & (150 < z)
+            
+            # Finding E and F-region peaks
+            e_peaks, e_properties = find_peaks(ne[e_reg], prominence=True)
+            f_peaks, f_properties = find_peaks(ne[f_reg], prominence=True)
+            
+            # Handling E-region
+            if e_peaks.size > 0:
+                e_peak_index = e_properties['prominences'].argmax()
+                e_peaks_z = z[e_reg][e_peaks][e_peak_index]
+                e_peaks_ne = ne[e_reg][e_peaks][e_peak_index]
+            else:
+                e_peaks_z = z[e_reg][ne[e_reg].argmax()]
+                e_peaks_ne = ne[e_reg].max()
+            
+            # Handling F-region
+            if f_peaks.size > 0:
+                f_peak_index = f_properties['prominences'].argmax()
+                f_peaks_z = z[f_reg][f_peaks][f_peak_index]
+                f_peaks_ne = ne[f_reg][f_peaks][f_peak_index]
+            else:
+                f_peaks_z = z[f_reg][ne[f_reg].argmax()]
+                f_peaks_ne = ne[f_reg].max()
+                    
+                
+            # print(len(e_peaks), len(f_peaks))
+            # print(e_peaks_z, f_peaks_z)
+            # print(e_properties['prominences'], f_properties['prominences'])
+            # # print(e_peak_index, f_peak_index)
+            # print("\n")
+            
+            plt.plot(ne, z, color='green', label="Ne")
+            plt.scatter([e_peaks_ne, f_peaks_ne], [e_peaks_z, f_peaks_z], color="red", label="scipy")
+            plt.scatter([neE_peak, neF_peak], [zE_peak, zF_peak], color="C0", label="normal", marker="x")
+            plt.xscale('log')
+            plt.legend()
+            plt.show()
+            
+            
+            
+            
             
         # # True EISCAT data
         # Z_true = np.tile(np.array(data_day["r_h"]), 32).T        # altitude [km] 
@@ -181,7 +211,7 @@ with open(custom_file_path, 'rb') as f:
 
 
 
-X = dataset['2018-11-10']
+X = dataset['2018-11-9']
 
 
 m = 'scipy'
