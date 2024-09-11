@@ -139,7 +139,7 @@ class CurvefittingChapman:
     
     
     def curvefit_lmfit(self):
-        # curvefit_model = Model(double_chapman)
+        curvefit_model = Model(self.double_chapman)
         # params = curvefit_model.make_params(HEd=10, HEu=35, HFd=25, HFu=40)
 
         # params.add('zE_peak', value=150, vary=True)
@@ -212,8 +212,8 @@ with open(custom_file_path, 'rb') as f:
 X = dataset['2018-11-10']
 
 
-m = 'scipy'
-# m = 'lmfit'
+# m = 'scipy'
+m = 'lmfit'
 # m = 'NN'
 
 A = CurvefittingChapman(X)
