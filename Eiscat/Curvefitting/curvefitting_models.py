@@ -39,29 +39,28 @@ class CurvefittingChapman:
         dataset (dict)    | Global dictionary containing the EISCAT data.
         """
         
+        
         self.dataset = dataset
         self.curvefitting_model = {'scipy': self.curvefit_scipy,
                                    'lmfit': self.curvefit_lmfit,
                                    'NN': self.curvefit_neural_network}
+        self.dataset_curvefits = {}
     
-    
-    def batch_processing(self, method_name: str, save_plot=False):
-        
-        for key in list(self.dataset.keys()):
-            print(key)
-            
-            # self.dataset_outliers[key] = self.detect_outliers(self.dataset[key], method_name=method_name, save_plot=save_plot)
+    def batch_detection(self, model_name: str, H_initial: list, save_plot=False):
+        for key in self.dataset.keys():
+            self.dataset_curvefits[key] = self.get_curvefits(self.dataset[key], model_name=model_name, H_initial=H_initial, save_plot=save_plot)
             
             
     
     
     def get_curvefits(self, data: dict, model_name: str, H_initial: list, save_plot: bool=False):
+        # Initialize a dictionary to hold curve-fitted data for each key
+        fitted_data = data.copy()
         
-        
-        time = data['r_time']
+        # time = data['r_time']
         z    = data['r_h'].flatten()
         Ne   = data['r_param'].T
-        
+        fitted_params = []
         
         for i in range(0, len(Ne)):
             
@@ -73,11 +72,9 @@ class CurvefittingChapman:
             
             # Calling curvefitting model
             y_fit = self.curvefitting_model[model_name](z, ne, e_peaks_z, f_peaks_z, e_peaks_ne, f_peaks_ne, H_initial)
+            fitted_params.append(y_fit)
             
-            
-            
-            
-            if save_plot is True:
+            if save_plot:
                 plt.plot(ne, z, color='C0', label="Ne")
                 plt.plot(y_fit, z, color='C1', label="fitted")
                 plt.scatter([e_peaks_ne, f_peaks_ne], [e_peaks_z, f_peaks_z], color="red", label="Peaks")
@@ -85,8 +82,8 @@ class CurvefittingChapman:
                 plt.legend()
                 plt.show()
             
-            # if i == 10:
-            #     break
+        fitted_data['r_param'] = np.array(fitted_params).T
+        return fitted_data
     
     
     def get_peaks(self, z, ne):
@@ -251,7 +248,7 @@ class CurvefittingChapman:
             # Updating weights (Scale-Heights)
             optimizer.step()
 
-
+        
         with torch.no_grad():
             pred = model(z, zE_peak, zF_peak, neE_peak, neF_peak)
         
@@ -301,7 +298,10 @@ class CurvefittingChapman:
         return neE + neF
 
 
-
+    def return_curvefits(self):
+        
+        return self.dataset_curvefits
+        
 
 import pickle
 
@@ -312,15 +312,21 @@ with open(custom_file_path, 'rb') as f:
 
 
 
-X = dataset['2018-11-10']
 
+key_choise = list(dataset.keys())[:2]
+X = {key: dataset[key] for key in key_choise}
 
 # m = 'scipy'
-# m = 'lmfit'
-m = 'NN'
+m = 'lmfit'
+# m = 'NN'
 
 A = CurvefittingChapman(X)
-A.get_curvefits(X, m, H_initial=[20, 30, 35, 40], save_plot=True)
+A.batch_detection(model_name=m, H_initial=[20, 30, 35, 40], save_plot=False)
+
+x = A.return_curvefits()
+
+
+# A.get_curvefits(X, m, H_initial=[20, 30, 35, 40], save_plot=True)
 # A.batch_processing(m)
 
 
