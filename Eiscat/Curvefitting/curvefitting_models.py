@@ -8,9 +8,16 @@ Created on Tue Sep 10 13:02:05 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.optimize import curve_fit
 from scipy.signal import find_peaks
+
+from scipy.optimize import curve_fit
 from lmfit import Model
+from curvefitting_NN import CurvefitNN
+
+import torch
+import torch.nn as nn
+
+
 
 
 
@@ -38,6 +45,15 @@ class CurvefittingChapman:
                                    'NN': self.curvefit_neural_network}
     
     
+    def batch_processing(self, method_name: str, save_plot=False):
+        
+        for key in list(self.dataset.keys()):
+            print(key)
+            
+            # self.dataset_outliers[key] = self.detect_outliers(self.dataset[key], method_name=method_name, save_plot=save_plot)
+            
+            
+    
     
     def get_curvefits(self, data: dict, model_name: str, H_initial: list, save_plot: bool=False):
         
@@ -61,16 +77,16 @@ class CurvefittingChapman:
             
             
             
+            if save_plot is True:
+                plt.plot(ne, z, color='C0', label="Ne")
+                plt.plot(y_fit, z, color='C1', label="fitted")
+                plt.scatter([e_peaks_ne, f_peaks_ne], [e_peaks_z, f_peaks_z], color="red", label="Peaks")
+                plt.xscale('log')
+                plt.legend()
+                plt.show()
             
-            plt.plot(ne, z, color='C0', label="Ne")
-            plt.plot(y_fit, z, color='C1', label="fitted")
-            plt.scatter([e_peaks_ne, f_peaks_ne], [e_peaks_z, f_peaks_z], color="red", label="Peaks")
-            plt.xscale('log')
-            plt.legend()
-            plt.show()
-            
-            # if i == 3:
-            #     break
+            if i == 0:
+                break
     
     
     def get_peaks(self, z, ne):
@@ -207,7 +223,49 @@ class CurvefittingChapman:
         return ne_fit
         
     
-    def curvefit_neural_network(self):
+    def curvefit_neural_network(self, z, ne, zE_peak, zF_peak, neE_peak, neF_peak, H_initial):
+        
+        
+        # Model, criterion, and optimizer
+        model = CurvefitNN()
+        criterion = nn.MSELoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+        
+        # Converting data to PyTorch Tensors
+        z = torch.from_numpy(z).double().view(-1, 1)
+        ne = torch.from_numpy(ne).double().view(-1, 1)
+        
+        # Training loop
+        for epoch in range(1001):
+            
+            # Prediction
+            output = model(z, zE_peak, zF_peak, neE_peak, neF_peak)
+            
+            # Calculate loss
+            loss   = criterion(output, ne)
+            optimizer.zero_grad()
+            
+            # Backpropagation
+            loss.backward()
+            
+            # Updating weights (Scale-Heights)
+            optimizer.step()
+
+            if epoch%100==0:
+                print(f"Epoch {epoch} Loss: {loss.item()}")
+
+
+            if epoch == 1000:
+                print(f"Epoch {epoch} Loss: {loss.item()}")
+                with torch.no_grad():
+                    pred = model(z, zE_peak, zF_peak, neE_peak, neF_peak)
+                    plt.plot(pred.numpy(), z.numpy(), label='Predicted')
+                    plt.plot(ne, z.numpy(), label='Actual')
+                    plt.xscale("log")
+                    plt.legend()
+                    plt.show()
+        
+        
         
         print("NN")
     
@@ -265,12 +323,12 @@ X = dataset['2018-11-10']
 
 
 # m = 'scipy'
-m = 'lmfit'
-# m = 'NN'
+# m = 'lmfit'
+m = 'NN'
 
 A = CurvefittingChapman(X)
 A.get_curvefits(X, m, H_initial=[20, 30, 35, 40])
-
+# A.batch_processing(m)
 
 
 
