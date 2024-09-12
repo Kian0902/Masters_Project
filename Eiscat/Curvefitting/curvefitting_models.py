@@ -69,8 +69,8 @@ class CurvefittingChapman:
             plt.legend()
             plt.show()
             
-            if i == 3:
-                break
+            # if i == 3:
+            #     break
     
     
     def get_peaks(self, z, ne):
