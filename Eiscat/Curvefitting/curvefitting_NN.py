@@ -13,13 +13,13 @@ import torch.nn as nn
 
 
 
-class Curvefit_NN(nn.Module):
+class CurvefitNN(nn.Module):
     """
     Class for curvefitting using a Neural Network. 
     """
     
-    def __init__(self):
-        super(Curvefit_NN, self).__init__()
+    def __init__(self, ):
+        super(CurvefitNN, self).__init__()
         
         # Setting up parameters to be optimized
         self.HE_below = nn.Parameter(torch.tensor([np.log(5)], dtype=torch.float64), requires_grad=True)
@@ -28,7 +28,7 @@ class Curvefit_NN(nn.Module):
         self.HF_above = nn.Parameter(torch.tensor([np.log(40)], dtype=torch.float64), requires_grad=True)
 
 
-    def forward(self, x, nE_peak, nF_peak, zE_peak, zF_peak):
+    def forward(self, x, zE_peak, zF_peak, nE_peak, nF_peak):
         """
         Forward propagation function.
         
