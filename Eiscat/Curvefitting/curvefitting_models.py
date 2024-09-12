@@ -39,12 +39,7 @@ class CurvefittingChapman:
     
     
     
-    
-    def get_curvefits(self, data: dict, model_name: str, save_plot: bool=False):
-        
-        # Value error 
-        if model_name not in self.curvefitting_model:
-            raise ValueError(f"Curvefitting model '{model_name}' not recognized.")
+    def get_curvefits(self, data: dict, model_name: str, H_initial: list, save_plot: bool=False):
         
         
         time = data['r_time']
@@ -61,7 +56,7 @@ class CurvefittingChapman:
             e_peaks_z, e_peaks_ne, f_peaks_z, f_peaks_ne = self.get_peaks(z, ne)
             
             # Calling curvefitting model
-            y_fit = self.curvefitting_model[model_name](z, ne, e_peaks_z, f_peaks_z, e_peaks_ne, f_peaks_ne)
+            y_fit = self.curvefitting_model[model_name](z, ne, e_peaks_z, f_peaks_z, e_peaks_ne, f_peaks_ne, H_initial)
             
             
             
@@ -74,7 +69,8 @@ class CurvefittingChapman:
             plt.legend()
             plt.show()
             
-    
+            if i == 3:
+                break
     
     
     def get_peaks(self, z, ne):
@@ -124,35 +120,55 @@ class CurvefittingChapman:
             
     
     
-    def curvefit_scipy(self, z, ne, zE_peak, zF_peak, neE_peak, neF_peak):
+    def curvefit_scipy(self, z, ne, zE_peak, zF_peak, neE_peak, neF_peak, H_initial):
+        
+        # Initial guesses of scale-heights
+        HEd_initial = H_initial[0]
+        HEu_initial = H_initial[1]
+        HFd_initial = H_initial[2]
+        HFu_initial = H_initial[3]
+        
+        
+        
+        # Calling wrapper function
+        func = lambda z, HEd, HEu, HFd, HFu: self.double_chapman_wrapper(z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak)
         
         # Curve fitting
-        popt, pcov = curve_fit(lambda z, HEd, HEu, HFd, HFu: self.double_chapman_wrapper(z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_peak), z, ne, p0=[20, 55, 45, 70], bounds=(5, [200, 200, 200, 200]), maxfev=10000)
+        popt, pcov = curve_fit(func, z, ne, p0=[HEd_initial, HEu_initial, HFd_initial, HFu_initial], bounds=(5, [200, 200, 200, 200]), maxfev=10000)
         
         # Extracting fitted parameters
         HEd_fitted, HEu_fitted, HFd_fitted, HFu_fitted = popt
-
-        y_fit = self.double_chapman_wrapper(z, HEd_fitted, HEu_fitted, HFd_fitted, HFu_fitted, zE_peak, zF_peak, neE_peak, neF_peak)
-        return y_fit
-    
-    
-    
-    
-    def curvefit_lmfit(self):
-        curvefit_model = Model(self.double_chapman)
-        # params = curvefit_model.make_params(HEd=10, HEu=35, HFd=25, HFu=40)
-
-        # params.add('zE_peak', value=150, vary=True)
-        # params.add('neE_peak', value=5e8, vary=True)
-        # params.add('zF_peak', value=290, vary=True)
-        # params.add('neF_peak', value=1e9, vary=True)
-
-
-        # result = curvefit_model.fit(y, params, z=x)
-
-        # y_fit = result.best_fit
         
-        print("lmfit")
+        # Calculating fitted double chapman curve
+        ne_fit = self.double_chapman_wrapper(z, HEd_fitted, HEu_fitted, HFd_fitted, HFu_fitted, zE_peak, zF_peak, neE_peak, neF_peak)
+        return ne_fit
+    
+    
+    
+    
+    def curvefit_lmfit(self, z, ne, zE_peak, zF_peak, neE_peak, neF_peak, H_initial):
+        
+        # Initial guesses of scale-heights
+        HEd_initial = H_initial[0]
+        HEu_initial = H_initial[1]
+        HFd_initial = H_initial[2]
+        HFu_initial = H_initial[3]
+        
+        curvefit_model = Model(self.double_chapman)
+        params = curvefit_model.make_params(HEd=HEd_initial, HEu=HEu_initial, HFd=HFd_initial, HFu=HFu_initial)
+        
+        
+        params.add('zE_peak', value=zE_peak, vary=True, min=50, max=600)
+        params.add('zF_peak', value=zF_peak, vary=True, min=50, max=600)
+        params.add('neE_peak', value=neE_peak, vary=True, min=1e3, max=1e16)
+        params.add('neF_peak', value=neF_peak, vary=True, min=1e3, max=1e16)
+        
+        
+        result = curvefit_model.fit(ne, params, z=z)
+        
+        ne_fit = result.best_fit
+        
+        return ne_fit
         
     
     def curvefit_neural_network(self):
@@ -217,7 +233,7 @@ m = 'lmfit'
 # m = 'NN'
 
 A = CurvefittingChapman(X)
-A.get_curvefits(X, m)
+A.get_curvefits(X, m, H_initial=[20, 30, 35, 40])
 
 
 
