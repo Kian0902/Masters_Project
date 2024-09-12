@@ -76,7 +76,8 @@ class CurvefittingChapman:
     def get_peaks(self, z, ne):
         """
         Function for finding E and F-region electron density peaks and their
-        corresponding altitudes.
+        corresponding altitudes. This method uses SciPy's signal library to
+        find the most common peaks.
         
         Input (type)  | DESCRIPTION
         ------------------------------------------------
@@ -121,6 +122,23 @@ class CurvefittingChapman:
     
     
     def curvefit_scipy(self, z, ne, zE_peak, zF_peak, neE_peak, neF_peak, H_initial):
+        """
+        Function that use SciPy's curvefitting model.
+        
+        Input (type)  | DESCRIPTION
+        ------------------------------------------------
+        z  (np.array) | Altitude values.
+        ne (np.array) | Electron density values.
+        neE_peak      | E-region Peak electron density.
+        neF_peak      | F-region Peak electron density.
+        zE_peak       | E-region Peak altitude.
+        zF_peak       | F-region Peak altitude.
+        H_initial     | List containing initial guesses
+        
+        Return (type) | DESCRIPTION
+        ------------------------------------------------
+        ne_fit        | Curvefitted Double Chapman electron density.
+        """
         
         # Initial guesses of scale-heights
         HEd_initial = H_initial[0]
@@ -147,27 +165,27 @@ class CurvefittingChapman:
     
     
     def curvefit_lmfit(self, z, ne, zE_peak, zF_peak, neE_peak, neF_peak, H_initial):
-        
         # Initial guesses of scale-heights
         HEd_initial = H_initial[0]
         HEu_initial = H_initial[1]
         HFd_initial = H_initial[2]
         HFu_initial = H_initial[3]
         
+        # Defining curvefitting model
         curvefit_model = Model(self.double_chapman)
         params = curvefit_model.make_params(HEd=HEd_initial, HEu=HEu_initial, HFd=HFd_initial, HFu=HFu_initial)
         
-        
+        # Adding peak values as constant values
         params.add('zE_peak', value=zE_peak, vary=True, min=50, max=600)
         params.add('zF_peak', value=zF_peak, vary=True, min=50, max=600)
         params.add('neE_peak', value=neE_peak, vary=True, min=1e3, max=1e16)
         params.add('neF_peak', value=neF_peak, vary=True, min=1e3, max=1e16)
         
-        
+        # Performing curvefitting
         result = curvefit_model.fit(ne, params, z=z)
         
+        # Getting best results
         ne_fit = result.best_fit
-        
         return ne_fit
         
     
