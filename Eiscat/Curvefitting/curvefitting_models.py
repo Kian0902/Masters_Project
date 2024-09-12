@@ -85,8 +85,8 @@ class CurvefittingChapman:
                 plt.legend()
                 plt.show()
             
-            if i == 0:
-                break
+            # if i == 10:
+            #     break
     
     
     def get_peaks(self, z, ne):
@@ -227,7 +227,7 @@ class CurvefittingChapman:
         
         
         # Model, criterion, and optimizer
-        model = CurvefitNN()
+        model = CurvefitNN(H_initial)
         criterion = nn.MSELoss()
         optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
         
@@ -236,7 +236,7 @@ class CurvefittingChapman:
         ne = torch.from_numpy(ne).double().view(-1, 1)
         
         # Training loop
-        for epoch in range(1001):
+        for epoch in range(500):
             
             # Prediction
             output = model(z, zE_peak, zF_peak, neE_peak, neF_peak)
@@ -251,23 +251,16 @@ class CurvefittingChapman:
             # Updating weights (Scale-Heights)
             optimizer.step()
 
-            if epoch%100==0:
-                print(f"Epoch {epoch} Loss: {loss.item()}")
 
+        with torch.no_grad():
+            pred = model(z, zE_peak, zF_peak, neE_peak, neF_peak)
+        
+        
+        # Converting torch.tensor to numpy.ndarray
+        ne_fit = pred.numpy().flatten()
+        return ne_fit
+        
 
-            if epoch == 1000:
-                print(f"Epoch {epoch} Loss: {loss.item()}")
-                with torch.no_grad():
-                    pred = model(z, zE_peak, zF_peak, neE_peak, neF_peak)
-                    plt.plot(pred.numpy(), z.numpy(), label='Predicted')
-                    plt.plot(ne, z.numpy(), label='Actual')
-                    plt.xscale("log")
-                    plt.legend()
-                    plt.show()
-        
-        
-        
-        print("NN")
     
 
 
@@ -327,7 +320,7 @@ X = dataset['2018-11-10']
 m = 'NN'
 
 A = CurvefittingChapman(X)
-A.get_curvefits(X, m, H_initial=[20, 30, 35, 40])
+A.get_curvefits(X, m, H_initial=[20, 30, 35, 40], save_plot=True)
 # A.batch_processing(m)
 
 
