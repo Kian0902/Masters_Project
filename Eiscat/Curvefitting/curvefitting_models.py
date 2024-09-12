@@ -5,7 +5,7 @@ Created on Tue Sep 10 13:02:05 2024
 @author: Kian Sartipzadeh
 """
 
-
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
@@ -40,14 +40,18 @@ class CurvefittingChapman:
         """
         
         
+        
         self.dataset = dataset
         self.curvefitting_model = {'scipy': self.curvefit_scipy,
                                    'lmfit': self.curvefit_lmfit,
                                    'NN': self.curvefit_neural_network}
         self.dataset_curvefits = {}
-    
+        
+        
+        
     def batch_detection(self, model_name: str, H_initial: list, save_plot=False):
         for key in self.dataset.keys():
+            print(f"Date: {key}")
             self.dataset_curvefits[key] = self.get_curvefits(self.dataset[key], model_name=model_name, H_initial=H_initial, save_plot=save_plot)
             
             
@@ -105,8 +109,8 @@ class CurvefittingChapman:
         f_peaks_ne    | F-region electron density peak.
         """
         # Defining E and F-region altitudes
-        e_reg = (150 >= z) & (90 < z)
-        f_reg = (300 >= z) & (150 < z)
+        e_reg = (160 >= z) & (90 < z)
+        f_reg = (380 >= z) & (160 < z)
         
         # Finding E and F-region peaks
         e_peaks, e_properties = find_peaks(ne[e_reg], prominence=True)
@@ -296,60 +300,46 @@ class CurvefittingChapman:
         neE = neE_peak * np.exp(1 - ((z - zE_peak)/HE) - np.exp(-((z - zE_peak)/HE)))
         neF = neF_peak * np.exp(1 - ((z - zF_peak)/HF) - np.exp(-((z - zF_peak)/HF)))
         return neE + neF
-
-
+    
+    
+    def save_curvefits(self, filename: str):
+        """
+        Save the curve-fitted data to a pickle file.
+        """
+        with open(filename, 'wb') as f:
+            pickle.dump(self.dataset_curvefits, f)
+    
+    
     def return_curvefits(self):
-        
         return self.dataset_curvefits
         
 
-import pickle
 
-# Importing processed dataset
-custom_file_path = "Ne_vhf_avg"
-with open(custom_file_path, 'rb') as f:
-    dataset = pickle.load(f)
+# import pickle
+
+# # Importing processed dataset
+# custom_file_path = "Ne_vhf_avg"
+# with open(custom_file_path, 'rb') as f:
+#     dataset = pickle.load(f)
 
 
 
 
-key_choise = list(dataset.keys())[:2]
-X = {key: dataset[key] for key in key_choise}
+# key_choise = list(dataset.keys())[:2]
+# X = {key: dataset[key] for key in key_choise}
 
 # m = 'scipy'
-m = 'lmfit'
-# m = 'NN'
+# # m = 'lmfit'
+# # m = 'NN'
 
-A = CurvefittingChapman(X)
-A.batch_detection(model_name=m, H_initial=[20, 30, 35, 40], save_plot=False)
+# A = CurvefittingChapman(X)
+# A.batch_detection(model_name=m, H_initial=[20, 30, 35, 40], save_plot=False)
 
-x = A.return_curvefits()
-
-
-# A.get_curvefits(X, m, H_initial=[20, 30, 35, 40], save_plot=True)
-# A.batch_processing(m)
+# x = A.return_curvefits()
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# # A.get_curvefits(X, m, H_initial=[20, 30, 35, 40], save_plot=True)
+# # A.batch_processing(m)
 
 
 
