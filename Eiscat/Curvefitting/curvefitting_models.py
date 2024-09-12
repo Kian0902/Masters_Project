@@ -165,6 +165,24 @@ class CurvefittingChapman:
     
     
     def curvefit_lmfit(self, z, ne, zE_peak, zF_peak, neE_peak, neF_peak, H_initial):
+        """
+        Function that use SciPy's curvefitting model.
+        
+        Input (type)  | DESCRIPTION
+        ------------------------------------------------
+        z  (np.array) | Altitude values.
+        ne (np.array) | Electron density values.
+        neE_peak      | E-region Peak electron density.
+        neF_peak      | F-region Peak electron density.
+        zE_peak       | E-region Peak altitude.
+        zF_peak       | F-region Peak altitude.
+        H_initial     | List containing initial guesses
+        
+        Return (type) | DESCRIPTION
+        ------------------------------------------------
+        ne_fit        | Curvefitted Double Chapman electron density.
+        """
+        
         # Initial guesses of scale-heights
         HEd_initial = H_initial[0]
         HEu_initial = H_initial[1]
