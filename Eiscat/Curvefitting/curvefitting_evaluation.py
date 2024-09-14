@@ -151,7 +151,7 @@ class CurvefittingEvaluation:
         
         if save_plot:
             file_name= t[0].strftime('%Y_%m_%d')
-            plt.savefig("Curvefitting_plots/" + file_name, bbox_inches='tight')
+            plt.savefig("Curvefitting_plots/vhf/" + file_name, bbox_inches='tight')
             
         if show_plot:
             plt.show()
@@ -174,8 +174,8 @@ def import_file(file_name):
 
 
 # Import files
-file_org = "Ne_vhf_avg"
-file_fit = "Ne_vhf_avg_lmfit_curvefits"
+file_org = "Ne_uhf_avg"
+file_fit = "Ne_uhf_avg_lmfit_curvefits"
 
 # Get datasets
 X_org = import_file(file_org)
