@@ -34,13 +34,18 @@ data = np.where(np.isnan(data), col_means, data)
 A = FeatureAnalysis(data[:, :], header[:])
 
 A.correlation_matrix(plot_correlation_matrix=True, plot_correlogram=False)
+
 # A.exclude_feature(['Bx', 'By', 'dBx', 'dBy'])
-A.merge_feature(['Bx', 'By', 'Bz'], 1, ["B_pca"])
-A.merge_feature(['dBx', 'dBy', 'dBz'], 1, ["dB_pca"])
-A.merge_feature(['AU', 'AL', 'AE',], 1, ["A_pca"])
+# A.merge_feature(['Bx', 'By', 'Bz'], 1, ["B_pca"])
+# A.merge_feature(['dBx', 'dBy', 'dBz'], 1, ["dB_pca"])
+# A.merge_feature(['AU', 'AL', 'AE',], 1, ["A_pca"])
+# A.merge_feature(['F10_7', 'R', 'Lyman_alpha',], 1, ["F10_R_Lyman_pca"])
+# A.merge_feature(['Kp', 'ap',], 1, ["Kp_ap_pca"])
+
+# A.correlation_matrix(plot_correlation_matrix=True, plot_correlogram=False)
 
 
-A.correlation_matrix(plot_correlation_matrix=True, plot_correlogram=False)
+# A.t_sne()
 
 
 
