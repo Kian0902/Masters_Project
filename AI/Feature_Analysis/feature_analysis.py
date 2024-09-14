@@ -38,6 +38,26 @@ class FeatureAnalysis:
     
     
     
+    def merge_feature(self, features_to_reduce, n_components=1, pca_component_name=["PCA_component"]):
+        
+        reduce_indices = [self.feature_names.index(f) for f in features_to_reduce if f in self.feature_names]
+        features_data = self.dataset[:, reduce_indices]
+        
+        
+        # Perform PCA
+        pca = PCA(n_components=n_components)
+        reduced_data = pca.fit_transform(features_data)
+        
+        self.dataset = np.delete(self.dataset, reduce_indices, axis=1)
+        self.feature_names = [f for i, f in enumerate(self.feature_names) if i not in reduce_indices]
+        
+        # Add the reduced features to the dataset
+        for i in range(n_components):
+            component_name = pca_component_name[i]
+            self.dataset = np.column_stack((self.dataset, reduced_data[:, i]))
+            self.feature_names.append(component_name)
+    
+    
     
     
     
@@ -62,7 +82,7 @@ class FeatureAnalysis:
         
         plt.figure(figsize=(12, 10))
         sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap='coolwarm', square=True, linewidths=.5, 
-                    xticklabels=self.feature_names, yticklabels=self.feature_names)
+                    xticklabels=self.feature_names, yticklabels=self.feature_names, vmin=-1, vmax=1)
         plt.title('Correlation Matrix')
         plt.show()
     
