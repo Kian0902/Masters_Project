@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-
+from sklearn.manifold import TSNE
 
 
 
@@ -35,6 +35,16 @@ class FeatureAnalysis:
         return corr_matrix
     
     
+    
+    def t_sne(self, n_components=2, perplexity=30.0, random_state=None):
+        
+        tsne = TSNE(n_components=n_components, perplexity=perplexity, random_state=random_state)
+        tsne_results = tsne.fit_transform(self.dataset)
+        return tsne_results
+
+    
+    
+    
     def plot_correlation_matrix(self):
         
         # Calculating correlation matrix
@@ -45,26 +55,22 @@ class FeatureAnalysis:
                     xticklabels=self.feature_names, yticklabels=self.feature_names)
         plt.title('Correlation Matrix')
         plt.show()
-
-
-
+    
+    
+    
     def plot_correlogram(self):
-        print("h")
-        
+
         # Convert the dataset to a DataFrame for use with Seaborn
         df = pd.DataFrame(self.dataset, columns=self.feature_names)
         
-        
-        print("d")
-        
-        sns.pairplot(df, kind='scatter', diag_kind='kde')
+        sns.pairplot(df, kind="scatter", diag_kind="kde")
         plt.suptitle('Correlogram')
         plt.show()
 
 
 
 
-
+# class FeatureEngineering:
 
 
 
