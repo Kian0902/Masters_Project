@@ -44,39 +44,82 @@ VHF.sort_data()  # sort data
 # VHF data
 X_vhf = VHF.return_data()  # returning dict data
 
-# Clipping range and Filtering data for nan
-filt = EISCATDataFilter(X_vhf, filt_range=True, filt_nan=True) 
-filt.batch_filtering()
-X_filtered = filt.return_data()
-
-
-
-key_choise = list(X_filtered.keys())[:]
-X = {key: X_filtered[key] for key in key_choise}
 
 
 
 
-# Detecting outliers
-Outlier = EISCATOutlierDetection(X)
-Outlier.batch_detection(method_name="IQR", save_plot=False)
-X_outliers = Outlier.return_outliers()
+AVG = EISCATAverager(X_vhf)
 
 
-# Filtering outliers
-outlier_filter = EISCATDataFilter(X, filt_outlier=True)
-outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
-X_outliers_filtered = outlier_filter.return_data()
+for day in X_vhf:
+    
 
-
-# Averaging data
-AVG = EISCATAverager(X_outliers_filtered)
-AVG.batch_averaging(save_plot=False, weighted=False)
-X_avg = AVG.return_data()
+    AVG.round_time(X_vhf[day]['r_time'])
 
 
 
-save_data(X_avg, file_name=folder_name + "_avg")
+
+
+# # Clipping range and Filtering data for nan
+# filt = EISCATDataFilter(X_vhf, filt_range=True, filt_nan=True) 
+# filt.batch_filtering()
+# X_filtered = filt.return_data()
+
+
+
+# key_choise = list(X_filtered.keys())[:1]
+# X = {key: X_filtered[key] for key in key_choise}
+
+
+
+
+# # Detecting outliers
+# Outlier = EISCATOutlierDetection(X)
+# Outlier.batch_detection(method_name="IQR", save_plot=False)
+# X_outliers = Outlier.return_outliers()
+
+
+# # Filtering outliers
+# outlier_filter = EISCATDataFilter(X, filt_outlier=True)
+# outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
+# X_outliers_filtered = outlier_filter.return_data()
+
+
+# # Averaging data
+# AVG = EISCATAverager(X_outliers_filtered)
+# AVG.batch_averaging(save_plot=False, weighted=False)
+# X_avg = AVG.return_data()
+
+
+
+
+
+
+
+
+# save_data(X_avg, file_name=folder_name + "_avg")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

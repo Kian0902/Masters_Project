@@ -36,34 +36,70 @@ class EISCATAverager:
         # Loop through day
         for key in list(self.dataset.keys()):
             self.dataset[key] = self.average_over_period(self.dataset[key], save_plot=save_plot, weighted=weighted, log_scale=log_scale)
-
-            
+    
+    
+    
+    
     
     def round_time(self, data_time):
-        """
-        Rounds the data time array to the nearest minute.
+
         
-        Input (type)             | DESCRIPTION
-        ------------------------------------------------
-        data_time (np.ndarray)   | Array with dates and times.
         
-        Return (type)                      | DESCRIPTION
-        ------------------------------------------------
-        rounded_dates_array (np.ndarray)   | Array with rounded dates and times.
-        """
-        # Convert each row with date and time into datetime objects
         datetimes = [datetime(year, month, day, hour, minute, second) 
-             for year, month, day, hour, minute, second in data_time]
+              for year, month, day, hour, minute, second in data_time]
         
-        # Rounding datetimes into closest minute
         rounded_datetimes = [dt.replace(second=0, microsecond=0) + timedelta(minutes=1) if dt.second >= 30 
-                     else dt.replace(second=0, microsecond=0) 
-                     for dt in datetimes]
+                      else dt.replace(second=0, microsecond=0) for dt in datetimes]
         
-        # Convert back to numpy array
-        rounded_dates_array = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] 
-                                        for dt in rounded_datetimes])
-        return rounded_dates_array
+        
+        L = []
+        for i, dt in enumerate(rounded_datetimes):
+            if (dt.minute % 15 == 1) and (rounded_datetimes[i-1].minute % 15 !=0):
+                if rounded_datetimes[i-1].minute % 15 != 14:
+                    dt = dt.replace(second=0, microsecond=0) - timedelta(minutes=1)
+                    L.append(dt)
+                else:
+                    dt = rounded_datetimes[i-1].replace(second=0, microsecond=0) + timedelta(minutes=1)
+                    L.append(dt)
+
+            else:
+                L.append(dt)
+        
+        
+        
+
+
+        # print(datetimes[:26])
+        # print(rounded_datetimes[:26])
+        
+        
+        # n_norm = [(dt.minute % 15==0) for dt in datetimes[:]]
+        # n_round = [(dt.minute % 15==0) for dt in rounded_datetimes[:]]
+        
+        
+        # print(sum(n_norm))
+        # print(sum(n_round))
+        # for dt in datetimes[:16]:
+        #     print(dt.minute)
+        
+        
+        
+        # # Rounding datetimes into closest minute
+        # rounded_datetimes = [dt.replace(second=0, microsecond=0) + timedelta(minutes=1) if dt.second >= 30 
+        #              else dt.replace(second=0, microsecond=0) 
+        #              for dt in datetimes]
+        
+        
+
+        # # Convert back to numpy array
+        # rounded_dates_array = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] 
+        #                                 for dt in rounded_datetimes])
+        
+        
+        # print(rounded_dates_array[5:15])
+        
+        
+        # return rounded_dates_array
     
     
     def get_weights(self, errors: np.ndarray, eps: float = 1e-10)-> np.ndarray:
