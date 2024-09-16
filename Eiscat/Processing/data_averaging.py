@@ -52,54 +52,29 @@ class EISCATAverager:
                       else dt.replace(second=0, microsecond=0) for dt in datetimes]
         
         
-        L = []
-        for i, dt in enumerate(rounded_datetimes):
-            if (dt.minute % 15 == 1) and (rounded_datetimes[i-1].minute % 15 !=0):
-                if rounded_datetimes[i-1].minute % 15 != 14:
-                    dt = dt.replace(second=0, microsecond=0) - timedelta(minutes=1)
-                    L.append(dt)
-                else:
-                    dt = rounded_datetimes[i-1].replace(second=0, microsecond=0) + timedelta(minutes=1)
-                    L.append(dt)
+        # L = []
+        # for i, dt in enumerate(rounded_datetimes):
+        #     if (dt.minute % 15 == 1) and (rounded_datetimes[i-1].minute % 15 !=0):
+        #         if rounded_datetimes[i-1].minute % 15 != 14:
+        #             dt = dt.replace(second=0, microsecond=0) - timedelta(minutes=1)
+        #             L.append(dt)
+        #         else:
+        #             dt = rounded_datetimes[i-1].replace(second=0, microsecond=0) + timedelta(minutes=1)
+        #             L.append(dt)
 
-            else:
-                L.append(dt)
+        #     else:
+        #         L.append(dt)
         
         
-        
-
-
-        # print(datetimes[:26])
-        # print(rounded_datetimes[:26])
-        
-        
-        # n_norm = [(dt.minute % 15==0) for dt in datetimes[:]]
-        # n_round = [(dt.minute % 15==0) for dt in rounded_datetimes[:]]
-        
-        
-        # print(sum(n_norm))
-        # print(sum(n_round))
-        # for dt in datetimes[:16]:
-        #     print(dt.minute)
-        
-        
-        
-        # # Rounding datetimes into closest minute
-        # rounded_datetimes = [dt.replace(second=0, microsecond=0) + timedelta(minutes=1) if dt.second >= 30 
-        #              else dt.replace(second=0, microsecond=0) 
-        #              for dt in datetimes]
-        
+        adjusted_datetimes = [(dt.replace(second=0, microsecond=0) - timedelta(minutes=1)) if (dt.minute % 15 == 1 and rounded_datetimes[i-1].minute % 15 != 0 and rounded_datetimes[i-1].minute % 15 != 14)
+        else (rounded_datetimes[i-1].replace(second=0, microsecond=0) + timedelta(minutes=1)) if (dt.minute % 15 == 1 and rounded_datetimes[i-1].minute % 15 == 14)
+        else dt for i, dt in enumerate(rounded_datetimes)]
         
 
-        # # Convert back to numpy array
-        # rounded_dates_array = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] 
-        #                                 for dt in rounded_datetimes])
-        
-        
-        # print(rounded_dates_array[5:15])
-        
-        
-        # return rounded_dates_array
+        # Convert back to numpy array
+        rounded_dates_array = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] 
+                                        for dt in adjusted_datetimes])
+        return rounded_dates_array
     
     
     def get_weights(self, errors: np.ndarray, eps: float = 1e-10)-> np.ndarray:
@@ -138,7 +113,7 @@ class EISCATAverager:
         """
 
         # Definin keys
-        r_time  = data['r_time']
+        r_time  = self.round_time(data['r_time'])
         r_h     = data['r_h']
         r_param = data['r_param']
         r_error = data['r_error']
