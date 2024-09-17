@@ -19,6 +19,31 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
 
+
+class MLP(nn.Module):
+    def __init__(self, in_dim, hidden_dim, out_dim):
+        super(MLP, self).__init__()
+        
+        self.FC1  = nn.Linear(in_dim, hidden_dim)
+        self.FC2  = nn.Linear(hidden_dim, out_dim)
+        
+        self.sig = nn.Sigmoid()
+        
+    def forward(self, x):
+        
+        x = self.FC1(x)
+        x = self.sig(x)
+        x = self.FC2(x)
+        x = self.sig(x)
+        
+        return x
+        
+        
+
+
+
+
+
 # class to store data
 class BlobDataset(Dataset):
     
@@ -80,12 +105,7 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 
 
-# class MultiLayeredPerceptron(nn.Module):
-#     def __init__(self):
-#         super(MultiLayeredPerceptron, self).__init__()
-        
-#         self.FC1 = nn.Linear(19, 100)
-#         self.FC2 = nn.Linear(100, out_features)
+
         
 
 
