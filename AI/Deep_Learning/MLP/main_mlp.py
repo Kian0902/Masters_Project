@@ -18,30 +18,30 @@ from sklearn.datasets import make_blobs
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
+# Check if GPU is available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 
 
 class MLP(nn.Module):
     def __init__(self, in_dim, hidden_dim, out_dim):
         super(MLP, self).__init__()
         
+        # Layers
         self.FC1  = nn.Linear(in_dim, hidden_dim)
         self.FC2  = nn.Linear(hidden_dim, out_dim)
         
+        # Activation
         self.sig = nn.Sigmoid()
         
     def forward(self, x):
-        
         x = self.FC1(x)
         x = self.sig(x)
         x = self.FC2(x)
         x = self.sig(x)
-        
         return x
         
         
-
-
-
 
 
 # class to store data
@@ -93,26 +93,37 @@ test_dataset = BlobDataset(X_test, y_test)
 
 
 # Create DataLoader
-train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=100, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=False)
 
 
 
 
+# Initialize network
+model = MLP(2, 10, 2).to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 
 
+epochs = 10
 
-
-
-
+for epoch in range(epochs):
+    model.train()
+    running_loss = 0.0
+    for inputs, labels in train_loader:
         
-
-
-
-
-
-
+        inputs, labels = inputs.to(device), labels.to(device)
+        
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+    
+    
+    print(f'Epoch [{epoch+1}/{epochs}], Loss: {running_loss/len(train_loader):.4f}')
 
 
 
