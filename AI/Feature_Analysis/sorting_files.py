@@ -38,10 +38,16 @@ for i, filename in enumerate(os.listdir(folder_path)):
         
         df = df.T
         
-        df_list.append(df)
+        
+        df.to_csv(f'SP19_samples/{filename}', index=False, header=custom_header)
+        
+        
+        
+        
+        # df_list.append(df)
 
-combined_df = pd.concat(df_list, axis=0)
-combined_df.to_csv('spacephysics_19features.csv', index=False, header=custom_header)
+# combined_df = pd.concat(df_list, axis=0)
+# combined_df.to_csv('spacephysics_19features.csv', index=False, header=custom_header)
 
 
 
