@@ -127,13 +127,25 @@ for epoch in range(epochs):
 
 
 
+# Test the model
+model.eval()
+correct = 0
+total = 0
 
 
 
 
+with torch.no_grad():
+    for inputs, labels in test_loader:
+        # Move inputs and labels to the device
+        inputs, labels = inputs.to(device), labels.to(device)
+        
+        outputs = model(inputs)
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
 
-
-
+print(f'Accuracy of the model on the test set: {100 * correct / total:.2f}%')
 
 
 
