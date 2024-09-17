@@ -61,6 +61,42 @@ class BlobDataset(Dataset):
 
 
 
+def plot_decision_boundary(model, X, y, device):
+    # Set the model to evaluation mode
+    model.eval()
+
+    # Define the grid over which to evaluate the model
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01),
+                         np.arange(y_min, y_max, 0.01))
+
+    # Flatten the grid to pass it through the model
+    grid = np.c_[xx.ravel(), yy.ravel()]
+    grid_tensor = torch.tensor(grid, dtype=torch.float32).to(device)
+
+    # Get model predictions for the grid
+    with torch.no_grad():
+        Z = model(grid_tensor)
+        Z = torch.argmax(Z, dim=1)
+        Z = Z.cpu().numpy()
+
+    # Reshape the predictions back into the grid shape
+    Z = Z.reshape(xx.shape)
+
+    # Plot the decision boundary and the data points
+    plt.contourf(xx, yy, Z, alpha=0.5, cmap=plt.cm.RdYlBu)
+    plt.scatter(X[:, 0], X[:, 1], c=y, s=40, edgecolor='k', cmap=plt.cm.RdYlBu)
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.title("Decision Boundary")
+    plt.show()
+
+
+
+
+
+
 # data
 X, y = make_blobs(n_samples=1000, centers=2, n_features=2)
 
@@ -106,7 +142,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 
 
-epochs = 10
+epochs = 100
 
 for epoch in range(epochs):
     model.train()
