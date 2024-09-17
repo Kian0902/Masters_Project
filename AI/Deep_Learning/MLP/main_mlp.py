@@ -23,6 +23,8 @@ from sklearn.preprocessing import StandardScaler
 class BlobDataset(Dataset):
     
     def __init__(self, data, targets):
+        
+        # Converting to tensors
         self.data = torch.tensor(data, dtype=torch.float32)
         self.targets = torch.tensor(targets, dtype=torch.long)
         
@@ -56,6 +58,22 @@ plt.xlabel("X1")
 plt.ylabel("X2")
 plt.legend()
 plt.show()
+
+
+
+
+# Storing datasets
+train_dataset = BlobDataset(X_train, y_train)
+test_dataset = BlobDataset(X_test, y_test)
+
+
+# Create DataLoader
+train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
+
+
+
+
 
 
 
