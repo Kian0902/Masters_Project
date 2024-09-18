@@ -18,12 +18,38 @@ def list_csv_files(folder_path):
 
 
 
+def match_files(A_files, B_files):
+    
+    # print(A_files[0], B_files[0])
+    
+    # matched_dates = []
+    # for date in B_files:
+    #     if date in A_files:
+    #         matched_dates.append(date)
+    #     else:
+    #         pass
+    
+    # print(len(matched_dates))
+    
+    radar_dates = {f.split('.')[0]: f for f in A_files}
+    satellite_dates = {f.split('.')[0]: f for f in B_files}
+    
+    matched_pairs = []
+    for date in satellite_dates.keys():
+        if date in radar_dates:
+            matched_pairs.append(date)
+            
+    print(len(matched_pairs))
+    
+    
+    
+    
 eiscat_files = list_csv_files("EISCAT_samples")
 sp19_files = list_csv_files("SP19_samples")
 
 
 
-
+match_files(eiscat_files, sp19_files)
 
 
 
