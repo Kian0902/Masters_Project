@@ -58,8 +58,8 @@ print(radar_data[0])
 print(satellite_data[0])
 
 
-np.save('radar_data.npy', radar_data)
-np.save('satellite_data.npy', satellite_data)
+np.save('eiscat_data.npy', radar_data)
+np.save('sp19_data.npy', satellite_data)
 
 
 

@@ -41,7 +41,7 @@ for i, filename in enumerate(os.listdir(folder_path)):
         
         df.to_csv(f'SP19_samples/{filename}', index=False, header=False)
         
-        break
+        
         
         
         # df_list.append(df)
