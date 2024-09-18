@@ -45,13 +45,12 @@ for date, data in dataset.items():
         
         
         sample_df = pd.DataFrame({
-            'r_h': r_h.flatten(),
             'r_param': sample_r_param
-            })
+            }).T
         
         time_str = f"{r_time[i, 0]:04d}{r_time[i, 1]:02d}{r_time[i, 2]:02d}_{r_time[i, 3]:02d}{r_time[i, 4]:02d}"
         csv_filename = os.path.join(output_dir, f"{time_str}.csv")
-        sample_df.to_csv(csv_filename, index=False)
+        sample_df.to_csv(csv_filename, index=False, header=False)
     
 
 
