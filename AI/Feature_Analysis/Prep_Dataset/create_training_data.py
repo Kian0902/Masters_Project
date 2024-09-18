@@ -14,23 +14,12 @@ import pandas as pd
 
 
 def list_csv_files(folder_path):
-    
-    L = []
-    for f in os.listdir(folder_path):
-        if f.endswith('.csv'):
-            L.append(f)
-        else:
-            pass
-    
-    return L
+    return [f for f in os.listdir(folder_path) if f.endswith('.csv')]
 
 
 
-
-
-
-
-
+eiscat_files = list_csv_files("EISCAT_samples")
+sp19_files = list_csv_files("SP19_samples")
 
 
 
