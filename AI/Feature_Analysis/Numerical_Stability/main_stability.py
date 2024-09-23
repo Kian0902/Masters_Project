@@ -77,7 +77,7 @@ problem = {'num_vars': 8,
 param_values = saltelli.sample(problem, 2**8)
 
 
-z = np.linspace(90, 400, 150)
+z = np.linspace(90, 400, 50)
 
 
 
