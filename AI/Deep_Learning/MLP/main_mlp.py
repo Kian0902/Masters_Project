@@ -71,19 +71,20 @@ class MLP(nn.Module):
         x = self.FC1(x)
         x = self.relu(x)
         x = self.FC2(x)
-        x = self.softplus(x)
+        x_final = self.softplus(x)
         
-        batch_size = x.size(0)
+        
+        batch_size = x_final.size(0)
         z = z.unsqueeze(0).expand(batch_size, -1).to(device)
         
-        chapman_output = self.double_chapman(x, z)
+        chapman_output = self.double_chapman(x_final, z)
         
-        return x
+        return chapman_output, x_final
     
 
 
 
-
+# Importing data
 data_sp19 = np.load('sp19_data.npy')
 data_eiscat = np.load('eiscat_data.npy')
 
@@ -102,33 +103,26 @@ y_test = np.log10(y_test)
 
 
 
-
-
-
-
-
 train_dataset = StoreDataset(X_train, y_train)
 test_dataset = StoreDataset(X_test, y_test)
 
 train_loader = DataLoader(train_dataset, batch_size=100, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True)
 
+
+
 # Initialize model, loss function, and optimizer
 in_dim = X_train.shape[1]
-hidden_dim = 124
 
-
-model = MLP(in_dim, out_dim=27).to(device)
+model = MLP(in_dim, out_dim=8).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 
 
 
-
-
 # Example training loop
-num_epochs = 2000  # You can adjust the number of epochs
+num_epochs = 2000
 
 for epoch in range(num_epochs):
     model.train()
@@ -209,6 +203,66 @@ for i in range(len(outputs_np)):
 
 
 
+
+# class StoreDataset(Dataset):
+#     def __init__(self, data, targets):
+#         self.data = torch.tensor(data, dtype=torch.float32)
+#         self.targets = torch.tensor(targets, dtype=torch.float32)
+        
+#     def __len__(self):
+#         return len(self.data)
+        
+#     def __getitem__(self, idx):
+#         return self.data[idx], self.targets[idx]
+
+
+
+
+# class MLP(nn.Module):
+#     def __init__(self, in_dim, out_dim):
+#         super(MLP, self).__init__()
+        
+#         # MLP layers
+#         self.FC1  = nn.Linear(in_dim, 64)
+#         self.FC2  = nn.Linear(64, out_dim)
+
+ 
+#         # Activation
+#         self.relu = nn.ReLU()
+#         self.softplus = nn.Softplus(beta=0.2, threshold=1)
+        
+    
+#     def double_chapman(self, x, z):
+#         zE_peak, zF_peak, nE_peak, nF_peak, HE_below, HF_below, HE_above, HF_above = x.split(1, dim=1)
+        
+        
+#         # Adding epsilon to avoid division by zero
+#         HE = torch.where(z < zE_peak, HE_below, HE_above)
+#         HF = torch.where(z < zF_peak, HF_below, HF_above)
+    
+#         # Clamping to avoid overflow in torch.exp
+#         neE = nE_peak * torch.exp(1 - ((z - zE_peak) / HE) - torch.exp(-((z - zE_peak) / HE)))
+#         neF = nF_peak * torch.exp(1 - ((z - zF_peak) / HF) - torch.exp(-((z - zF_peak) / HF)))
+
+
+#         return neE + neF
+        
+    
+    
+#     def forward(self, x, z):
+
+#         x = self.FC1(x)
+#         x = self.relu(x)
+#         x = self.FC2(x)
+#         x = self.softplus(x)
+        
+#         batch_size = x.size(0)
+#         z = z.unsqueeze(0).expand(batch_size, -1).to(device)
+        
+#         chapman_output = self.double_chapman(x, z)
+        
+#         return chapman_output
+    
 
 
 
