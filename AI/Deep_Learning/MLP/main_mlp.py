@@ -40,17 +40,27 @@ class MLP(nn.Module):
         super(MLP, self).__init__()
         
         # MLP layers
-        self.FC1  = nn.Linear(in_dim, 64)
-        self.FC2  = nn.Linear(64, out_dim)
+        self.layers = nn.Sequential(nn.Linear(in_dim, 124),
+                                    nn.ReLU(),
+                                    nn.Linear(124, 124),
+                                    nn.ReLU(),
+                                    nn.Linear(124, 64),
+                                    nn.ReLU(),
+                                    nn.Linear(64, out_dim)
+                                    )
 
  
         # Activation
-        self.relu = nn.ReLU()
-        self.softplus = nn.Softplus(beta=0.2, threshold=1)
+        # self.relu = nn.ReLU()
+        self.softplus_H = nn.Softplus(beta=0.2, threshold=20)
+        self.softplus_Z = nn.Softplus(beta=0.01, threshold=20)
+        self.softplus_N = nn.Softplus(beta=0.01, threshold=20)
+        
         
     
     def double_chapman(self, x, z):
-        zE_peak, zF_peak, nE_peak, nF_peak, HE_below, HF_below, HE_above, HF_above = x.split(1, dim=1)
+        HE_below, HF_below, HE_above, HF_above, zE_peak, zF_peak, nE_peak, nF_peak = x.split(1, dim=1)
+        
         
         
         # Adding epsilon to avoid division by zero
@@ -60,26 +70,43 @@ class MLP(nn.Module):
         # Clamping to avoid overflow in torch.exp
         neE = nE_peak * torch.exp(1 - ((z - zE_peak) / HE) - torch.exp(-((z - zE_peak) / HE)))
         neF = nF_peak * torch.exp(1 - ((z - zF_peak) / HF) - torch.exp(-((z - zF_peak) / HF)))
-
-
-        return neE + neF
+        
+        ne = neE + neF
+        
+        
+        # print(torch.log(ne))
+        
+        return ne
         
     
     
     def forward(self, x, z):
 
-        x = self.FC1(x)
-        x = self.relu(x)
-        x = self.FC2(x)
-        x_final = self.softplus(x)
+        # x = self.FC1(x)
+        # x = self.relu(x)
+        # x = self.FC2(x)
         
+        
+        x = self.layers(x)
+        
+        x_H = x[:,:4]
+        x_Z = x[:,4:6]
+        x_N = x[:,6:]
+        
+        
+        x_H = self.softplus_H(x_H)
+        x_Z = self.softplus_Z(x_Z)
+        x_N = self.softplus_N(x_N)
+        
+        x_final =  torch.cat([x_H, x_Z, x_N], dim=1)
         
         batch_size = x_final.size(0)
         z = z.unsqueeze(0).expand(batch_size, -1).to(device)
         
         chapman_output = self.double_chapman(x_final, z)
         
-        return chapman_output, x_final
+        
+        return chapman_output
     
 
 
@@ -93,6 +120,8 @@ data_eiscat = np.load('eiscat_data.npy')
 
 X_train, X_test, y_train, y_test = train_test_split(data_sp19, data_eiscat, train_size=0.8, shuffle=True)
 
+
+
 y_train[y_train < 10**5] = 10**5
 y_test[y_test < 10**5] = 10**5
 
@@ -102,12 +131,17 @@ y_train = np.log10(y_train)
 y_test = np.log10(y_test)
 
 
+y_train = np.round(y_train, decimals=3)
+y_test = np.round(y_test, decimals=3)
+
+
+
 
 train_dataset = StoreDataset(X_train, y_train)
 test_dataset = StoreDataset(X_test, y_test)
 
 train_loader = DataLoader(train_dataset, batch_size=100, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=10, shuffle=True)
 
 
 
@@ -122,7 +156,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 
 # Example training loop
-num_epochs = 2000
+num_epochs = 100
 
 for epoch in range(num_epochs):
     model.train()
