@@ -50,7 +50,25 @@ def double_chapman(self, z, HEd, HEu, HFd, HFu, zE_peak, zF_peak, neE_peak, neF_
 
 
 
-
+problem = {'num_vars': 8,
+           'names': ['HEd',
+                     'HEu',
+                     'HFd', 
+                     'HFu',
+                     'log_neE_peak', 
+                     'log_neF_peak',
+                     'zE_peak',
+                     'zF_peak'],
+           
+           'bounds': [[1, 100],
+                      [1, 100],
+                      [1, 100],
+                      [1, 100],
+                      [5, 16],
+                      [5, 16],
+                      [80, 600],
+                      [80, 600]]
+           }
 
 
 
