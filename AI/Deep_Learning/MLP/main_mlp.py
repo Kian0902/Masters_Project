@@ -52,15 +52,26 @@ class MLP(nn.Module):
  
         # Activation
         # self.relu = nn.ReLU()
-        self.softplus_H = nn.Softplus(beta=0.2, threshold=20)
-        self.softplus_Z = nn.Softplus(beta=0.01, threshold=20)
-        self.softplus_N = nn.Softplus(beta=0.01, threshold=20)
+        self.softplus_H = nn.Softplus(beta=0.1, threshold=10)
+        # self.softplus_Z = nn.Softplus(beta=0.0074, threshold=10)
+        self.softplus_N = nn.Softplus(beta=0.15, threshold=10)
         
         
     
     def double_chapman(self, x, z):
-        HE_below, HF_below, HE_above, HF_above, zE_peak, zF_peak, nE_peak, nF_peak = x.split(1, dim=1)
+        HE_below, HF_below, HE_above, HF_above, nE_peak, nF_peak, zE_peak, zF_peak = x.split(1, dim=1)
         
+        print(f'HE_b {HE_below[1]}')
+        print(f'HE_a {HE_above[1]}')
+        print(f'HF_b {HF_below[1]}')
+        print(f'HF_a {HF_above[1]}')
+    
+        print(f'nE {nE_peak[1]}')
+        print(f'nF {nF_peak[1]}')
+        print(f'zE {zE_peak[1]}')
+        print(f'zF {zF_peak[1]}')
+        print("--------")
+
         
         
         # Adding epsilon to avoid division by zero
@@ -74,7 +85,7 @@ class MLP(nn.Module):
         ne = neE + neF
         
         
-        # print(torch.log(ne))
+        # print(ne)
         
         return ne
         
@@ -82,23 +93,20 @@ class MLP(nn.Module):
     
     def forward(self, x, z):
 
-        # x = self.FC1(x)
-        # x = self.relu(x)
-        # x = self.FC2(x)
-        
-        
+
         x = self.layers(x)
         
         x_H = x[:,:4]
-        x_Z = x[:,4:6]
-        x_N = x[:,6:]
+        x_N = x[:,4:]
+        # x_Z = x[:,6:]
         
         
         x_H = self.softplus_H(x_H)
-        x_Z = self.softplus_Z(x_Z)
         x_N = self.softplus_N(x_N)
+        # x_Z = self.softplus_Z(x_Z)
         
-        x_final =  torch.cat([x_H, x_Z, x_N], dim=1)
+        
+        x_final =  torch.cat([x_H, x_N], dim=1)
         
         batch_size = x_final.size(0)
         z = z.unsqueeze(0).expand(batch_size, -1).to(device)
@@ -150,13 +158,13 @@ in_dim = X_train.shape[1]
 
 model = MLP(in_dim, out_dim=8).to(device)
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
 
 
 
 
 # Example training loop
-num_epochs = 100
+num_epochs = 5000
 
 for epoch in range(num_epochs):
     model.train()
