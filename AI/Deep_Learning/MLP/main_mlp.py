@@ -237,4 +237,23 @@ avg_test_loss = total_test_loss / len(test_loader)
 
 
 
+plt.figure(figsize=(10, 6))
+for i in range(len(outputs_np)):
+    plt.plot(outputs_np[i], z.cpu().numpy(), label='Predicted', color="C0")
+    plt.plot(targets_np[i], z.cpu().numpy(), label='True', color="C1")
+
+    plt.xlabel('Altitude (km)')
+    plt.ylabel('Log Electron Density')
+    # plt.title('Predicted vs True Electron Density for 10 Samples')
+    plt.legend()
+    # plt.grid(True)
+    plt.show()
+
+
+
+print(f'Test Loss: {avg_test_loss:.4f}')
+
+
+
+
 
