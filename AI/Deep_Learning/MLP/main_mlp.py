@@ -159,7 +159,7 @@ in_dim = X_train.shape[1]
 model = MLP(in_dim, out_dim=8).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
-
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=0.1)
 
 # To track the best validation loss
 best_val_loss = float('inf')
@@ -214,6 +214,26 @@ for epoch in range(num_epochs):
     
 # After training, load the best model weights before testing
 model.load_state_dict(torch.load(best_model_path))
+
+
+# Now use the model on the test set
+model.eval()
+total_test_loss = 0.0
+with torch.no_grad():
+    for test_inputs, test_targets in test_loader:
+        test_inputs, test_targets = test_inputs.to(device), test_targets.to(device)
+        
+        z = torch.linspace(90, 400, 27).to(device)
+        test_outputs = model(test_inputs, z)
+        
+        outputs_np = outputs.cpu().numpy()
+        targets_np = targets.cpu().numpy()
+        
+        test_loss = criterion(test_outputs, test_targets)
+        total_test_loss += test_loss.item()
+
+avg_test_loss = total_test_loss / len(test_loader)
+
 
 
 
