@@ -8,6 +8,7 @@ Created on Sat Sep 14 14:04:36 2024
 
 import os
 import glob
+import numpy as np
 import pandas as pd
 
 
@@ -37,19 +38,24 @@ for i, filename in enumerate(os.listdir(folder_path)):
         df = df.T
         
         
-        df.to_csv(f'SP19_samples/{filename}', index=False, header=False)
+        year = int(filename[:4])
+        df.insert(0, None, year)
+        
+        # df.to_csv(f'SP19_samples/{filename}', index=False, header=False)
         
         
-        
-        
-        # df_list.append(df)
-
-# combined_df = pd.concat(df_list, axis=0)
-# combined_df.to_csv('spacephysics_19features.csv', index=False, header=custom_header)
+        df_list.append(df)
 
 
 
 
+combined_df = pd.concat(df_list, axis=0)
+numpy_array = combined_df.to_numpy()
+
+# Save the numpy array to a .npy file
+np.save('sp19_features.npy', numpy_array)
+
+print("Data saved as sp19_features.npy")
 
 
 
