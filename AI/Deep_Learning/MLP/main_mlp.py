@@ -41,8 +41,10 @@ class MLP(nn.Module):
         
         # MLP layers
         self.layers = nn.Sequential(nn.Linear(in_dim, 124),
+                                    nn.BatchNorm1d(124),
                                     nn.ReLU(),
                                     nn.Linear(124, 64),
+                                    nn.BatchNorm1d(64),
                                     nn.ReLU(),
                                     nn.Linear(64, out_dim)
                                     )
@@ -158,8 +160,17 @@ in_dim = X_train.shape[1]
 
 model = MLP(in_dim, out_dim=8).to(device)
 criterion = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.01)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=0.1)
+
+
+# # Print the initialized weights
+# print("Initialized model weights:")
+# for name, param in model.named_parameters():
+#     if param.requires_grad:
+#         print(f"Layer: {name} | Size: {param.size()} | Values : {param[:2]}")  # Printing only the first two weights for brevity
+
+
 
 # To track the best validation loss
 best_val_loss = float('inf')
@@ -239,8 +250,8 @@ avg_test_loss = total_test_loss / len(test_loader)
 
 plt.figure(figsize=(10, 6))
 for i in range(len(outputs_np)):
-    plt.plot(outputs_np[i], z.cpu().numpy(), label='Predicted', color="C0")
-    plt.plot(targets_np[i], z.cpu().numpy(), label='True', color="C1")
+    plt.plot(outputs_np[i], z.cpu().numpy(), label='Predicted', color="C1")
+    plt.plot(targets_np[i], z.cpu().numpy(), label='True', color="C0")
 
     plt.xlabel('Altitude (km)')
     plt.ylabel('Log Electron Density')

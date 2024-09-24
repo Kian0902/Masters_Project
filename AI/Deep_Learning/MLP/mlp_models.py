@@ -22,8 +22,10 @@ class MLP19(nn.Module):
         
         # Layers
         self.layers = nn.Sequential(nn.Linear(19, 124),
+                                    nn.BatchNorm1d(124),
                                     nn.ReLU(),
                                     nn.Linear(124, 64),
+                                    nn.BatchNorm1d(64),
                                     nn.ReLU(),
                                     nn.Linear(64, 8)
                                     )
