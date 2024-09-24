@@ -153,4 +153,68 @@ train_loader = DataLoader(train_dataset, batch_size=100, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=100, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True)
 
+# Initialize model, loss function, optimizer, and scheduler
+in_dim = X_train.shape[1]
+
+model = MLP(in_dim, out_dim=8).to(device)
+criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+
+# To track the best validation loss
+best_val_loss = float('inf')
+best_model_path = 'best_model.pth'
+
+num_epochs = 3000
+
+for epoch in range(num_epochs):
+    model.train()
+    total_train_loss = 0.0
+    for inputs, targets in train_loader:
+        inputs, targets = inputs.to(device), targets.to(device)
+        
+        z = torch.linspace(90, 400, 27).to(device)
+        
+        outputs = model(inputs, z)
+        loss = criterion(outputs, targets)
+        
+        # Backward pass and optimization
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        total_train_loss += loss.item()
+        
+    avg_train_loss = total_train_loss / len(train_loader)
+    
+    # Validation loop
+    model.eval()
+    total_val_loss = 0.0
+    with torch.no_grad():
+        for val_inputs, val_targets in val_loader:
+            val_inputs, val_targets = val_inputs.to(device), val_targets.to(device)
+            
+            z = torch.linspace(90, 400, 27).to(device)
+            val_outputs = model(val_inputs, z)
+            val_loss = criterion(val_outputs, val_targets)
+            total_val_loss += val_loss.item()
+    
+    avg_val_loss = total_val_loss / len(val_loader)
+    
+    # Step the learning rate scheduler
+    scheduler.step()
+    
+    # Check if current validation loss is the best we've seen so far
+    if avg_val_loss < best_val_loss:
+        best_val_loss = avg_val_loss
+        torch.save(model.state_dict(), best_model_path)  # Save the model with best validation loss
+        
+    # Print training and validation loss for the epoch
+    print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, LR: {scheduler.get_last_lr()[0]:.6f}')
+    
+# After training, load the best model weights before testing
+model.load_state_dict(torch.load(best_model_path))
+
+
+
 
