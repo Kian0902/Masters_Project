@@ -46,12 +46,12 @@ def train_model(model, train_loader, val_loader, loss_function, optimizer, sched
         
         scheduler.step()
 
-        if avg_val_loss < best_val_loss:
+        if (avg_val_loss < best_val_loss):
             best_val_loss = avg_val_loss
             torch.save(model.state_dict(), model_path)
         
         if epoch % 10 == 0:
-            print(f'Epoch [{epoch+1}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, LR: {scheduler.get_last_lr()[0]:.6f}')
+            print(f'Epoch [{epoch}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, LR: {scheduler.get_last_lr()[0]:.6f}')
     
     return model
 
