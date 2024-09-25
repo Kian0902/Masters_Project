@@ -6,12 +6,16 @@ Created on Wed Sep 25 14:45:11 2024
 """
 
 import torch
+import matplotlib.pyplot as plt
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs, model_path='best_model.pth'):
     best_val_loss = float('inf')
-
+    
+    train_losses = []
+    val_losses = []
+    
     for epoch in range(num_epochs):
         model.train()
         total_train_loss = 0.0
@@ -29,6 +33,7 @@ def train_model(model, train_loader, val_loader, loss_function, optimizer, sched
             total_train_loss += loss.item()
         
         avg_train_loss = total_train_loss / len(train_loader)
+        train_losses.append(avg_train_loss)
         
         # Validation loop
         model.eval()
@@ -43,6 +48,8 @@ def train_model(model, train_loader, val_loader, loss_function, optimizer, sched
                 total_val_loss += val_loss.item()
         
         avg_val_loss = total_val_loss / len(val_loader)
+        val_losses.append(avg_val_loss)
+        
         
         scheduler.step()
 
@@ -53,7 +60,7 @@ def train_model(model, train_loader, val_loader, loss_function, optimizer, sched
         if epoch % 10 == 0:
             print(f'Epoch [{epoch}/{num_epochs}], Train Loss: {avg_train_loss:.4f}, Val Loss: {avg_val_loss:.4f}, LR: {scheduler.get_last_lr()[0]:.6f}')
     
-    return model
+    return model, train_losses, val_losses
 
 
 
