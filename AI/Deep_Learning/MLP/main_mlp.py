@@ -8,15 +8,14 @@ Created on Tue Sep 17 14:42:19 2024
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
 from mlp_models import MLP19
 from storing_dataset import StoreDataset
-from training_mlp import train_model
+from training_mlp import train_model, plot_losses
 from testing_mlp import test_model
 
 
@@ -77,7 +76,10 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.1)
 
 num_epochs = 1000
 
-model = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
+# model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
+
+
+# plot_losses(train_loss, val_loss)
 
 
 best_model_path = 'best_model.pth'
