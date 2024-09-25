@@ -14,6 +14,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 
+
+from mlp_models import MLP19
+
 # Check if GPU is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
@@ -33,69 +36,6 @@ class StoreDataset(Dataset):
         return self.data[idx], self.targets[idx]
 
 
-
-
-class MLP(nn.Module):
-    def __init__(self, in_dim, out_dim):
-        super(MLP, self).__init__()
-        
-        # MLP layers
-        self.layers = nn.Sequential(nn.Linear(in_dim, 124),
-                                    nn.BatchNorm1d(124),
-                                    nn.ReLU(),
-                                    nn.Linear(124, 64),
-                                    nn.BatchNorm1d(64),
-                                    nn.ReLU(),
-                                    nn.Linear(64, out_dim)
-                                    )
-        
-        # Activation
-        self.softplus_H = nn.Softplus(beta=0.1, threshold=10)
-        self.softplus_N = nn.Softplus(beta=0.15, threshold=10)
-        
-        
-    
-    def double_chapman(self, x, z):
-        HE_below, HF_below, HE_above, HF_above, nE_peak, nF_peak, zE_peak, zF_peak = x.split(1, dim=1)
-        
-        
-        # Adding epsilon to avoid division by zero
-        HE = torch.where(z < zE_peak, HE_below, HE_above)
-        HF = torch.where(z < zF_peak, HF_below, HF_above)
-    
-        # Clamping to avoid overflow in torch.exp
-        neE = nE_peak * torch.exp(1 - ((z - zE_peak) / HE) - torch.exp(-((z - zE_peak) / HE)))
-        neF = nF_peak * torch.exp(1 - ((z - zF_peak) / HF) - torch.exp(-((z - zF_peak) / HF)))
-        
-        ne = neE + neF
-        
-        
-        return ne
-        
-    
-    
-    def forward(self, x, z):
-
-
-        x = self.layers(x)
-        
-        x_H = x[:,:4]
-        x_N = x[:,4:]
-        
-        
-        x_H = self.softplus_H(x_H)
-        x_N = self.softplus_N(x_N)
-        
-        x_final =  torch.cat([x_H, x_N], dim=1)
-        
-        batch_size = x_final.size(0)
-        z = z.unsqueeze(0).expand(batch_size, -1).to(device)
-        
-        chapman_output = self.double_chapman(x_final, z)
-        
-        
-        return chapman_output
-    
 
 
 
@@ -140,7 +80,7 @@ test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=Tru
 # Initialize model, loss function, optimizer, and scheduler
 in_dim = X_train.shape[1]
 
-model = MLP(in_dim, out_dim=8).to(device)
+model = MLP19().to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
 scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1400, gamma=0.1)
@@ -151,7 +91,7 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1400, gamma=0.1)
 best_val_loss = float('inf')
 best_model_path = 'best_model.pth'
 
-num_epochs = 2000
+num_epochs = 100
 
 for epoch in range(num_epochs):
     model.train()
