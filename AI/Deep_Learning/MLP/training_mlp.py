@@ -9,7 +9,7 @@ import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs, model_path):
+def train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs, model_path='best_model.pth'):
     best_val_loss = float('inf')
 
     for epoch in range(num_epochs):
