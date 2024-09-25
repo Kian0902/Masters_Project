@@ -48,30 +48,15 @@ class MLP(nn.Module):
                                     nn.ReLU(),
                                     nn.Linear(64, out_dim)
                                     )
-
- 
+        
         # Activation
-        # self.relu = nn.ReLU()
         self.softplus_H = nn.Softplus(beta=0.1, threshold=10)
-        # self.softplus_Z = nn.Softplus(beta=0.0074, threshold=10)
         self.softplus_N = nn.Softplus(beta=0.15, threshold=10)
         
         
     
     def double_chapman(self, x, z):
         HE_below, HF_below, HE_above, HF_above, nE_peak, nF_peak, zE_peak, zF_peak = x.split(1, dim=1)
-        
-        # print(f'HE_b {HE_below[1]}')
-        # print(f'HE_a {HE_above[1]}')
-        # print(f'HF_b {HF_below[1]}')
-        # print(f'HF_a {HF_above[1]}')
-    
-        # print(f'nE {nE_peak[1]}')
-        # print(f'nF {nF_peak[1]}')
-        # print(f'zE {zE_peak[1]}')
-        # print(f'zF {zF_peak[1]}')
-        # print("--------")
-
         
         
         # Adding epsilon to avoid division by zero
@@ -84,8 +69,6 @@ class MLP(nn.Module):
         
         ne = neE + neF
         
-        
-        # print(ne)
         
         return ne
         
@@ -102,7 +85,6 @@ class MLP(nn.Module):
         
         x_H = self.softplus_H(x_H)
         x_N = self.softplus_N(x_N)
-        
         
         x_final =  torch.cat([x_H, x_N], dim=1)
         
@@ -161,14 +143,7 @@ in_dim = X_train.shape[1]
 model = MLP(in_dim, out_dim=8).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=0.1)
-
-
-# # Print the initialized weights
-# print("Initialized model weights:")
-# for name, param in model.named_parameters():
-#     if param.requires_grad:
-#         print(f"Layer: {name} | Size: {param.size()} | Values : {param[:2]}")  # Printing only the first two weights for brevity
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1400, gamma=0.1)
 
 
 
@@ -176,7 +151,7 @@ scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=1000, gamma=0.1)
 best_val_loss = float('inf')
 best_model_path = 'best_model.pth'
 
-num_epochs = 3000
+num_epochs = 2000
 
 for epoch in range(num_epochs):
     model.train()
@@ -227,9 +202,13 @@ for epoch in range(num_epochs):
 model.load_state_dict(torch.load(best_model_path))
 
 
+from sklearn.metrics import r2_score
+
 # Now use the model on the test set
 model.eval()
 total_test_loss = 0.0
+predicted_outputs = []
+true_outputs = []
 with torch.no_grad():
     for test_inputs, test_targets in test_loader:
         test_inputs, test_targets = test_inputs.to(device), test_targets.to(device)
@@ -237,13 +216,33 @@ with torch.no_grad():
         z = torch.linspace(90, 400, 27).to(device)
         test_outputs = model(test_inputs, z)
         
-        outputs_np = outputs.cpu().numpy()
-        targets_np = targets.cpu().numpy()
+        # Convert the predictions and targets to numpy for further calculations
+        outputs_np = test_outputs.cpu().numpy()
+        targets_np = test_targets.cpu().numpy()
+        
+        predicted_outputs.append(outputs_np)
+        true_outputs.append(targets_np)
         
         test_loss = criterion(test_outputs, test_targets)
         total_test_loss += test_loss.item()
 
 avg_test_loss = total_test_loss / len(test_loader)
+
+# Concatenate the list of predictions and targets
+predicted_outputs = np.concatenate(predicted_outputs, axis=0)
+true_outputs = np.concatenate(true_outputs, axis=0)
+
+# Flatten the arrays for R2 score calculation
+predicted_outputs_flat = predicted_outputs.flatten()
+true_outputs_flat = true_outputs.flatten()
+
+# Calculate R² score using sklearn's r2_score function
+r2 = r2_score(true_outputs_flat, predicted_outputs_flat)
+
+# Calculate accuracy within a certain percentage tolerance (example: 10% tolerance)
+tolerance = 0.02  # 2% tolerance
+relative_error = np.abs(predicted_outputs_flat - true_outputs_flat) / np.abs(true_outputs_flat)
+accuracy = np.mean(relative_error < tolerance) * 100  # Accuracy in percentage
 
 
 
@@ -253,8 +252,8 @@ for i in range(len(outputs_np)):
     plt.plot(outputs_np[i], z.cpu().numpy(), label='Predicted', color="C1")
     plt.plot(targets_np[i], z.cpu().numpy(), label='True', color="C0")
 
-    plt.xlabel('Altitude (km)')
-    plt.ylabel('Log Electron Density')
+    plt.ylabel('Altitude (km)')
+    plt.xlabel('Log Electron Density')
     # plt.title('Predicted vs True Electron Density for 10 Samples')
     plt.legend()
     # plt.grid(True)
@@ -262,9 +261,10 @@ for i in range(len(outputs_np)):
 
 
 
+# Print out test metrics
 print(f'Test Loss: {avg_test_loss:.4f}')
-
-
+print(f'R² Score: {r2:.4f}')
+print(f'Accuracy (within {tolerance * 100}% tolerance): {accuracy:.2f}%')
 
 
 
