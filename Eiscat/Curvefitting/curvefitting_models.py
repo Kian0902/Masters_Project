@@ -315,6 +315,34 @@ class CurvefittingChapman:
         
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # import pickle
 
 # # Importing processed dataset

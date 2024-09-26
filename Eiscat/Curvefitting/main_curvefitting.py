@@ -25,14 +25,7 @@ key_choise = list(dataset.keys())[:]
 X = {key: dataset[key] for key in key_choise}
 
 
-print(len(X))
 
-y=0
-for day in X:
-    size=X[day]['r_param'].shape[1]
-    y+=size
-
-print(y)
 
 # m = 'scipy'
 m = 'lmfit'

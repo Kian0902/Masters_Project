@@ -174,8 +174,8 @@ def import_file(file_name):
 
 
 # Import files
-file_org = "Ne_uhf_avg"
-file_fit = "Ne_uhf_avg_lmfit_curvefits"
+file_org = "Ne_vhf_avg"
+file_fit = "Ne_vhf_avg_lmfit_curvefits"
 
 # Get datasets
 X_org = import_file(file_org)
