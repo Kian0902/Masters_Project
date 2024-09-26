@@ -51,14 +51,18 @@ def test_model(model, test_loader, loss_function):
     return avg_test_loss, r2, accuracy, predicted_outputs, true_outputs
 
 
-def plot_results(predicted_outputs, true_outputs):
+def plot_results(predicted_outputs, true_outputs, num_plots=None):
     z = np.linspace(90, 400, 27)
-
+    print(num_plots)
+    
+    if not num_plots:
+        num_plots=len(predicted_outputs)
+    
     plt.figure(figsize=(10, 6))
-    for i in range(len(predicted_outputs)):
+    for i in range(num_plots):
         plt.plot(predicted_outputs[i], z, label='Predicted', color="C1")
         plt.plot(true_outputs[i], z, label='True', color="C0")
-        plt.ylabel('Altitude (km)')
         plt.xlabel('Log Electron Density')
+        plt.ylabel('Altitude (km)')
         plt.legend()
         plt.show()

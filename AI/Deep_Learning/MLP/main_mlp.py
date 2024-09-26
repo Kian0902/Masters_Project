@@ -70,16 +70,16 @@ in_dim = X_train.shape[1]
 model = MLP19().to(device)
 loss_function = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=1)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=400, gamma=0.1)
 
 
 
-num_epochs = 200
+# num_epochs = 500
 
-model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
+# model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
 
 
-plot_losses(train_loss, val_loss)
+# plot_losses(train_loss, val_loss)
 
 
 best_model_path = 'best_model.pth'
@@ -94,7 +94,7 @@ print(f'Accuracy (within 2% tolerance): {accuracy:.2f}%')
 
 
 
-plot_results(predicted_outputs, true_outputs)
+plot_results(predicted_outputs, true_outputs, num_plots=3)
 
 
 
