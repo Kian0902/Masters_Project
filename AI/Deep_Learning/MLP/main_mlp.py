@@ -16,7 +16,7 @@ from sklearn.model_selection import train_test_split
 from mlp_models import MLP19
 from storing_dataset import StoreDataset
 from training_mlp import train_model, plot_losses
-from testing_mlp import test_model
+from testing_mlp import test_model, plot_results
 
 
 # Check if GPU is available
@@ -69,17 +69,17 @@ in_dim = X_train.shape[1]
 
 model = MLP19().to(device)
 loss_function = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=500, gamma=0.1)
+optimizer = optim.Adam(model.parameters(), lr=0.01)
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=1)
 
 
 
-num_epochs = 1000
+num_epochs = 200
 
-# model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
+model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
 
 
-# plot_losses(train_loss, val_loss)
+plot_losses(train_loss, val_loss)
 
 
 best_model_path = 'best_model.pth'
@@ -91,6 +91,22 @@ avg_test_loss, r2, accuracy, predicted_outputs, true_outputs = test_model(model,
 print(f'Test Loss: {avg_test_loss:.4f}')
 print(f'R² Score: {r2:.4f}')
 print(f'Accuracy (within 2% tolerance): {accuracy:.2f}%')
+
+
+
+plot_results(predicted_outputs, true_outputs)
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
