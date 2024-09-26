@@ -33,21 +33,21 @@ def detect_nan_in_arrays(data_dict):
 
 
 # Use the local folder name containing data
-folder_name = "Ne_vhf"
+folder_name = "Ne_uhf"
 
 
 # Sorting data
-VHF = EISCATDataSorter(folder_name)
-VHF.sort_data()  # sort data
+Esicat = EISCATDataSorter(folder_name)
+Esicat.sort_data()  # sort data
 
 
 # VHF data
-X_vhf = VHF.return_data()  # returning dict data
+X_Esicat = Esicat.return_data()  # returning dict data
 
 
 
 # Clipping range and Filtering data for nan
-filt = EISCATDataFilter(X_vhf, filt_range=True, filt_nan=True) 
+filt = EISCATDataFilter(X_Esicat, filt_range=True, filt_nan=True) 
 filt.batch_filtering()
 X_filtered = filt.return_data()
 
