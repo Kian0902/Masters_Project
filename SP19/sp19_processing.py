@@ -41,7 +41,7 @@ class Processing:
         
         print(len(data))
         
-        sns.histplot(data[:,feature], bins=int(len(data)/10), kde=True, color="C0")
+        sns.histplot(data[:,feature], bins=int(len(data)/1000), kde=True, color="C0")
         plt.xlabel('Values')
         plt.ylabel('Density')
         plt.title(f'Feature {feature}')
@@ -51,14 +51,16 @@ class Processing:
 data = np.load("sp19_features.npy")
 
 
-a=1000
+a=80000
 
 X = pd.DataFrame(data[:a])
 
 
 A = Processing(X)
 A.filter_missing_values()
-A.plot_hist(feature=3)
+
+for i in range(0, 20):
+    A.plot_hist(feature=i)
 
 
 
