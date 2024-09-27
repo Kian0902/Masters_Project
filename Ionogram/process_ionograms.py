@@ -196,25 +196,3 @@ def import_data(datapath: str):
 
 
 
-
-
-
-# resultpath = "justmadeiono"
-datapath_folder = "ionograms_txt_data"
-
-
-for file in os.listdir(datapath_folder):
-    
-    
-    file_path = os.path.join(datapath_folder, file)
-
-    times, data = import_data(file_path)
-    
-    print(f'Date {times[0][:10]}')
-    
-    # print(data.shape, times.shape)
-    
-    
-    ionogram_processing(data, times, plot=False)
-
-    break
