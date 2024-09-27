@@ -13,7 +13,7 @@ from torch.utils.data import DataLoader
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from mlp_models import MLP19ION
+from mlp_models import MLP19, MLP19ION
 from storing_dataset import StoreDataset
 from training_mlp import train_model, plot_losses
 from testing_mlp import test_model, plot_results
@@ -33,7 +33,7 @@ data_eiscat = np.load('eiscat_data_SI.npy')
 
 
 
-X_train, X_test, y_train, y_test = train_test_split(data_sp19_ion, data_eiscat, train_size=0.8, shuffle=True)
+X_train, X_test, y_train, y_test = train_test_split(data_sp19_ion, data_eiscat, train_size=0.8, shuffle=True, random_state=42)
 
 
 
@@ -53,15 +53,15 @@ y_test = np.round(y_test, decimals=3)
 
 
 # Split training data further into training and validation sets
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, train_size=0.8, shuffle=True)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, train_size=0.8, shuffle=True , random_state=42)
 
 # Creating datasets and data loaders for training, validation, and test sets
 train_dataset = StoreDataset(X_train, y_train)
 val_dataset = StoreDataset(X_val, y_val)
 test_dataset = StoreDataset(X_test, y_test)
 
-train_loader = DataLoader(train_dataset, batch_size=100, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=100, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=300, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=300, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True)
 
 # Initialize model, loss function, optimizer, and scheduler
@@ -70,22 +70,22 @@ in_dim = X_train.shape[1]
 model = MLP19ION().to(device)
 loss_function = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
-# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[2000], gamma=0.1)
-# scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=5)
+# scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=200, gamma=0.1)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[600], gamma=0.1)
+# scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=200)
 
 
 
-num_epochs = 3000
+# num_epochs = 3000
 
-model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
-
-
-plot_losses(train_loss, val_loss)
+# model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
 
 
-# best_model_path = 'best_model.pth'
-# model.load_state_dict(torch.load(best_model_path, weights_only=True))
+# plot_losses(train_loss, val_loss)
+
+
+best_model_path = 'best_model.pth'
+model.load_state_dict(torch.load(best_model_path, weights_only=True))
 
 
 avg_test_loss, r2, accuracy, predicted_outputs, true_outputs = test_model(model, test_loader, loss_function)
@@ -96,7 +96,7 @@ print(f'Accuracy (within 2% tolerance): {accuracy:.2f}%')
 
 
 
-plot_results(predicted_outputs, true_outputs)
+plot_results(predicted_outputs, true_outputs, num_plots=300)
 
 
 

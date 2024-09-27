@@ -26,7 +26,7 @@ class MLP19(nn.Module):
                                     nn.Linear(124, 64),
                                     nn.BatchNorm1d(64),
                                     nn.ReLU(),
-                                    nn.Linear(64, 8)
+                                    nn.Linear(64, 27)
                                     )
         
         # Activation
@@ -53,20 +53,20 @@ class MLP19(nn.Module):
         
         x = self.layers(x)
         
-        x_H = x[:,:4]
-        x_N = x[:,4:]
+        # x_H = x[:,:4]
+        # x_N = x[:,4:]
         
-        x_H = self.softplus_H(x_H)
-        x_N = self.softplus_N(x_N)
+        # x_H = self.softplus_H(x_H)
+        # x_N = self.softplus_N(x_N)
         
         
-        x_final =  torch.cat([x_H, x_N], dim=1)
+        # x_final =  torch.cat([x_H, x_N], dim=1)
         
-        batch_size = x_final.size(0)
-        z = z.unsqueeze(0).expand(batch_size, -1).to(device)
+        # batch_size = x_final.size(0)
+        # z = z.unsqueeze(0).expand(batch_size, -1).to(device)
         
-        DChap_pred = self.double_chapman(x_final, z)
-        return DChap_pred
+        # DChap_pred = self.double_chapman(x_final, z)
+        return x
         
 
 
@@ -87,29 +87,36 @@ class MLP19ION(nn.Module):
         self.dropout_prob = 0.5
         
         # Layers
-        self.layers = nn.Sequential(nn.Linear(262, 2096),
-                                    nn.BatchNorm1d(2096),
+        self.layers = nn.Sequential(nn.Linear(262, 2048),
+                                    nn.BatchNorm1d(2048),
                                     nn.ReLU(),
                                     nn.Dropout(p=self.dropout_prob),
                                     
-                                    nn.Linear(2096, 524),
-                                    nn.BatchNorm1d(524),
+                                    nn.Linear(2048, 4096),
+                                    nn.BatchNorm1d(4096),
                                     nn.ReLU(),
                                     nn.Dropout(p=self.dropout_prob),
-                                    nn.Linear(524, 128),
-                                    nn.BatchNorm1d(128),
+                                    
+                                    nn.Linear(4096, 2048),
+                                    nn.BatchNorm1d(2048),
                                     nn.ReLU(),
                                     nn.Dropout(p=self.dropout_prob),
-                                    nn.Linear(128, 64),
-                                    nn.BatchNorm1d(64),
+                                    
+                                    nn.Linear(2048, 1024),
+                                    nn.BatchNorm1d(1024),
                                     nn.ReLU(),
                                     nn.Dropout(p=self.dropout_prob),
-                                    nn.Linear(64, 8)
+                                    
+                                    nn.Linear(1024, 512),
+                                    nn.BatchNorm1d(512),
+                                    nn.ReLU(),
+                                    
+                                    nn.Linear(512, 27),
                                     )
         
         # Activation
         self.softplus_H = nn.Softplus(beta=0.1, threshold=10)   # For scale-heights
-        self.softplus_N = nn.Softplus(beta=0.1, threshold=10)  # For peaks
+        self.softplus_N = nn.Softplus(beta=0.15, threshold=10)  # For peaks
     
     
     
@@ -131,20 +138,20 @@ class MLP19ION(nn.Module):
         
         x = self.layers(x)
         
-        x_H = x[:,:4]
-        x_N = x[:,4:]
+        # x_H = x[:,:4]
+        # x_N = x[:,4:]
         
-        x_H = self.softplus_H(x_H)
-        x_N = self.softplus_N(x_N)
+        # x_H = self.softplus_H(x_H)
+        # x_N = self.softplus_N(x_N)
         
         
-        x_final =  torch.cat([x_H, x_N], dim=1)
+        # x_final =  torch.cat([x_H, x_N], dim=1)
         
-        batch_size = x_final.size(0)
-        z = z.unsqueeze(0).expand(batch_size, -1).to(device)
+        # batch_size = x_final.size(0)
+        # z = z.unsqueeze(0).expand(batch_size, -1).to(device)
         
-        DChap_pred = self.double_chapman(x_final, z)
-        return DChap_pred
+        # DChap_pred = self.double_chapman(x_final, z)
+        return x
 
 
 
