@@ -67,6 +67,7 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         rang = np.around(data_i[:, 1], decimals=2)  # radar range  [km]
         pol  = np.round(data_i[:, 2])               # polarization (either 90 or -90 degrees)
         amp  = data_i[:, 4]                         # backscatter amplitude
+        dop  = data_i[:, 5]                         # doppler shift
         ang  = np.round(data_i[:, 7])               # received angle
         
         
@@ -79,37 +80,35 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         F_idx = np.clip(np.searchsorted(freq_org, freq), 0, len(freq_org) - 1)
         Z_idx = np.clip(np.searchsorted(rang_org, rang), 0, len(rang_org) - 1)
         I_idx = np.clip(amp, I_min, I_max)              # only interested in amp: [21, 75]
+        
         mask_O = (pol == 90) & (ang == 0)               # mask for positive 90 deg pol values (O-mode) and a 0 deg ang values
         mask_X = (pol == -90) & (ang == 0)              # mask for positive 90 deg pol values (X-mode) and a 0 deg ang values
         
+        # Masks for Doppler shift signs
+        mask_pos_doppler = dop > 0
+        mask_neg_doppler = dop <= 0
+        
+        
+        # Mapping Doppler shifts to color hues while maintaining intensity
+        # Light and dark shades of red for O-mode (positive 90-degree polarization)
+        iono_org[Z_idx[mask_O & mask_pos_doppler], F_idx[mask_O & mask_pos_doppler], :] = [153, 0, 0]          # Dark red for positive Doppler
+        iono_org[Z_idx[mask_O & mask_neg_doppler], F_idx[mask_O & mask_neg_doppler], :] = [255, 102, 102]      # Light red for negative Doppler
+
+        # Light and dark shades of green for X-mode (negative 90-degree polarization)
+        iono_org[Z_idx[mask_X & mask_pos_doppler], F_idx[mask_X & mask_pos_doppler], :] = [102, 255, 102]  # Light green for positive Doppler
+        iono_org[Z_idx[mask_X & mask_neg_doppler], F_idx[mask_X & mask_neg_doppler], :] = [0, 153, 0]      # Dark green for negative Doppler
         
         # Safeguarding index operations by clipping the indices
-        iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = (I_idx[mask_O] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
-        iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = (I_idx[mask_X] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
+        # iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = (I_idx[mask_O] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
+        # iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = (I_idx[mask_X] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
+        
         # iono_org[Z_idx[mask], F_idx[mask]] = (I_idx[mask] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
-        iono_org = (iono_org / np.max(iono_org)) * 255                                # multiplying by 255 for image purposes
+        # iono_org = (iono_org / np.max(iono_org)) * 255                                # multiplying by 255 for image purposes
         iono_org = iono_org.astype(np.uint8)
         
         iono_image = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
         
-        # Create the figure and axis with no padding
-        fig, ax = plt.subplots(figsize=(6, 6), dpi=100, frameon=False)
-        
-        # Display the image
-        ax.imshow(iono_image)
-        
-        # Remove axes and borders
-        ax.set_axis_off()
-        plt.axis('off')
-        plt.gca().set_axis_off()
-        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
-        
-        # Remove all margins and padding
-        plt.margins(0, 0)
-        plt.gca().xaxis.set_major_locator(plt.NullLocator())
-        plt.gca().yaxis.set_major_locator(plt.NullLocator())
-        plt.show()
-        
+
         
         # """ Resampling Ionograms on 81x81 grid"""
         # # Meshgrid
@@ -126,10 +125,11 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         # ionogram_image = ionogram_image.transpose(Image.FLIP_TOP_BOTTOM)
         
         
-        # if plot == True:
-        #     plt.imshow(ionogram_image, cmap='gray')
-        #     plt.axis("off")
-        #     plt.show()
+        if plot:
+            plt.figure(frameon=False)
+            plt.imshow(iono_image, cmap='gray')
+            plt.axis("off")
+            plt.show()
         
         
         # if result_path is not None:
