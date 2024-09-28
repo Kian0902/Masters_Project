@@ -33,7 +33,7 @@ for file in os.listdir(datapath_folder):
     times, data = A.import_data(file_path)
     # data = A.return_dataset()
     
-    t, x = times[0:20], data[0:20]
+    t, x = times[100:115], data[100:115]
     
     ionogram_processing(x, t, plot=True)
     
