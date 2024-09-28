@@ -1,21 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Dec 10 14:32:00 2023
+Created:
+    Sun Dec 10 14:32:00 2023
+    @author: Kian Sartipzadeh
 
-@author: Kian Sartipzadeh
+Updated:
+    Sat Sep 28 13:36:00 2024
+    @author: Kian Sartipzadeh
 """
-
-
-"""
-To do:
-    - Understand the each step in "ionogram_processing".
-    - Find ways of writing it more efficiently.
-    - Access whether or not to make a class.
-    - Maybe two seperate scripts?
-"""
-
-
-
 
 
 
@@ -124,10 +116,23 @@ def ionogram_processing(data, times, plot=False, result_path=None):
             
             # Save the image to the specified file path
             ionogram_image.save(iono_name)
-            
-        
-        
-        
+
+
+
+
+
+
+
+
+class IonogramSorting:
+    def __init__(self):
+        ...
+    
+    
+    
+
+
+
 
 
 def import_data(datapath: str):
