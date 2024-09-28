@@ -37,7 +37,6 @@ def ionogram_processing(data, times, plot=False, result_path=None):
     result_path (str)   | Path for Saving processed ionograms
     """
     
-    
     # Defining ionogram axes
     freq_org = np.arange(1, 16 + 0.05, 0.05)  # original ionogram freq: [1, 16] MHz
     rang_org = np.arange(80, 640 + 5, 5)      # original ionogram range: [80, 640] km 
@@ -60,7 +59,7 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         time = times[i]
         data_i = data[i]
         
-        print(f'  - {time[11: ]}')
+        print(f'  - {time}')
 
         """ Reconstructing ionograms to original dimensions"""
         # Rounding to the nearest 2nd decimal place (Ex: 2.157 --> 2.16)
@@ -73,49 +72,71 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         
         
         """ Recreate ionogram """
-        iono_org = np.zeros((len(rang_org), len(freq_org)))
+        iono_org = np.zeros((len(rang_org), len(freq_org), 3))
         
         
         # Finding indices and ensuring they stay within valid bounds
         F_idx = np.clip(np.searchsorted(freq_org, freq), 0, len(freq_org) - 1)
         Z_idx = np.clip(np.searchsorted(rang_org, rang), 0, len(rang_org) - 1)
         I_idx = np.clip(amp, I_min, I_max)              # only interested in amp: [21, 75]
-        mask = (pol == 90) & (ang == 0)                 # mask for positive 90 deg pol values and a 0 deg ang values
+        mask_O = (pol == 90) & (ang == 0)               # mask for positive 90 deg pol values (O-mode) and a 0 deg ang values
+        mask_X = (pol == -90) & (ang == 0)              # mask for positive 90 deg pol values (X-mode) and a 0 deg ang values
         
         
         # Safeguarding index operations by clipping the indices
-        iono_org[Z_idx[mask], F_idx[mask]] = (I_idx[mask] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
+        iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = (I_idx[mask_O] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
+        iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = (I_idx[mask_X] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
+        # iono_org[Z_idx[mask], F_idx[mask]] = (I_idx[mask] - I_min) / (I_max - I_min)  # Scaling amplitude from 0 to 1
         iono_org = (iono_org / np.max(iono_org)) * 255                                # multiplying by 255 for image purposes
+        iono_org = iono_org.astype(np.uint8)
+        
+        iono_image = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
+        
+        # Create the figure and axis with no padding
+        fig, ax = plt.subplots(figsize=(6, 6), dpi=100, frameon=False)
+        
+        # Display the image
+        ax.imshow(iono_image)
+        
+        # Remove axes and borders
+        ax.set_axis_off()
+        plt.axis('off')
+        plt.gca().set_axis_off()
+        plt.subplots_adjust(left=0, right=1, top=1, bottom=0)
+        
+        # Remove all margins and padding
+        plt.margins(0, 0)
+        plt.gca().xaxis.set_major_locator(plt.NullLocator())
+        plt.gca().yaxis.set_major_locator(plt.NullLocator())
+        plt.show()
         
         
-        
-        
-        """ Resampling Ionograms on 81x81 grid"""
-        # Meshgrid
-        r_g, f_g = np.meshgrid(rang_org, freq_org)  # org ionogram grid
+        # """ Resampling Ionograms on 81x81 grid"""
+        # # Meshgrid
+        # r_g, f_g = np.meshgrid(rang_org, freq_org)  # org ionogram grid
 
         
-        # Resampling onto grid
-        iono = np.uint8(griddata((r_g.flatten(), f_g.flatten()), iono_org.T.flatten(), (r.flatten(), f.flatten())).reshape(output_size, output_size).T)
-        ionogram = np.uint8((iono / np.max(iono)) * 255)
+        # # Resampling onto grid
+        # iono = np.uint8(griddata((r_g.flatten(), f_g.flatten()), iono_org.T.flatten(), (r.flatten(), f.flatten())).reshape(output_size, output_size).T)
+        # ionogram = np.uint8((iono / np.max(iono)) * 255)
         
         
-        # Convert the ionogram data to a Pillow image
-        ionogram_image = Image.fromarray(ionogram)
-        ionogram_image = ionogram_image.transpose(Image.FLIP_TOP_BOTTOM)
+        # # Convert the ionogram data to a Pillow image
+        # ionogram_image = Image.fromarray(ionogram)
+        # ionogram_image = ionogram_image.transpose(Image.FLIP_TOP_BOTTOM)
         
         
-        if plot == True:
-            plt.imshow(ionogram_image, cmap='gray')
-            plt.axis("off")
-            plt.show()
+        # if plot == True:
+        #     plt.imshow(ionogram_image, cmap='gray')
+        #     plt.axis("off")
+        #     plt.show()
         
         
-        if result_path is not None:
-            iono_name = os.path.join(result_path, f"{time}.png")
+        # if result_path is not None:
+        #     iono_name = os.path.join(result_path, f"{time}.png")
             
-            # Save the image to the specified file path
-            ionogram_image.save(iono_name)
+        #     # Save the image to the specified file path
+        #     ionogram_image.save(iono_name)
 
 
 
@@ -199,6 +220,10 @@ class IonogramSorting:
 
         return ionogram_time, ionogram_data
     
+    
+    
+    def return_dataset(self):
+        return self.ionogram_dataset
 
 
 

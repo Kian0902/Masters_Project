@@ -10,7 +10,7 @@ Created on Fri Sep 27 12:37:28 2024
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from process_ionograms import import_data, ionogram_processing
+from process_ionograms import IonogramSorting, ionogram_processing
 
 
 
@@ -19,22 +19,29 @@ from process_ionograms import import_data, ionogram_processing
 
 
 # resultpath = "justmadeiono"
-datapath_folder = "ionograms_txt_data"
+datapath_folder = "TXT"
 
 
 for file in os.listdir(datapath_folder):
     
     
     file_path = os.path.join(datapath_folder, file)
-
-    times, data = import_data(file_path)
     
-    print(f'Date {times[0][:10]}')
+    
+    
+    A = IonogramSorting()
+    times, data = A.import_data(file_path)
+    # data = A.return_dataset()
+    
+    t, x = times[105:115], data[105:115]
+    
+    ionogram_processing(x, t, plot=True)
+    
     
     # print(data.shape, times.shape)
     
     
-    ionogram_processing(data, times, plot=True)
+    
 
     break
 
