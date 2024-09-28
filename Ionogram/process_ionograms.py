@@ -137,13 +137,13 @@ def import_data(datapath: str):
     
     Each of these text files consist of 24-hour worth of ionosonde measurements
     with 15 minutes interval per data update. In other words, each 15 min
-    interval has a time and date header followed by the ionosonde measurements.
+    interval ("batch") has a time and a date header followed by the ionosonde measurements.
     Each measurement (one row) has 8 ionosonde features represented as the
-    columns. The features are: [Freq  Range  Pol  MPA  Amp  Doppler  Az  Zn].
+    columns as such: [Freq  Range  Pol  MPA  Amp  Doppler  Az  Zn].
     
     The number of measurements (rows) per "batch" changes depending on whether
     or not the Ionosonde was able to receive a backscatter signal. So each
-    "batch" can contain different number of rows.
+    "batch" can contain different number of measurements.
     
     
     Input (type)    | DESCRIPTION
