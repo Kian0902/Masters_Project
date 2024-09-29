@@ -2,18 +2,25 @@ ECHO is on.
 __pycache__/ 
 
 AI/Feature_Analysis/ionograms_1D/
+AI/Feature_Analysis/Prep_Dataset/Ne_uhf_avg_lmfit_curvefits
+AI/Feature_Analysis/Prep_Dataset/Ne_vhf_avg_lmfit_curvefits
 
 Eiscat/Curvefitting/Curvefitting_inputs
 Eiscat/Curvefitting/Curvefitting_outputs
 Eiscat/Processing/Processing_outputs
 Eiscat/Processing/Processing_inputs
+Eiscat/Processing/Ne_from_Andreas
+Eiscat/Processing/old_EISCAT_Ne
 Eiscat/Processing/misc
 
 Ionogram/GRM
 Ionogram/ionograms_1D
 Ionogram/ionograms_txt_data
+Ionogram/TXT
 Ionogram/misc
 
 *.png
 *.csv
 *.npy
+*.png
+*.pth
