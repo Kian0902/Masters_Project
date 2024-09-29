@@ -28,32 +28,11 @@ class IonogramProcessing:
     def __init__(self):
         self.a = 1
     
-    
-    # def resample_ionogram(self, iono_org, freq_org, rang_org, f, r, output_size):
-    #     """ Resampling onto an 81x81 grid """
-    #     # Original coordinates
-    #     freq_grid, rang_grid = np.meshgrid(freq_org, rang_org)
-    #     original_coords = np.vstack([rang_grid.ravel(), freq_grid.ravel()]).T
-        
-        
-    #     # Create empty resampled ionograms for O and X modes
-    #     iono_resampled = np.zeros((output_size, output_size, 3))
-    #     for mode in range(2):  # Mode 0 is O-mode, Mode 1 is X-mode
-    #         values = iono_org[:, :, mode].ravel()
-    #         # Perform grid interpolation
-    #         iono_resampled[:, :, mode] = griddata(
-    #             points=original_coords, values=values, xi=(r, f), method='linear', fill_value=0
-    #         )
-        
-    #     # Combine O and X modes
-    #     iono_resampled = (iono_resampled / np.max(iono_resampled)) * 255
-    #     iono_resampled = iono_resampled.astype(np.uint8)
-        
-    #     iono_resampled = np.rot90(iono_resampled, k=1)
-    #     return iono_resampled
-    
+
     def resample_ionogram(self, iono_org, freq_org, rang_org, f, r, output_size):
-        """ Resampling onto an 81x81 grid using RegularGridInterpolator """
+        """
+        Resampling onto an 81x81 grid using RegularGridInterpolator
+        """
 
         # Create interpolator for each mode separately
         iono_resampled = np.zeros((output_size, output_size, 3))
@@ -71,6 +50,8 @@ class IonogramProcessing:
         iono_resampled = np.rot90(iono_resampled, k=1)
         
         return iono_resampled
+    
+    
     
     def process_ionogram(self, data, times, plot=False, result_path=None):
         """
@@ -110,7 +91,7 @@ class IonogramProcessing:
             time = times[i]
             data_i = data[i]
             
-            print(f'  - Processing ionogram at time {time}')
+            # print(f'  - Processing ionogram at time {time}')
             
             """ Reconstructing ionograms to original dimensions"""
             freq = np.around(data_i[:, 0], decimals=2)     # frequencies [MHz]
@@ -151,11 +132,16 @@ class IonogramProcessing:
             iono_image = Image.fromarray(iono_resampled)
             
             
+            if result_path:
+                iono_resampled_image = Image.fromarray(iono_resampled)
+                save_filename = os.path.join(result_path, f"Ionogram_{time}.png")
+                iono_resampled_image.save(save_filename)
+                # print(f"  - Saved ionogram image to {save_filename}")
+            
             if plot:
-                fig, ax = plt.subplots(1, 2, frameon=False)
+                fig, ax = plt.subplots(frameon=False)
                 
-                ax[0].imshow(iono_org)
-                ax[1].imshow(iono_image, cmap="gray")
+                ax.imshow(iono_image)
                 plt.show()
     
         print("Processing complete.")

@@ -25,28 +25,17 @@ datapath_folder = "TXT"
 
 for file in os.listdir(datapath_folder):
     
+    print(f'{file[5:12]}')
     
     file_path = os.path.join(datapath_folder, file)
     
-    
-    
     A = IonogramSorting()
     times, data = A.import_data(file_path)
-    # data = A.return_dataset()
-    
-    t, x = times[110:115], data[110:115]
-    
-    
-    B = IonogramProcessing()
-    B.process_ionogram(x, t, plot=True)
-    
-    
-    # print(data.shape, times.shape)
-    
-    
-    
 
-    break
+    B = IonogramProcessing()
+    B.process_ionogram(data, times, plot=False, result_path="Ionogram_sampled_images")
+
+    
 
 
 
