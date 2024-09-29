@@ -37,7 +37,29 @@ class IonogramProcessing:
         self.a = 1
     
     
-
+    def resample_ionogram(self, iono_org, freq_org, rang_org, f, r, output_size):
+        """ Resampling onto an 81x81 grid """
+        # Original coordinates
+        freq_grid, rang_grid = np.meshgrid(freq_org, rang_org)
+        original_coords = np.vstack([rang_grid.ravel(), freq_grid.ravel()]).T
+        
+        # Create empty resampled ionograms for O and X modes
+        iono_resampled = np.zeros((output_size, output_size, 3))
+        for mode in range(2):  # Mode 0 is O-mode, Mode 1 is X-mode
+            values = iono_org[:, :, mode].ravel()
+            # Perform grid interpolation
+            iono_resampled[:, :, mode] = griddata(
+                points=original_coords, values=values, xi=(r, f), method='linear', fill_value=0
+            )
+        
+        # Combine O and X modes
+        iono_resampled = (iono_resampled / np.max(iono_resampled)) * 255
+        iono_resampled = iono_resampled.astype(np.uint8)
+        
+        iono_resampled = np.rot90(iono_resampled, k=1)
+        return iono_resampled
+    
+    
     def process_ionogram(self, data, times, plot=False, result_path=None):
         """
         Function for reconstructing ionograms to their original dimensions, then
@@ -105,25 +127,10 @@ class IonogramProcessing:
             iono_org = (iono_org / np.max(iono_org)) * 255  # multiplying by 255 for image purposes
             iono_org = iono_org.astype(np.uint8)
             
-            """ Resampling onto an 81x81 grid """
-            # Original coordinates
-            freq_grid, rang_grid = np.meshgrid(freq_org, rang_org)
-            original_coords = np.vstack([rang_grid.ravel(), freq_grid.ravel()]).T
             
-            # Create empty resampled ionograms for O and X modes
-            iono_resampled = np.zeros((output_size, output_size, 3))
-            for mode in range(2):  # Mode 0 is O-mode, Mode 1 is X-mode
-                values = iono_org[:, :, mode].ravel()
-                # Perform grid interpolation
-                iono_resampled[:, :, mode] = griddata(
-                    points=original_coords, values=values, xi=(r, f), method='linear', fill_value=0
-                )
+            iono_resampled = self.resample_ionogram(iono_org, freq_org, rang_org, f, r, output_size)
             
-            # Combine O and X modes
-            iono_resampled = (iono_resampled / np.max(iono_resampled)) * 255
-            iono_resampled = iono_resampled.astype(np.uint8)
             
-            iono_resampled = np.rot90(iono_resampled, k=1)
             
             
             iono_org = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
