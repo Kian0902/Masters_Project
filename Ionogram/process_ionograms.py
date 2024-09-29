@@ -58,10 +58,7 @@ def ionogram_processing(data, times, plot=False, result_path=None):
     range_axis = np.linspace(Zrange[0], Zrange[1], output_size)
     r, f = np.meshgrid(range_axis, frequency_axis)
     
-    # Create a directory for saving the images if it does not exist
-    if result_path and not os.path.exists(result_path):
-        os.makedirs(result_path)
-    
+
     # Process each ionogram
     for i in np.arange(0, len(data)):
         time = times[i]
@@ -70,12 +67,12 @@ def ionogram_processing(data, times, plot=False, result_path=None):
         print(f'  - Processing ionogram at time {time}')
         
         """ Reconstructing ionograms to original dimensions"""
-        freq = np.around(data_i[:, 0], decimals=2)  # frequencies [MHz]
-        rang = np.around(data_i[:, 1], decimals=2)  # radar range [km]
-        pol  = np.round(data_i[:, 2])               # polarization (either 90 or -90 degrees)
-        amp  = data_i[:, 4]                         # backscatter amplitude
-        dop  = data_i[:, 5]                         # doppler shift
-        ang  = np.round(data_i[:, 7])               # received angle
+        freq = np.around(data_i[:, 0], decimals=2)     # frequencies [MHz]
+        rang = np.around(data_i[:, 1], decimals=2)     # ionosonde vertual range [km]
+        pol  = np.round(data_i[:, 2])                  # polarization (either 90 or -90 degrees)
+        amp  = data_i[:, 4]                            # backscatter amplitude
+        dop  = np.around(data_i[:, 5], decimals=2)     # doppler shift
+        ang  = np.round(data_i[:, 7])                  # received angle [deg]
 
         """ Recreate ionogram """
         iono_org = np.zeros((len(rang_org), len(freq_org), 3))
