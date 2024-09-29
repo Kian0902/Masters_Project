@@ -31,7 +31,8 @@ for file in os.listdir(datapath_folder):
     
     A = IonogramSorting()
     times, data = A.import_data(file_path)
-
+    print(times[0])
+    
     B = IonogramProcessing()
     B.process_ionogram(data, times, plot=False, result_path="Ionogram_sampled_images")
 

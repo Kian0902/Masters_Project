@@ -16,9 +16,8 @@ import os
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
 from scipy.interpolate import RegularGridInterpolator
-
+from datetime import datetime
 
 
 
@@ -132,9 +131,14 @@ class IonogramProcessing:
             iono_image = Image.fromarray(iono_resampled)
             
             
+            # Save the resampled image if a result path is provided
             if result_path:
                 iono_resampled_image = Image.fromarray(iono_resampled)
-                save_filename = os.path.join(result_path, f"Ionogram_{time}.png")
+                
+                # Format the timestamp into yyyyMMdd_hhmm
+                time_str = datetime.strptime(time, "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
+                save_filename = os.path.join(result_path, f"{time_str}.png")
+                
                 iono_resampled_image.save(save_filename)
                 # print(f"  - Saved ionogram image to {save_filename}")
             
