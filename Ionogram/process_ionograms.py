@@ -14,18 +14,10 @@ Updated:
 
 import os
 import numpy as np
+from PIL import Image
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
-from PIL import Image
-
-
-import os
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
-from PIL import Image
-
-
+from scipy.interpolate import RegularGridInterpolator
 
 
 
@@ -37,28 +29,48 @@ class IonogramProcessing:
         self.a = 1
     
     
-    def resample_ionogram(self, iono_org, freq_org, rang_org, f, r, output_size):
-        """ Resampling onto an 81x81 grid """
-        # Original coordinates
-        freq_grid, rang_grid = np.meshgrid(freq_org, rang_org)
-        original_coords = np.vstack([rang_grid.ravel(), freq_grid.ravel()]).T
+    # def resample_ionogram(self, iono_org, freq_org, rang_org, f, r, output_size):
+    #     """ Resampling onto an 81x81 grid """
+    #     # Original coordinates
+    #     freq_grid, rang_grid = np.meshgrid(freq_org, rang_org)
+    #     original_coords = np.vstack([rang_grid.ravel(), freq_grid.ravel()]).T
         
-        # Create empty resampled ionograms for O and X modes
+        
+    #     # Create empty resampled ionograms for O and X modes
+    #     iono_resampled = np.zeros((output_size, output_size, 3))
+    #     for mode in range(2):  # Mode 0 is O-mode, Mode 1 is X-mode
+    #         values = iono_org[:, :, mode].ravel()
+    #         # Perform grid interpolation
+    #         iono_resampled[:, :, mode] = griddata(
+    #             points=original_coords, values=values, xi=(r, f), method='linear', fill_value=0
+    #         )
+        
+    #     # Combine O and X modes
+    #     iono_resampled = (iono_resampled / np.max(iono_resampled)) * 255
+    #     iono_resampled = iono_resampled.astype(np.uint8)
+        
+    #     iono_resampled = np.rot90(iono_resampled, k=1)
+    #     return iono_resampled
+    
+    def resample_ionogram(self, iono_org, freq_org, rang_org, f, r, output_size):
+        """ Resampling onto an 81x81 grid using RegularGridInterpolator """
+
+        # Create interpolator for each mode separately
         iono_resampled = np.zeros((output_size, output_size, 3))
         for mode in range(2):  # Mode 0 is O-mode, Mode 1 is X-mode
-            values = iono_org[:, :, mode].ravel()
-            # Perform grid interpolation
-            iono_resampled[:, :, mode] = griddata(
-                points=original_coords, values=values, xi=(r, f), method='linear', fill_value=0
+            interpolator = RegularGridInterpolator(
+                (rang_org, freq_org), iono_org[:, :, mode], method='linear', bounds_error=False, fill_value=0
             )
-        
-        # Combine O and X modes
+            # Interpolate on the new grid
+            grid_coords = np.array([r.ravel(), f.ravel()]).T
+            iono_resampled[:, :, mode] = interpolator(grid_coords).reshape((output_size, output_size))
+
+        # Normalize and convert to uint8
         iono_resampled = (iono_resampled / np.max(iono_resampled)) * 255
         iono_resampled = iono_resampled.astype(np.uint8)
-        
         iono_resampled = np.rot90(iono_resampled, k=1)
+        
         return iono_resampled
-    
     
     def process_ionogram(self, data, times, plot=False, result_path=None):
         """
@@ -109,6 +121,7 @@ class IonogramProcessing:
             ang  = np.round(data_i[:, 7])                  # received angle [deg]
     
             """ Recreate ionogram """
+            
             iono_org = np.zeros((len(rang_org), len(freq_org), 3))
             
             # Finding indices and ensuring they stay within valid bounds
@@ -122,6 +135,7 @@ class IonogramProcessing:
             # O and X-mode without doppler shift
             iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = (I_idx[mask_O] - I_min) / (I_max - I_min)  # Scale amplitude 0 to 1
             iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = (I_idx[mask_X] - I_min) / (I_max - I_min)  # Scale amplitude 0 to 1
+            
             
             # Normalize the ionogram data
             iono_org = (iono_org / np.max(iono_org)) * 255  # multiplying by 255 for image purposes
@@ -141,7 +155,7 @@ class IonogramProcessing:
                 fig, ax = plt.subplots(1, 2, frameon=False)
                 
                 ax[0].imshow(iono_org)
-                ax[1].imshow(iono_image)
+                ax[1].imshow(iono_image, cmap="gray")
                 plt.show()
     
         print("Processing complete.")
