@@ -53,15 +53,15 @@ y_test = np.round(y_test, decimals=3)
 
 
 # Split training data further into training and validation sets
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, train_size=0.8, shuffle=True , random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, train_size=0.8, shuffle=True)
 
 # Creating datasets and data loaders for training, validation, and test sets
 train_dataset = StoreDataset(X_train, y_train)
 val_dataset = StoreDataset(X_val, y_val)
 test_dataset = StoreDataset(X_test, y_test)
 
-train_loader = DataLoader(train_dataset, batch_size=300, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=300, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=100, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=100, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True)
 
 # Initialize model, loss function, optimizer, and scheduler
@@ -69,19 +69,19 @@ in_dim = X_train.shape[1]
 
 model = MLP19ION().to(device)
 loss_function = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.01)
 # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=200, gamma=0.1)
-scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[600], gamma=0.1)
+scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[100, 1500, 3000], gamma=0.1)
 # scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.1, patience=200)
 
 
 
-# num_epochs = 3000
+num_epochs = 4000
 
-# model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
+model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
 
 
-# plot_losses(train_loss, val_loss)
+plot_losses(train_loss, val_loss)
 
 
 best_model_path = 'best_model.pth'
@@ -96,7 +96,7 @@ print(f'Accuracy (within 2% tolerance): {accuracy:.2f}%')
 
 
 
-plot_results(predicted_outputs, true_outputs, num_plots=300)
+plot_results(predicted_outputs, true_outputs, num_plots=100)
 
 
 

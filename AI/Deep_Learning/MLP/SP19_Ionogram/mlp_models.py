@@ -87,31 +87,31 @@ class MLP19ION(nn.Module):
         self.dropout_prob = 0.5
         
         # Layers
-        self.layers = nn.Sequential(nn.Linear(262, 2048),
-                                    nn.BatchNorm1d(2048),
+        self.layers = nn.Sequential(nn.Linear(262, 8000),
+                                    nn.BatchNorm1d(8000),
                                     nn.ReLU(),
                                     nn.Dropout(p=self.dropout_prob),
                                     
-                                    nn.Linear(2048, 4096),
-                                    nn.BatchNorm1d(4096),
+                                    nn.Linear(8000, 4000),
+                                    nn.BatchNorm1d(4000),
                                     nn.ReLU(),
                                     nn.Dropout(p=self.dropout_prob),
                                     
-                                    nn.Linear(4096, 2048),
-                                    nn.BatchNorm1d(2048),
+                                    nn.Linear(4000, 2000),
+                                    nn.BatchNorm1d(2000),
                                     nn.ReLU(),
                                     nn.Dropout(p=self.dropout_prob),
                                     
-                                    nn.Linear(2048, 1024),
-                                    nn.BatchNorm1d(1024),
+                                    nn.Linear(2000, 1000),
+                                    nn.BatchNorm1d(1000),
                                     nn.ReLU(),
                                     nn.Dropout(p=self.dropout_prob),
                                     
-                                    nn.Linear(1024, 512),
-                                    nn.BatchNorm1d(512),
+                                    nn.Linear(1000, 500),
+                                    nn.BatchNorm1d(500),
                                     nn.ReLU(),
                                     
-                                    nn.Linear(512, 27),
+                                    nn.Linear(500, 27),
                                     )
         
         # Activation
