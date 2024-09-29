@@ -11,7 +11,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from ionogram_sorting import IonogramSorting
-from process_ionograms import ionogram_processing
+from process_ionograms import IonogramProcessing
 
 
 
@@ -34,9 +34,11 @@ for file in os.listdir(datapath_folder):
     times, data = A.import_data(file_path)
     # data = A.return_dataset()
     
-    t, x = times[100:115], data[100:115]
+    t, x = times[110:115], data[110:115]
     
-    ionogram_processing(x, t, plot=True)
+    
+    B = IonogramProcessing()
+    B.process_ionogram(x, t, plot=True)
     
     
     # print(data.shape, times.shape)
