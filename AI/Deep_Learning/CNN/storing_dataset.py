@@ -69,6 +69,15 @@ class IonoRadarDataset(Dataset):
         Args:
             idx (int): Index of the sample pair to plot.
         """
+        
+        r_h = np.array([[ 91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
+               [103.57141624],[106.57728701],[110.08393175],[114.60422289],
+               [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
+               [152.05174717],[162.57986185],[174.09833378],[186.65837945],
+               [200.15192581],[214.62769852],[230.12198695],[246.64398082],
+               [264.11728204],[282.62750673],[302.15668686],[322.70723831],
+               [344.19596481],[366.64409299],[390.113117  ]])
+        
         # Retrieve the specified sample
         ionogram_image, radar_values = self.__getitem__(idx)
 
@@ -85,7 +94,8 @@ class IonoRadarDataset(Dataset):
         ax[0].axis("off")  # Turn off axis
 
         # Display the radar data as a bar plot on the right subplot
-        ax[1].plot(radar_values.squeeze().numpy(), np.linspace(90, 400, len(radar_values.squeeze().numpy())), color='skyblue')
+        ax[1].plot(radar_values.squeeze().numpy(), r_h, color='skyblue')
+        ax[1].set_xscale("log")
         # ax[1].set_title(f"Radar Data: {filename}")
         ax[1].set_xlabel("Measurement Index")
         ax[1].set_ylabel("Value")
