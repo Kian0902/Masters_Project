@@ -10,7 +10,8 @@ Created on Fri Sep 27 12:37:28 2024
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from process_ionograms import IonogramSorting, ionogram_processing
+from ionogram_sorting import IonogramSorting
+from process_ionograms import ionogram_processing
 
 
 
