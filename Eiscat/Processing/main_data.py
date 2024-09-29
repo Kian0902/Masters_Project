@@ -33,7 +33,7 @@ def detect_nan_in_arrays(data_dict):
 
 
 # Use the local folder name containing data
-folder_name = "Ne_uhf"
+folder_name = "Processing_outputs\\Ne_uhf"
 
 
 # Sorting data
