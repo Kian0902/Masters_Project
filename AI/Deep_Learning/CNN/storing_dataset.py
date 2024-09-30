@@ -21,46 +21,19 @@ from torchvision import transforms
 
 
 
-
-class IonoEisDataset(Dataset):
-    def __init__(self, ionogram_folder, radar_folder, matching_filenames, transform=None):
-        """
-        Custom PyTorch Dataset for pairing ionograms and radar measurements.
-        
-        Args:
-            ionogram_folder (str): Path to the folder containing ionogram images.
-            radar_folder (str): Path to the folder containing radar CSV files.
-            matching_filenames (list): List of matching filenames without extensions.
-            transform (callable, optional): Optional transform to be applied on a sample.
-        """
-        self.ionogram_folder = ionogram_folder
-        self.radar_folder = radar_folder
-        self.matching_filenames = matching_filenames
+class StoreDataset(Dataset):
+    def __init__(self, data, targets, transform=transforms.Compose([transforms.ToTensor()])):
+        self.data = np.array(data)
+        self.targets = torch.tensor(np.array(targets), dtype=torch.float32)
         self.transform = transform
-
+        
     def __len__(self):
-        return len(self.matching_filenames)
+        return len(self.data)
 
     def __getitem__(self, idx):
-        filename = self.matching_filenames[idx]
         
+        return self.transform(self.data[idx]), self.targets[idx]
         
-        ionogram_path = os.path.join(self.ionogram_folder, f"{filename}.png")
-        ionogram_image = Image.open(ionogram_path)
-        
-        
-        
-        if self.transform:
-            ionogram_image = self.transform(ionogram_image)
-        
-        radar_path = os.path.join(self.radar_folder, f"{filename}.csv")
-        radar_data = np.genfromtxt(radar_path, dtype=np.float64, delimiter=",")
-        
-        
-        radar_values = torch.tensor(radar_data, dtype=torch.float32)
-
-        return ionogram_image, radar_values
-    
     
     def plot_sample_pair(self, idx):
         """
@@ -98,67 +71,57 @@ class IonoEisDataset(Dataset):
 
 
 
-# def list_csv_files(folder_path):
-#     return [f for f in os.listdir(folder_path) if f.endswith('.csv')]
+
+class MatchingPairs:
+    def __init__(self, ionogram_folder, radar_folder):
+        self.ionogram_folder = ionogram_folder
+        self.radar_folder = radar_folder
+    
+    
+    def list_csv_files(self):
+        return [f for f in os.listdir(self.radar_folder) if f.endswith('.csv')]
 
 
-# def list_png_files(folder_path):
-#     return [f for f in os.listdir(folder_path) if f.endswith('.png')]
+    def list_png_files(self):
+        return [f for f in os.listdir(self.ionogram_folder) if f.endswith('.png')]
 
 
-# def get_filename_without_extension(filename):
-#     return os.path.splitext(filename)[0]
-
-
-# radar_folder = "EISCAT_samples"
-# ionogram_folder = "Ionogram_sampled_images"
-
-
-
-
-
-
-
-# radar_names = list_csv_files(radar_folder)
-# ionogram_names = list_png_files(ionogram_folder)
-
-
-# # Extract base filenames without ".csv"
-# radar_filenames = set(get_filename_without_extension(f) for f in radar_names)
-# ionogram_filenames = set(get_filename_without_extension(f) for f in ionogram_names)
-
-
-# # Find the matching filenames
-# matching_filenames = sorted(list(ionogram_filenames.intersection(radar_filenames)))
-
-
-
-# transform = transforms.Compose([transforms.ToTensor()])
-
-
-# A = IonoEisDataset(ionogram_folder, radar_folder, matching_filenames, transform=transform)
-
-
-# # for i in range(1500):
-# #     A.plot_sample_pair(i)
-
-
-
-
-# train_loader = DataLoader(A, batch_size=32, shuffle=True)
-
-
-# for batch_idx, (images, radar_values) in enumerate(train_loader):
-#     print(f"Batch {batch_idx + 1}")
-#     print(f"Image batch shape: {images.shape}")
-#     print(f"Radar batch shape: {radar_values.shape}")
-#     break
-
-
-
-
-
-
+    def get_filename_without_extension(self, filename):
+        return os.path.splitext(filename)[0]
+    
+    
+    def get_matching_filenames(self):
+        radar_names = self.list_csv_files()
+        ionogram_names = self.list_png_files()
+        
+        radar_filenames = set(self.get_filename_without_extension(f) for f in radar_names)
+        ionogram_filenames = set(self.get_filename_without_extension(f) for f in ionogram_names)
+        
+        return sorted(list(ionogram_filenames.intersection(radar_filenames)))
+        
+    
+    def find_pairs(self):
+        i=0
+        
+        RAD = []
+        ION = []
+        
+        matching_filenames = self.get_matching_filenames()
+        for filename in matching_filenames:
+            ionogram_path = os.path.join(self.ionogram_folder, f"{filename}.png")
+            ionogram_image = Image.open(ionogram_path)
+            ionogram_array = np.array(ionogram_image)
+            
+            radar_path = os.path.join(self.radar_folder, f"{filename}.csv")
+            radar_data = np.genfromtxt(radar_path, dtype=np.float64, delimiter=",")
+            
+            
+            RAD.append(radar_data)
+            ION.append(ionogram_array)
+            
+            i+=1
+        
+        return RAD, ION
 
 
 
