@@ -87,20 +87,13 @@ class IonoRadarDataset(Dataset):
 
         # Create a figure with 2 subplots (1x2 layout)
         fig, ax = plt.subplots(1, 2, figsize=(12, 6))
-
-        # Display the ionogram image on the left subplot
+        
         ax[0].imshow(ionogram_image)
-        # ax[0].set_title(f"Ionogram: {filename}")
-        ax[0].axis("off")  # Turn off axis
-
-        # Display the radar data as a bar plot on the right subplot
+        ax[0].axis("off")
+        
         ax[1].plot(radar_values.squeeze().numpy(), r_h, color='skyblue')
-        ax[1].set_xscale("log")
-        # ax[1].set_title(f"Radar Data: {filename}")
         ax[1].set_xlabel("Measurement Index")
         ax[1].set_ylabel("Value")
-
-        # Display the plot
         plt.show()
 
 
@@ -146,20 +139,20 @@ transform = transforms.Compose([transforms.ToTensor()])
 A = IonoRadarDataset(ionogram_folder, radar_folder, matching_filenames, transform=transform)
 
 
-for i in range(500):
-    A.plot_sample_pair(i)
+# for i in range(1500):
+#     A.plot_sample_pair(i)
 
 
 
 
-# train_loader = DataLoader(A, batch_size=32, shuffle=True)
+train_loader = DataLoader(A, batch_size=32, shuffle=True)
 
 
-# for batch_idx, (images, radar_values) in enumerate(train_loader):
-#     print(f"Batch {batch_idx + 1}")
-#     print(f"Image batch shape: {images.shape}")
-#     print(f"Radar batch shape: {radar_values.shape}")
-#     break
+for batch_idx, (images, radar_values) in enumerate(train_loader):
+    print(f"Batch {batch_idx + 1}")
+    print(f"Image batch shape: {images.shape}")
+    print(f"Radar batch shape: {radar_values.shape}")
+    break
 
 
 
