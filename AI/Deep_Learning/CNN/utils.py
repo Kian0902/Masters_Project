@@ -6,6 +6,13 @@ Created on Mon Sep 30 12:06:41 2024
 """
 
 
+import matplotlib.pyplot as plt
+from torchvision import transforms
+
+
+
+
+
 class CNNShapeCalculator:
     def __init__(self, input_shape):
         
@@ -54,18 +61,14 @@ class CNNShapeCalculator:
         return self.current_shape
 
 
-
-
-
-
-cnn_calculator = CNNShapeCalculator(input_shape=(81, 81, 3))
-
-print(cnn_calculator.conv2d(kernel_size=(3, 3), stride=1, padding=1))
-print(cnn_calculator.max_pool2d(pool_size=(2, 2), stride=2))
-
-print(cnn_calculator.get_current_shape())
-
-
+def plot_ionogram(ionogram_image):
+    ionogram_image = transforms.ToPILImage()(ionogram_image)
+    
+    fig, ax = plt.subplots()
+    
+    ax.imshow(ionogram_image)
+    ax.axis("on")
+    plt.show()
 
 
 
