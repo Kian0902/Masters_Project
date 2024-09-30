@@ -13,7 +13,7 @@ import torch.nn as nn
 from torchvision import transforms
 
 from utils import plot_ionogram
-from storing_dataset import IonoEisDataset
+
 
 
 
@@ -59,16 +59,16 @@ class CNN(nn.Module):
     
     def forward(self, x):
         
-        x1 = self.conv1(x)
-        x2 = self.conv2(x1)
-        x3 = self.conv3(x2)
+        c1 = self.conv1(x)
+        c2 = self.conv2(c1)
+        c3 = self.conv3(c2)
         
-        x_flat = x3.view(x3.size(0), -1)
+        x_flat = c3.view(c3.size(0), -1)
         
         x4 = self.fc1(x_flat)
         x5 = self.fc2(x4)
         
-        return x1, x2, x3, x4, x5
+        return x5
 
 
 
