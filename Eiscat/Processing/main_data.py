@@ -88,7 +88,12 @@ save_data(X_avg, file_name=folder_name + "_avg")
 
 
 
+# guisdap_data_folder_name = "beata_vhf"
+# result_folder_name = "Ne_vhf"
 
+
+# process_data = EISCATDataProcessor(guisdap_data_folder_name, result_folder_name)
+# process_data.process_all_files()
 
 
 
@@ -145,12 +150,7 @@ save_data(X_avg, file_name=folder_name + "_avg")
 
 
 
-# guisdap_data_folder_name = "beata_vhf"
-# result_folder_name = "Ne_vhf"
 
-
-# process_data = EISCATDataProcessor(guisdap_data_folder_name, result_folder_name)
-# process_data.process_all_files()
 
 
 
