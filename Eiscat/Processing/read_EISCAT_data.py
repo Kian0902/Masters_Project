@@ -105,7 +105,6 @@ class EISCATDataProcessor:
             
             # Extract the range information
             range_data = data['range'][:]
-
             # Find indices where range data shows significant drops (indicating a new time step)
             ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
             
@@ -114,7 +113,6 @@ class EISCATDataProcessor:
             
             # Combine electron and ion temperatures
             te = data['tr'][:] * data['ti'][:]
-            
             
             nT = len(ind)  # number of time-steps
             
@@ -128,14 +126,25 @@ class EISCATDataProcessor:
             if shape[0]*shape[1] != range_data.size:
                 print("Warning! Detected unmatching shapes.\nSwitching from vectorized to manual processing.\n")
 
+                # # Initialize matrices to store interpolated data
+                # Ne_i = np.full((nT, nZ), np.nan)  # Electron density
+                # DNe_i = np.full((nT, nZ), np.nan)  # Electron density error
+                # range_i = np.full((nT, nZ), np.nan)  # Range values
+                # Te_i = np.full((nT, nZ), np.nan)  # Electron temperature
+                # Ti_i = np.full((nT, nZ), np.nan)  # Ion temperature
+                # Vi_i = np.full((nT, nZ), np.nan)  # Ion velocity
+                # El_i = np.full((nT, nZ), np.nan)  # Elevation angle
+                
                 # Initialize matrices to store interpolated data
-                Ne_i = np.full((nT, nZ), np.nan)  # Electron density
-                DNe_i = np.full((nT, nZ), np.nan)  # Electron density error
-                range_i = np.full((nT, nZ), np.nan)  # Range values
-                Te_i = np.full((nT, nZ), np.nan)  # Electron temperature
-                Ti_i = np.full((nT, nZ), np.nan)  # Ion temperature
-                Vi_i = np.full((nT, nZ), np.nan)  # Ion velocity
-                El_i = np.full((nT, nZ), np.nan)  # Elevation angle
+                Ne_i = np.zeros((nT, nZ))  # Electron density
+                DNe_i = np.zeros((nT, nZ))  # Electron density error
+                range_i = np.zeros((nT, nZ))  # Range values
+                Te_i = np.zeros((nT, nZ))  # Electron temperature
+                Ti_i = np.zeros((nT, nZ))  # Ion temperature
+                Vi_i = np.zeros((nT, nZ))  # Ion velocity
+                El_i = np.zeros((nT, nZ))  # Elevation angle
+                
+                
                 
                 # Loop over time steps to process the data
                 for iT in range(nT - 1):
@@ -145,9 +154,8 @@ class EISCATDataProcessor:
                     
                     # Extract elevation angle for this time range
                     El_iT = data['elm'][ind_s:ind_f]
-                    
                     # Check if the mean elevation is close to 90 degrees (indicating data is usable)
-                    if round(abs(np.mean(El_iT) - 90)) < 6:
+                    if round(abs(np.mean(El_iT) - 90)) < 18:
                         # Determine the number of elements that will fit in the current row of the matrices
                         num_elements = min(ind_f - ind_s, nZ)  # Truncate to fit within the matrix dimensions
                         
@@ -217,6 +225,7 @@ class EISCATDataProcessor:
         plt.close()
 
 
+
     def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, year, month, day):
         datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
         r_time = datetime_matrix
@@ -233,11 +242,20 @@ class EISCATDataProcessor:
             self.process_file(iE)
         print(f"Processing complete. Processed {self.num_datafiles} data files.")
 
-# # Usage example:
-# datapath = "beata_zenith_data_uhf"
-# resultpath = "Ne_uhf"
 
-# processor = EISCATDataProcessor(datapath, resultpath)
+
+
+
+
+
+# Usage example:
+datapath = "Processing_inputs/beata_uhf_madrigal"
+resultpath = "Processing_outputs"
+
+processor = EISCATDataProcessor(datapath, resultpath)
+
+processor.process_file(9)
+
 # processor.process_all_files()
 
 
