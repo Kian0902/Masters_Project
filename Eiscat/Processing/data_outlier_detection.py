@@ -61,7 +61,7 @@ class EISCATOutlierDetection:
     
     
     # Inter-Quantile Range
-    def iqr_method(self, data: np.ndarray, lower_percent: int=0.5, upper_percent: int=99.5):
+    def iqr_method(self, data: np.ndarray, lower_percent: int=1, upper_percent: int=99):
         """
         Detect outliers using the Interquartile Range (IQR) method.
     

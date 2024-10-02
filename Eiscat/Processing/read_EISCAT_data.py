@@ -278,15 +278,15 @@ class EISCATDataProcessor:
 
 
 
-# Usage example:
-datapath = "Processing_inputs/beata_uhf_madrigal"
-resultpath = "Processing_outputs/Ne_uhf_madrigal"
+# # Usage example:
+# datapath = "Processing_inputs/beata_uhf_madrigal"
+# resultpath = "Processing_outputs/Ne_uhf_madrigal"
 
-processor = EISCATDataProcessor(datapath, resultpath)
+# processor = EISCATDataProcessor(datapath, resultpath)
 
-# processor.process_file(17)
+# # processor.process_file(17)
 
-processor.process_all_files()
+# processor.process_all_files()
 
 
 

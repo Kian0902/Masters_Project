@@ -44,6 +44,12 @@ Esicat.sort_data()  # sort data
 # UHF data
 X_Eiscat = Esicat.return_data()  # returning dict data
 
+
+# for key in X_Eiscat:
+#     detect_nan_in_arrays(X_Eiscat[key])
+
+
+
 # key_choise = list(X_Eiscat.keys())[:]
 # X1 = {key: X_Eiscat[key] for key in key_choise}
 
@@ -65,46 +71,67 @@ filt.batch_filtering()
 X_filtered = filt.return_data()
 
 
+for key in X_filtered:
+    detect_nan_in_arrays(X_filtered[key])
 
-key_choise = list(X_filtered.keys())[:]
-X = {key: X_filtered[key] for key in key_choise}
+
+# key_choise = list(X_filtered.keys())[:]
+# X = {key: X_filtered[key] for key in key_choise}
 
 
-for key in X:
+# for key in X:
     
-    if X[key]["r_h"].shape[0] == 28:
-        print(X[key]["r_time"].shape, X[key]["r_h"].shape, X[key]["r_param"].shape, X[key]["r_error"].shape)
-        print(X[key]["r_h"])
-        print(len(X[key]["r_h"]))
-        break
+#     if X[key]["r_h"].shape[0] == 28:
+#         print(X[key]["r_time"].shape, X[key]["r_h"].shape, X[key]["r_param"].shape, X[key]["r_error"].shape)
+#         print(X[key]["r_h"])
+#         print(len(X[key]["r_h"]))
+#         break
         
 
 
 # # print(X['2021-3-10']['r_time'])
 
 
+# Detecting outliers
+Outlier = EISCATOutlierDetection(X_filtered)
+Outlier.batch_detection(method_name="IQR", save_plot=False)
+X_outliers = Outlier.return_outliers()
+
+
+# Filtering outliers
+outlier_filter = EISCATDataFilter(X_filtered, filt_outlier=True)
+outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
+X_outliers_filtered = outlier_filter.return_data()
+
+
+
+
+
 # # Detecting outliers
-# Outlier = EISCATOutlierDetection(X)
-# Outlier.batch_detection(method_name="IQR", save_plot=False)
-# X_outliers = Outlier.return_outliers()
+# Outlier2 = EISCATOutlierDetection(X_outliers_filtered)
+# Outlier2.batch_detection(method_name="z-score", save_plot=False)
+# X_outliers2 = Outlier2.return_outliers()
 
 
 # # Filtering outliers
-# outlier_filter = EISCATDataFilter(X, filt_outlier=True)
-# outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
-# X_outliers_filtered = outlier_filter.return_data()
+# outlier_filter2 = EISCATDataFilter(X_outliers_filtered, filt_outlier=True)
+# outlier_filter2.batch_filtering(dataset_outliers=X_outliers2, filter_size=3, plot_after_each_day=False)
+# X_outliers_filtered2 = outlier_filter.return_data()
 
 
-# # Averaging data
-# AVG = EISCATAverager(X_outliers_filtered)
-# AVG.batch_averaging(save_plot=True, weighted=False)
-# X_avg = AVG.return_data()
+
+
+
+# Averaging data
+AVG = EISCATAverager(X_outliers_filtered)
+AVG.batch_averaging(save_plot=False, weighted=False)
+X_avg = AVG.return_data()
 
 
 # # print(X_avg['2021-3-10']['r_time'])
 
 
-# save_data(X_avg, file_name=folder_name + "_avg")
+save_data(X_avg, file_name="Ne_uhf_avg")
 
 
 
@@ -112,12 +139,11 @@ for key in X:
 
 
 
-# guisdap_data_folder_name = "beata_vhf"
-# result_folder_name = "Ne_vhf"
+# datapath = "Processing_inputs/beata_uhf_madrigal"
+# resultpath = "Processing_outputs/Ne_uhf_madrigal"
 
+# processor = EISCATDataProcessor(datapath, resultpath)
 
-# process_data = EISCATDataProcessor(guisdap_data_folder_name, result_folder_name)
-# process_data.process_all_files()
 
 
 
