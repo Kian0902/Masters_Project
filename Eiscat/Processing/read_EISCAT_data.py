@@ -15,6 +15,7 @@ python code by Kian.
 import os
 import h5py
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from datetime import datetime
 import scipy.io as sio
@@ -65,6 +66,18 @@ class EISCATDataProcessor:
         return file_names
     
     
+    
+    def interpolate_nan(self, data):
+        
+        data = pd.DataFrame(data)
+        
+        data_interp = data.interpolate(method="linear", axis=0).interpolate(method="linear", axis=1)
+        
+        data_out = data_interp.to_numpy()
+        
+        return data_out
+        
+        
 
     def process_file(self, file_index):
         """
@@ -94,149 +107,166 @@ class EISCATDataProcessor:
         with h5py.File(file_path, 'r') as f:
             data = f['/Data/Table Layout']
 
-            # Extract year, month, and day from the file name
             year = int(file[8:12])
             month = int(file[13:15])
             day = int(file[16:18])
             
-            # Convert time data (year, month, day, hour, min, sec) into datetime format
+            # Convert time data into datetime format
             t = [datetime(year, month, day, int(h), int(m), int(s))
                   for h, m, s in zip(data['hour'], data['min'], data['sec'])]
             
-            # Extract the range information
+            
             range_data = data['range'][:]
+            
             # Find indices where range data shows significant drops (indicating a new time step)
             ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
-            
-            # Get the time steps corresponding to these indices
             t_i = np.array(t)[ind]
             
-            # Combine electron and ion temperatures
-            te = data['tr'][:] * data['ti'][:]
+            
+            te = data['tr'][:] * data['ti'][:]  # combining electron and ion temperatures
             
             nT = len(ind)  # number of time-steps
             
-            # Find most common value
-            unique_values, counts = np.unique(np.diff(ind), return_counts=True)  # find num of unique values  
+            
+            # Prepare indices for slicing
+            ind_extended = np.concatenate((ind, [len(range_data)]))
+            measure_lengths = np.diff(ind_extended)
+            unique_values, counts = np.unique(measure_lengths, return_counts=True)  # find num of unique values  
             most_repeated_value = unique_values[np.argmax(counts)]  # get the most repeated value
             nZ = int(most_repeated_value)  # convert to int
             
-
+            
+                
+            
             shape = (nT, nZ)
             if shape[0]*shape[1] != range_data.size:
-                print("Warning! Detected unmatching shapes.\nSwitching from vectorized to manual processing.\n")
-
-                # # Initialize matrices to store interpolated data
-                # Ne_i = np.full((nT, nZ), np.nan)  # Electron density
-                # DNe_i = np.full((nT, nZ), np.nan)  # Electron density error
-                # range_i = np.full((nT, nZ), np.nan)  # Range values
-                # Te_i = np.full((nT, nZ), np.nan)  # Electron temperature
-                # Ti_i = np.full((nT, nZ), np.nan)  # Ion temperature
-                # Vi_i = np.full((nT, nZ), np.nan)  # Ion velocity
-                # El_i = np.full((nT, nZ), np.nan)  # Elevation angle
+                
+                # Generate a mask for valid entries
+                offsets = np.arange(nZ)
+                valid_mask = offsets < measure_lengths[:, None]
+                
+                # print(valid_mask.shape)
+                
+                data_indices = ind[:, None] + offsets
+                
+                # Mask out indices that are beyond the actual data length
+                valid_data_indices = data_indices[valid_mask]
+                
+                # print(valid_data_indices.shape)
                 
                 # Initialize matrices to store interpolated data
-                Ne_i = np.zeros((nT, nZ))  # Electron density
-                DNe_i = np.zeros((nT, nZ))  # Electron density error
-                range_i = np.zeros((nT, nZ))  # Range values
-                Te_i = np.zeros((nT, nZ))  # Electron temperature
-                Ti_i = np.zeros((nT, nZ))  # Ion temperature
-                Vi_i = np.zeros((nT, nZ))  # Ion velocity
-                El_i = np.zeros((nT, nZ))  # Elevation angle
+                Ne_i = np.full((nT, nZ), np.nan)     # Electron density
+                DNe_i = np.full((nT, nZ), np.nan)    # Electron density error
+                range_i = np.full((nT, nZ), np.nan)  # Range values
+                Te_i = np.full((nT, nZ), np.nan)     # Electron temperature
+                Ti_i = np.full((nT, nZ), np.nan)     # Ion temperature
+                Vi_i = np.full((nT, nZ), np.nan)     # Ion velocity
+                El_i = np.full((nT, nZ), np.nan)     # Elevation angle
+                
+                # Store data for this time step, truncating if necessary
+                Ne_i[valid_mask] = data['ne'][valid_data_indices]
+                DNe_i[valid_mask] = data['dne'][valid_data_indices]
+                Vi_i[valid_mask] = data['vo'][valid_data_indices]
+                Te_i[valid_mask] = te[valid_data_indices]
+                Ti_i[valid_mask] = data['ti'][valid_data_indices]
+                range_i[valid_mask] = range_data[valid_data_indices]
+                
+                # Store data for this time step, truncating if necessary
+                Ne_i  = self.interpolate_nan(Ne_i)
+                DNe_i = self.interpolate_nan(DNe_i)
+                Vi_i  = self.interpolate_nan(Vi_i)
+                Te_i  = self.interpolate_nan(Te_i)
+                Ti_i  = self.interpolate_nan(Ti_i)
+                range_i = self.interpolate_nan(range_i)
                 
                 
                 
-                # Loop over time steps to process the data
-                for iT in range(nT - 1):
-                    # Define the start and end indices for each time step
-                    ind_s = ind[iT]
-                    ind_f = ind[iT + 1]
-                    
-                    # Extract elevation angle for this time range
-                    El_iT = data['elm'][ind_s:ind_f]
-                    # Check if the mean elevation is close to 90 degrees (indicating data is usable)
-                    if round(abs(np.mean(El_iT) - 90)) < 18:
-                        # Determine the number of elements that will fit in the current row of the matrices
-                        num_elements = min(ind_f - ind_s, nZ)  # Truncate to fit within the matrix dimensions
-                        
-                        # Store data for this time step, truncating if necessary
-                        Ne_i[iT, :num_elements] = data['ne'][ind_s:ind_f][:num_elements]
-                        DNe_i[iT, :num_elements] = data['dne'][ind_s:ind_f][:num_elements]
-                        Vi_i[iT, :num_elements] = data['vo'][ind_s:ind_f][:num_elements]
-                        Te_i[iT, :num_elements] = te[ind_s:ind_f][:num_elements]
-                        Ti_i[iT, :num_elements] = data['ti'][ind_s:ind_f][:num_elements]
-                        range_i[iT, :num_elements] = range_data[ind_s:ind_f][:num_elements]
-                                                
-                                                
-                
-                print("Manual processing complete.\nSwitching back to vectorized operations...\n")
                 self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
                 self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
                 
+            
             else:
-                El_it  = data['elm'].reshape(shape)
-                Ne_i  = data['ne'].reshape(shape)
-                DNe_i = data['dne'].reshape(shape)
-                Vi_i  = data['vo'].reshape(shape)
-                Te_i  = te.reshape(shape)
-                Ti_i  = data['ti'].reshape(shape)
-                range_i = range_data.reshape(shape)
                 
+                El_it = data['elm'].reshape(shape)
+                elevation_mask = np.abs(np.mean(El_it, axis=1) - 90) < 20
+                
+                Ne_i = np.where(elevation_mask[:, None], data['ne'].reshape(shape), 0)
+                DNe_i = np.where(elevation_mask[:, None], data['dne'].reshape(shape), 0)
+                Vi_i = np.where(elevation_mask[:, None], data['vo'].reshape(shape), 0)
+                Te_i = np.where(elevation_mask[:, None], te.reshape(shape), 0)
+                Ti_i = np.where(elevation_mask[:, None], data['ti'].reshape(shape), 0)
+                range_i = np.where(elevation_mask[:, None], range_data.reshape(shape), 0)
+            
                 self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
                 self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
-
+            
+            # else:
+            #     El_it  = data['elm'].reshape(shape)
+            #     Ne_i  = data['ne'].reshape(shape)
+            #     DNe_i = data['dne'].reshape(shape)
+            #     Vi_i  = data['vo'].reshape(shape)
+            #     Te_i  = te.reshape(shape)
+            #     Ti_i  = data['ti'].reshape(shape)
+            #     range_i = range_data.reshape(shape)
+                
+            #     self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+            #     self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+    
     def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
-        # Plot the results for visualization
+        
+        
+        print(t_i.shape, range_i.shape, Ne_i.shape)
+        
         plt.figure()
-
+        
         # Electron density plot
         ax1 = plt.subplot(4, 1, 1)
         plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ne_i.T, shading='auto')
         plt.colorbar()
-        plt.clim(1e9, 5e11)  # Set color axis limits
-
+        plt.clim(1e9, 5e11)
+        
         # Electron temperature plot
         ax2 = plt.subplot(4, 1, 2)
         plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Te_i.T, shading='auto')
         plt.colorbar()
-        plt.clim(500, 4000)  # Set color axis limits
-
+        plt.clim(500, 4000)
+        
         # Ion temperature plot
         ax3 = plt.subplot(4, 1, 3)
         plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ti_i.T, shading='auto')
         plt.colorbar()
-        plt.clim(500, 3000)  # Set color axis limits
-
+        plt.clim(500, 3000)
+        
         # Ion velocity plot
         ax4 = plt.subplot(4, 1, 4)
         plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Vi_i.T, shading='auto')
         plt.colorbar()
-        plt.clim(-400, 400)  # Set color axis limits
-
+        plt.clim(-400, 400)
+        
         # Set the colormap and link the axes of all plots
         plt.set_cmap('turbo')
         plt.subplots_adjust(hspace=0.5)
-        # plt.show()
-
+        plt.show()
+        
         # # Save the figure as a .png file in the result folder
         os.chdir(self.resultpath)
         name = f"{year}-{month}-{day}.png"
         plt.savefig(name)
         plt.close()
-
-
-
+    
+    
+    
     def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, year, month, day):
         datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
         r_time = datetime_matrix
         r_h = np.nanmean(range_i, axis=0)
         r_param = Ne_i
         r_error = DNe_i
-
+        
         name = f"{year}-{month}-{day}.mat"
         sio.savemat(os.path.join(self.resultpath, name), {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error})
-        
-
+    
+    
     def process_all_files(self):
         for iE in range(self.num_datafiles):
             self.process_file(iE)
@@ -250,20 +280,13 @@ class EISCATDataProcessor:
 
 # Usage example:
 datapath = "Processing_inputs/beata_uhf_madrigal"
-resultpath = "Processing_outputs"
+resultpath = "Processing_outputs/Ne_uhf_madrigal"
 
 processor = EISCATDataProcessor(datapath, resultpath)
 
-processor.process_file(9)
+# processor.process_file(17)
 
-# processor.process_all_files()
-
-
-
-
-
-
-
+processor.process_all_files()
 
 
 
