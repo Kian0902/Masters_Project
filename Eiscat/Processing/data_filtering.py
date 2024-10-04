@@ -36,7 +36,7 @@ class EISCATDataFilter:
         
         
     
-    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=3, plot_after_each_day=False):
+    def batch_filtering(self, min_val=90, max_val=450, dataset_outliers=None, filter_size=3, plot_after_each_day=False):
         """
         Function for applying the filtering to the entire dataset by looping
         through the global keys (days).

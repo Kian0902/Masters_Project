@@ -206,6 +206,12 @@ class EISCATOutlierDetection:
             
             fig, ax = plt.subplots(1, num_plots, figsize=(5 * num_plots, 5))
             
+            # If `num_plots` is 1, `ax` is not a list, so convert it to a list for consistency
+            if num_plots == 1:
+                ax = [ax]  # Convert to list for consistent indexing
+            
+            print(f'Outliers in day: {date_of_day}')
+            
             # First plot: "Bad Samples"
             ax[0].set_title(f'Outliers in day: {date_of_day}')
             ax[0].scatter(pca_r_param[0, :], pca_r_param[1, :], zorder=0)

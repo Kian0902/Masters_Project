@@ -9,7 +9,8 @@ Created on Tue Aug 20 14:13:45 2024
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-
+from datetime import datetime, timedelta
+from matplotlib.dates import DateFormatter
 
 from read_EISCAT_data import EISCATDataProcessor
 from data_sorting import EISCATDataSorter
@@ -17,6 +18,43 @@ from data_averaging import EISCATAverager
 from data_filtering import EISCATDataFilter
 from data_outlier_detection import EISCATOutlierDetection
 
+
+
+
+def plotting(x):
+    
+    for i in x:
+        print(i)
+    
+    x = [x[key] for key in x][0]
+    
+    
+    # Convert time arrays to datetime objects
+    r_time_orig = np.array([datetime(year, month, day, hour, minute) 
+                            for year, month, day, hour, minute, second in x['r_time']])
+    r_h_orig = x['r_h']
+    r_param_orig = x['r_param']
+    
+    
+    # Date
+    date_str = r_time_orig[0].strftime('%Y-%m-%d')
+    
+    # Creating the plots
+    fig, ax = plt.subplots()
+    fig.suptitle(f'Date: {date_str}', fontsize=20)
+    
+    # Plotting original data
+    pcm_orig = ax.pcolormesh(r_time_orig, r_h_orig.flatten(), np.log10(r_param_orig), shading='auto', cmap='turbo', vmin=np.log10(1e10), vmax=np.log10(1e12))
+    ax.set_title(f'Original Data {r_param_orig.shape}')
+    ax.set_xlabel('Time (hours)')
+    ax.set_ylabel('Altitude (km)')
+    ax.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+    fig.autofmt_xdate()
+    
+    fig.colorbar(pcm_orig, ax=ax)
+
+    # Display the plots
+    plt.show()
 
 
 
@@ -45,8 +83,6 @@ Esicat.sort_data()  # sort data
 X_Eiscat = Esicat.return_data()  # returning dict data
 
 
-
-
 # Clipping range and Filtering data for nan
 filt = EISCATDataFilter(X_Eiscat, filt_range=True, filt_nan=True) 
 filt.batch_filtering()
@@ -58,31 +94,39 @@ for key in X_filtered:
 
 
 
+X = [{key: X_filtered[key]} for key in X_filtered][400]
+
+plotting(X)
+
+
+
+
+
 # Detecting outliers
-Outlier = EISCATOutlierDetection(X_filtered)
-Outlier.batch_detection(method_name="IQR", save_plot=False)
+Outlier = EISCATOutlierDetection(X)
+Outlier.batch_detection(method_name="IQR", save_plot=True)
 X_outliers = Outlier.return_outliers()
 
 
 # Filtering outliers
-outlier_filter = EISCATDataFilter(X_filtered, filt_outlier=True)
-outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
+outlier_filter = EISCATDataFilter(X, filt_outlier=True)
+outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=True)
 X_outliers_filtered = outlier_filter.return_data()
 
+plotting(X_outliers_filtered)
 
 
 
-
-# Averaging data
-AVG = EISCATAverager(X_outliers_filtered)
-AVG.batch_averaging(save_plot=False, weighted=False)
-X_avg = AVG.return_data()
+# # Averaging data
+# AVG = EISCATAverager(X_outliers_filtered)
+# AVG.batch_averaging(save_plot=False, weighted=False)
+# X_avg = AVG.return_data()
 
 
 # # print(X_avg['2021-3-10']['r_time'])
 
 
-save_data(X_avg, file_name="Ne_uhf_avg")
+# save_data(X_avg, file_name="Ne_uhf_avg")
 
 
 
@@ -130,68 +174,6 @@ save_data(X_avg, file_name="Ne_uhf_avg")
 
 # for day in X:
 #     detect_nan_in_arrays(X)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -308,29 +290,6 @@ save_data(X_avg, file_name="Ne_uhf_avg")
 # B = OutlierDetection(data1)
 # B.detect_outliers('z-score', plot_outliers=True)
 # B.detect_outliers('IQR', plot_outliers=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
