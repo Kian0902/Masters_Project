@@ -162,37 +162,12 @@ class CurvefittingEvaluation:
 
 
 
-def import_file(file_name):
-    with open(file_name, 'rb') as f:
-        dataset = pickle.load(f)
-    
-    return dataset
 
 
 
 
 
 
-# Import files
-file_org = "Ne_vhf_avg"
-file_fit = "Ne_vhf_avg_lmfit_curvefits"
-
-# Get datasets
-X_org = import_file(file_org)
-X_fit = import_file(file_fit)
-
-key_choise = list(X_org.keys())[:]
-
-
-x_org = {key: X_org[key] for key in key_choise}
-x_fit = {key: X_fit[key] for key in key_choise}
-
-
-
-E = CurvefittingEvaluation(x_org, x_fit)
-E.batch_detection(eval_method="Normalized Residuals", show_plot=True, save_plot=True)
-# E.residual_norm(x_org, x_fit, show_plot=True, save_plot=True)
-# E.chi_square(x_org, x_fit, show_plot=True)
 
 
 

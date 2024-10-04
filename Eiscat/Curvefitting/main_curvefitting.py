@@ -10,11 +10,11 @@ Created on Wed Aug 21 14:53:48 2024
 import os
 import pickle
 from curvefitting_models import CurvefittingChapman
-
+from curvefitting_evaluation import CurvefittingEvaluation
 
 
 # Importing processed dataset
-custom_file_path = "Ne_uhf_avg"
+custom_file_path = "Curvefitting_inputs/Ne_uhf_avg"
 with open(custom_file_path, 'rb') as f:
     dataset = pickle.load(f)
 
@@ -38,10 +38,35 @@ A.save_curvefits(custom_file_path + "_" + m + "_curvefits")
 x = A.return_curvefits()
 
 
+def import_file(file_name):
+    with open(file_name, 'rb') as f:
+        dataset = pickle.load(f)
+    
+    return dataset
 
 
 
 
+# Import files
+file_org = "Curvefitting_inputs/Ne_uhf_avg"
+file_fit = "Curvefitting_outputs/Ne_uhf_avg_lmfit_curvefits"
+
+# Get datasets
+X_org = import_file(file_org)
+X_fit = import_file(file_fit)
+
+key_choise = list(X_org.keys())[:]
+
+
+x_org = {key: X_org[key] for key in key_choise}
+x_fit = {key: X_fit[key] for key in key_choise}
+
+
+
+E = CurvefittingEvaluation(x_org, x_fit)
+E.batch_detection(eval_method="Normalized Residuals", show_plot=True, save_plot=True)
+# E.residual_norm(x_org, x_fit, show_plot=True, save_plot=True)
+# E.chi_square(x_org, x_fit, show_plot=True)
 
 
 

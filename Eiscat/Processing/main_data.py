@@ -45,24 +45,6 @@ Esicat.sort_data()  # sort data
 X_Eiscat = Esicat.return_data()  # returning dict data
 
 
-# for key in X_Eiscat:
-#     detect_nan_in_arrays(X_Eiscat[key])
-
-
-
-# key_choise = list(X_Eiscat.keys())[:]
-# X1 = {key: X_Eiscat[key] for key in key_choise}
-
-
-# for key in X1:
-    
-#     if X1[key]["r_h"].shape[0] < 40:
-#         print(X1[key]["r_time"].shape, X1[key]["r_h"].shape, X1[key]["r_param"].shape, X1[key]["r_error"].shape)
-#         print(X1[key]["r_h"])
-        
-#         break
-
-
 
 
 # Clipping range and Filtering data for nan
@@ -75,22 +57,6 @@ for key in X_filtered:
     detect_nan_in_arrays(X_filtered[key])
 
 
-# key_choise = list(X_filtered.keys())[:]
-# X = {key: X_filtered[key] for key in key_choise}
-
-
-# for key in X:
-    
-#     if X[key]["r_h"].shape[0] == 28:
-#         print(X[key]["r_time"].shape, X[key]["r_h"].shape, X[key]["r_param"].shape, X[key]["r_error"].shape)
-#         print(X[key]["r_h"])
-#         print(len(X[key]["r_h"]))
-#         break
-        
-
-
-# # print(X['2021-3-10']['r_time'])
-
 
 # Detecting outliers
 Outlier = EISCATOutlierDetection(X_filtered)
@@ -102,21 +68,6 @@ X_outliers = Outlier.return_outliers()
 outlier_filter = EISCATDataFilter(X_filtered, filt_outlier=True)
 outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
 X_outliers_filtered = outlier_filter.return_data()
-
-
-
-
-
-# # Detecting outliers
-# Outlier2 = EISCATOutlierDetection(X_outliers_filtered)
-# Outlier2.batch_detection(method_name="z-score", save_plot=False)
-# X_outliers2 = Outlier2.return_outliers()
-
-
-# # Filtering outliers
-# outlier_filter2 = EISCATDataFilter(X_outliers_filtered, filt_outlier=True)
-# outlier_filter2.batch_filtering(dataset_outliers=X_outliers2, filter_size=3, plot_after_each_day=False)
-# X_outliers_filtered2 = outlier_filter.return_data()
 
 
 
