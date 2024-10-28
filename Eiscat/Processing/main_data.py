@@ -9,13 +9,13 @@ Created on Tue Aug 20 14:13:45 2024
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-
+from scipy.interpolate import interp1d
 
 from read_EISCAT_data import EISCATDataProcessor
 from data_sorting import EISCATDataSorter
 from data_averaging import EISCATAverager
 from data_filtering import EISCATDataFilter
-# from data_outlier_detection import EISCATOutlierDetection
+from data_outlier_detection import EISCATOutlierDetection
 
 
 
@@ -61,6 +61,72 @@ X_filt = filt.return_data()
 #     detect_nan_in_arrays(X_filt[key])
 
 
+
+
+
+arrays = [sub_array for sub_dict in X_filt.values() for key, sub_array in sub_dict.items() if key.endswith('r_param')]
+
+
+# Determine the target size for the first dimension (e.g., maximum or specific value)
+target_rows = int(np.median([arr.shape[0] for arr in arrays]))
+
+adjusted_arrays = []
+for arr in arrays:
+    current_rows, cols = arr.shape
+    
+    if current_rows == target_rows:
+        # No need to adjust if it already matches
+        adjusted_arrays.append(arr)
+        continue
+    
+    # Create an interpolator for each column in the array
+    x_current = np.linspace(0, 1, current_rows)
+    x_target = np.linspace(0, 1, target_rows)
+    interpolated_array = np.zeros((target_rows, cols))
+    
+    for col in range(cols):
+        interpolator = interp1d(x_current, arr[:, col], kind='linear', fill_value="extrapolate")
+        interpolated_array[:, col] = interpolator(x_target)
+    
+    adjusted_arrays.append(interpolated_array)
+# i=0
+# while i < len(arrays):
+#     print(arrays[i].shape)
+#     i+=1
+
+
+result = np.hstack(adjusted_arrays)
+print(result.shape)
+
+log_norm = np.log10(result)
+print(log_norm.shape)
+
+
+
+O = EISCATOutlierDetection(log_norm)
+X_red = O.pca(log_norm, 3).T
+
+
+num_samp = 10000
+
+plt.figure(figsize=(15, 10))
+plt.scatter(X_red[:num_samp, 0], X_red[:num_samp, 1], s=10)
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.show()
+
+plt.figure(figsize=(15, 10))
+plt.scatter(X_red[:num_samp, 0], X_red[:num_samp, 2], s=10)
+plt.xlabel("X")
+plt.ylabel("Z")
+plt.show()
+
+
+plt.figure(figsize=(15, 10))
+plt.scatter(X_red[:num_samp, 1], X_red[:num_samp, 2], s=10)
+plt.xlabel("Y")
+plt.ylabel("Z")
+plt.show()
 
 
 
