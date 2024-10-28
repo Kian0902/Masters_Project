@@ -19,24 +19,26 @@ from process_ionograms import IonogramProcessing
 
 
 
-# resultpath = "justmadeiono"
-datapath_folder = "TXT"
+
+datapath_folder = "Ionogram_TXT"
 
 
 for file in os.listdir(datapath_folder):
     
-    print(f'{file[5:12]}')
+    print(f"Processing data from {file[6:12]}\n")
     
     file_path = os.path.join(datapath_folder, file)
     
     A = IonogramSorting()
+    print("-Sorting Mothly file into 15 min ionogram samples...")
     times, data = A.import_data(file_path)
-    print(times[0])
+    print("-Sorting Complete!\n")
     
     B = IonogramProcessing()
-    B.process_ionogram(data, times, plot=False, result_path="Ionogram_sampled_images")
-
-    
+    print("-Making Ionogram images...")
+    B.process_ionogram(data, times, plot=False, result_path="Ionogram_Images")
+    print("-Making Ionograms Complete!\n")
+    print("==========================================================")
 
 
 
