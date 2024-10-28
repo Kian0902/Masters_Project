@@ -10,6 +10,7 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
+from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
 
 from read_EISCAT_data import EISCATDataProcessor
 from data_sorting import EISCATDataSorter
@@ -64,7 +65,34 @@ X_filt = filt.return_data()
 
 
 
-arrays = [sub_array for sub_dict in X_filt.values() for key, sub_array in sub_dict.items() if key.endswith('r_param')]
+
+
+
+# # Detecting outliers
+# Outlier = EISCATOutlierDetection(X_filtered)
+# Outlier.batch_detection(method_name="IQR", save_plot=False)
+# X_outliers = Outlier.return_outliers()
+
+
+# # Filtering outliers
+# outlier_filter = EISCATDataFilter(X_filtered, filt_outlier=True)
+# outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
+# X_outliers_filtered = outlier_filter.return_data()
+
+
+
+
+
+# Averaging data
+AVG = EISCATAverager(X_filt)
+AVG.batch_averaging(save_plot=False, weighted=False)
+X_avg = AVG.return_data()
+
+
+
+
+
+arrays = [sub_array for sub_dict in X_avg.values() for key, sub_array in sub_dict.items() if key.endswith('r_param')]
 
 
 # Determine the target size for the first dimension (e.g., maximum or specific value)
@@ -106,50 +134,106 @@ print(log_norm.shape)
 O = EISCATOutlierDetection(log_norm)
 X_red = O.pca(log_norm, 3).T
 
+# num_samp = 1000
+# X_red = X_red1[:, :]
 
-num_samp = 10000
+# # List to store BIC values for different n_components
+# bic = []
+# n_components_range = range(1, 21)  # Adjust the range as needed
 
-plt.figure(figsize=(15, 10))
-plt.scatter(X_red[:num_samp, 0], X_red[:num_samp, 1], s=10)
-plt.xlabel("X")
-plt.ylabel("Y")
+# for n_components in n_components_range:
+#     gmm = GaussianMixture(n_components=n_components, random_state=42)
+#     gmm.fit(X_red)
+#     bic.append(gmm.bic(X_red))
+
+# # Plot BIC values against number of components
+# plt.figure(figsize=(8, 4))
+# plt.plot(n_components_range, bic, marker='o')
+# plt.title('BIC for Gaussian Mixture Model')
+# plt.xlabel('Number of Components')
+# plt.ylabel('BIC')
+# plt.xticks(n_components_range)
+# plt.grid()
+# plt.show()
+
+# # Determine the optimal number of components
+# optimal_n_components = n_components_range[np.argmin(bic)]
+# print(f'Optimal number of components: {optimal_n_components}')
+
+
+
+
+gmm = GaussianMixture(n_components=6, random_state=42)
+
+# Fit the model to your data
+gmm.fit(X_red)
+
+# Predict the cluster labels
+labels = gmm.predict(X_red)
+
+# Print or inspect the labels to see the assigned cluster for each point
+print("Cluster labels:", labels)
+
+
+
+# from sklearn.cluster import DBSCAN
+
+# clustering = DBSCAN(eps=1, min_samples=100).fit(X_red)
+# labels = clustering.labels_
+
+
+# num_samp = 10000
+
+fig, ax = plt.subplots(1, 2, figsize=(14, 8))
+ax[0].scatter(X_red[:, 0], X_red[:, 1], s=30, edgecolors="black", linewidths=0.3)
+ax[0].set_xlabel("X1")
+ax[0].set_ylabel("X2")
+
+ax[1].scatter(X_red[:, 0], X_red[:, 1], c=labels, s=30, edgecolors="black", linewidths=0.3)
+ax[1].set_xlabel("X1")
+ax[1].set_ylabel("X2")
 plt.show()
 
-plt.figure(figsize=(15, 10))
-plt.scatter(X_red[:num_samp, 0], X_red[:num_samp, 2], s=10)
-plt.xlabel("X")
-plt.ylabel("Z")
+
+
+
+fig, ax = plt.subplots(1, 2, figsize=(14, 8))
+ax[0].scatter(X_red[:, 0], X_red[:, 2], s=30, edgecolors="black", linewidths=0.3)
+ax[0].set_xlabel("X1")
+ax[0].set_ylabel("X3")
+
+ax[1].scatter(X_red[:, 0], X_red[:, 2], c=labels, s=30, edgecolors="black", linewidths=0.3)
+ax[1].set_xlabel("X1")
+ax[1].set_ylabel("X3")
 plt.show()
 
 
-plt.figure(figsize=(15, 10))
-plt.scatter(X_red[:num_samp, 1], X_red[:num_samp, 2], s=10)
-plt.xlabel("Y")
-plt.ylabel("Z")
+
+fig, ax = plt.subplots(1, 2, figsize=(14, 8))
+ax[0].scatter(X_red[:, 1], X_red[:, 2], s=30, edgecolors="black", linewidths=0.3)
+ax[0].set_xlabel("X2")
+ax[0].set_ylabel("X3")
+
+ax[1].scatter(X_red[:, 1], X_red[:, 2], c=labels, s=30, edgecolors="black", linewidths=0.3)
+ax[1].set_xlabel("X2")
+ax[1].set_ylabel("X3")
 plt.show()
 
 
 
 
-# # Detecting outliers
-# Outlier = EISCATOutlierDetection(X_filtered)
-# Outlier.batch_detection(method_name="IQR", save_plot=False)
-# X_outliers = Outlier.return_outliers()
-
-
-# # Filtering outliers
-# outlier_filter = EISCATDataFilter(X_filtered, filt_outlier=True)
-# outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
-# X_outliers_filtered = outlier_filter.return_data()
 
 
 
 
 
-# # Averaging data
-# AVG = EISCATAverager(X_outliers_filtered)
-# AVG.batch_averaging(save_plot=False, weighted=False)
-# X_avg = AVG.return_data()
+
+
+
+
+
+
+
 
 
 # # # print(X_avg['2021-3-10']['r_time'])
