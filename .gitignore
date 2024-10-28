@@ -14,10 +14,9 @@ Eiscat/Processing/old_EISCAT_Ne
 Eiscat/Processing/misc
 
 Ionogram_GRM
-Ionogram/GRM
+Ionogram_TXT
 Ionogram/ionograms_1D
 Ionogram/ionograms_txt_data
-Ionogram/TXT
 Ionogram/misc
 
 *.png
