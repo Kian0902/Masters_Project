@@ -26,39 +26,42 @@ from data_filtering import EISCATDataFilter
 
 
 
-# def detect_nan_in_arrays(data_dict):
-#     for key, array in data_dict.items():
-#         if np.isnan(array).any():
-#             print(f"NaN detected {key}: {array.shape}")
+def detect_nan_in_arrays(data_dict):
+    for key, array in data_dict.items():
+        if np.isnan(array).any():
+            print(f"NaN detected {key}: {array.shape}")
 
 
-# Use the local folder name containing data
-folder_name_in  = "EISCAT_Madrigal"
+# # Use the local folder name containing data
+# folder_name_in  = "EISCAT_Madrigal"
 folder_name_out = "EISCAT_MAT"
 
 
-# Extract info from hdf5 files
-madrigal_processor = EISCATDataProcessor(folder_name_in, folder_name_out)
-madrigal_processor.process_all_files()
+# # Extract info from hdf5 files
+# madrigal_processor = EISCATDataProcessor(folder_name_in, folder_name_out)
+# madrigal_processor.process_all_files()
 
 
 
-# # Sorting data
-# Eiscat = EISCATDataSorter(folder_name)
-# Eiscat.sort_data()               # sort data
-# X_Eiscat = Eiscat.return_data()  # returning dict data
+# Sorting data
+Eiscat = EISCATDataSorter(folder_name_out)
+Eiscat.sort_data()               # sort data
+X_Eiscat = Eiscat.return_data()  # returning dict data
 
 
 
 
-# # Clipping range and Filtering data for nan
-# filt = EISCATDataFilter(X_Eiscat, filt_range=True, filt_nan=True) 
-# filt.batch_filtering()
-# X_filtered = filt.return_data()
+# Clipping range and Filtering data for nan
+filt = EISCATDataFilter(X_Eiscat, filt_range=True, filt_nan=True) 
+filt.batch_filtering()
+X_filt = filt.return_data()
 
 
-# for key in X_filtered:
-#     detect_nan_in_arrays(X_filtered[key])
+# for key in X_filt:
+#     detect_nan_in_arrays(X_filt[key])
+
+
+
 
 
 
