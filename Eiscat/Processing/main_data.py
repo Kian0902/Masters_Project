@@ -34,8 +34,8 @@ def detect_nan_in_arrays(data_dict):
 
 
 # # Use the local folder name containing data
-# folder_name_in  = "EISCAT_Madrigal"
-folder_name_out = "EISCAT_MAT"
+# folder_name_in  = "EISCAT_Madrigal/2019"
+folder_name_out = "EISCAT_MAT/2019"
 
 
 # # Extract info from hdf5 files
@@ -64,7 +64,12 @@ AVG.batch_averaging(save_plot=False, weighted=False)
 X_avg = AVG.return_data()
 
 
-save_data(X_avg , file_name="X_avg")
+for key in X_avg:
+    print(key, X_avg[key]["r_h"].shape)
+
+
+
+# save_data(X_avg , file_name="X_avg")
 
 
 
