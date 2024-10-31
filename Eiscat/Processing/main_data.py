@@ -21,9 +21,9 @@ from data_outlier_detection import EISCATOutlierDetection
 
 
 
-# def save_data(dataset: dict, file_name: str):
-#     with open(file_name, 'wb') as file:
-#         pickle.dump(dataset, file)
+def save_data(dataset: dict, file_name: str):
+    with open(file_name, 'wb') as file:
+        pickle.dump(dataset, file)
 
 
 
@@ -64,7 +64,7 @@ AVG.batch_averaging(save_plot=False, weighted=False)
 X_avg = AVG.return_data()
 
 
-
+save_data(X_avg , file_name="X_avg")
 
 
 
