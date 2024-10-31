@@ -21,19 +21,19 @@ with open(custom_file_path, 'rb') as f:
 
 
 
-key_choise = list(dataset.keys())[:3]
+key_choise = list(dataset.keys())[:]
 X = {key: dataset[key] for key in key_choise}
 
 
 
 
-# # # m = 'scipy'
-# m = 'lmfit'
-# # # m = 'NN'
+# # m = 'scipy'
+m = 'lmfit'
+# # m = 'NN'
 
-# A = CurvefittingChapman(X)
-# A.batch_detection(model_name=m, H_initial=[5, 10, 25, 40], save_plot=False)
-# A.save_curvefits(custom_file_path + "_" + m + "_curvefits")
+A = CurvefittingChapman(X)
+A.batch_detection(model_name=m, H_initial=[5, 10, 25, 40], save_plot=False)
+A.save_curvefits(custom_file_path + "_" + m + "_curvefits")
 
 # x = A.return_curvefits()
 
@@ -43,6 +43,9 @@ def import_file(file_name):
         dataset = pickle.load(f)
     
     return dataset
+
+
+
 
 
 # # Import files
@@ -61,8 +64,12 @@ x_fit = {key: X_fit[key] for key in key_choise}
 
 
 
-E = CurvefittingEvaluation(x_org, x_fit)
-E.batch_detection(eval_method="Normalized Residuals", show_plot=True, save_plot=False)
+for key in X_fit:
+    print(key, X_fit[key]["r_h"].shape)
+
+
+# E = CurvefittingEvaluation(x_org, x_fit)
+# E.batch_detection(eval_method="Normalized Residuals", show_plot=True, save_plot=False)
 # E.residual_norm(x_org, x_fit, show_plot=True, save_plot=True)
 # E.chi_square(x_org, x_fit, show_plot=True)
 
