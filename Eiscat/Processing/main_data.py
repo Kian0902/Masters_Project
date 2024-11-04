@@ -111,14 +111,14 @@ for date, data in X_filt.items():
 
 # Averaging data
 AVG = EISCATAverager(X_interp)
-AVG.batch_averaging(save_plot=False, weighted=False)
+AVG.batch_averaging(save_plot=True, weighted=False)
 X_avg = AVG.return_data()
 
 
+save_data(X_avg, file_name="X_avg")
 
-
-for key in X_avg:
-    print(key, X_avg[key]["r_h"].shape, X_avg[key]["r_param"].shape, X_avg[key]["r_error"].shape)
+# for key in X_avg:
+#     print(key, X_avg[key]["r_h"].shape, X_avg[key]["r_param"].shape, X_avg[key]["r_error"].shape)
 
 
 # save_data(X_avg , file_name="X_avg")
