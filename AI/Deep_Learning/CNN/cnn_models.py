@@ -53,8 +53,6 @@ class CNN(nn.Module):
         
         self.fc2 = nn.Sequential(
             nn.Linear(800, 27),
-            nn.BatchNorm1d(27),
-            nn.ReLU(),
             )
     
     def forward(self, x):
