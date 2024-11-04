@@ -48,7 +48,7 @@ A = StoreDataset(ion, np.log10(rad), transforms.Compose([transforms.ToTensor()])
 model = CNN()
 criterion = nn.MSELoss()  
 optimizer = optim.Adam(model.parameters(), lr=0.1)  # Use Adam optimizer
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=75, gamma=0.1)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=25, gamma=0.1)
 
 
 
