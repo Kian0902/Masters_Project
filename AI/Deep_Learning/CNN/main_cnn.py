@@ -69,8 +69,8 @@ train_size = int(0.7 * len(A))
 val_size = len(A) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(A, [train_size, val_size])
 
-train_loader = DataLoader(train_dataset, batch_size=50, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=50, shuffle=False)
+train_loader = DataLoader(train_dataset, batch_size=30, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=30, shuffle=False)
 
 # Move the model to the appropriate device
 model = model.to(device)
@@ -145,6 +145,35 @@ for epoch in range(num_epochs):
 
 # Load the best model weights
 model.load_state_dict(best_model_weights)
+
+
+# Plot model outputs vs target values from validation data
+import matplotlib.pyplot as plt
+best_val_outputs = np.concatenate(best_val_outputs, axis=0)
+best_val_targets = np.concatenate(best_val_targets, axis=0)
+
+
+
+r_h = np.array([[ 91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
+       [103.57141624],[106.57728701],[110.08393175],[114.60422289],
+       [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
+       [152.05174717],[162.57986185],[174.09833378],[186.65837945],
+       [200.15192581],[214.62769852],[230.12198695],[246.64398082],
+       [264.11728204],[282.62750673],[302.15668686],[322.70723831],
+       [344.19596481],[366.64409299],[390.113117  ]])
+
+for i in range(0, len(best_val_outputs)):
+    plt.figure(figsize=(10, 6))
+    plt.plot(best_val_targets[i, :], r_h.flatten(), label='True')
+    plt.plot(best_val_outputs[i, :], r_h.flatten(), label='Pred')
+    plt.xlabel('log10(ne)')
+    plt.ylabel('Alt (km)')
+    plt.title('Model Outputs vs Target Values (Validation Data)')
+    plt.legend()
+    plt.show()
+
+print("Training complete.")
+
 
 
 
