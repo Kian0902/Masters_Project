@@ -61,3 +61,24 @@ class MatchingPairs:
         return empty_ionograms, non_empty_ionograms
     
     
+    
+    def plot_variance_distribution(self):
+        variances = []
+        matching_filenames = self.get_matching_filenames()
+    
+        for filename in matching_filenames:
+            ionogram_path = os.path.join(self.ionogram_folder, f"{filename}.png")
+            ionogram_image = Image.open(ionogram_path)
+            ionogram_array = np.array(ionogram_image)
+            variance = np.var(ionogram_array)
+            variances.append(variance)
+    
+        # Plot the histogram of variances
+        plt.hist(variances, bins=50)
+        plt.xlim(-100, 1000)
+        plt.xlabel('Variance')
+        plt.ylabel('Number of Images')
+        plt.title('Variance Distribution of Ionogram Images')
+        plt.show()
+
+    
