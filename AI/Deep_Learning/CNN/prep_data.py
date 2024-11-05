@@ -82,3 +82,58 @@ class MatchingPairs:
         plt.show()
 
     
+    def plot_empty_ionograms(self, empty_ionograms):
+        """
+        Plots each empty or almost empty ionogram in its own plot and loops over all of them.
+
+        Parameters:
+        - empty_ionograms: List of filenames of empty ionograms.
+        """
+        for filename in empty_ionograms:
+            ionogram_path = os.path.join(self.ionogram_folder, f"{filename}.png")
+            ionogram_image = Image.open(ionogram_path)
+            ionogram_array = np.array(ionogram_image)
+
+            plt.figure()
+            plt.imshow(ionogram_array)
+            plt.title(f"Empty Ionogram: {filename}")
+            plt.axis('off')
+            plt.show()
+    
+    
+    def plot_good_ionograms(self, non_empty_ionograms):
+        """
+        Plots each non empty ionogram in its own plot and loops over all of them.
+
+        Parameters:
+        - empty_ionograms: List of filenames of empty ionograms.
+        """
+        for filename in non_empty_ionograms:
+            ionogram_path = os.path.join(self.ionogram_folder, f"{filename}.png")
+            ionogram_image = Image.open(ionogram_path)
+            ionogram_array = np.array(ionogram_image)
+
+            plt.figure()
+            plt.imshow(ionogram_array)
+            plt.title(f"Good Ionogram: {filename}")
+            plt.axis('off')
+            plt.show()
+
+
+    # Optional: Save non-empty ionograms to files
+    def save_good_ionograms(self, good_ionograms, save_folder='Good_Ionograms_Images'):
+        """
+        Saves non-empty ionograms to a specified folder.
+
+        Parameters:
+        - non_empty_ionograms: List of filenames of non-empty ionograms.
+        - save_folder: Folder to save the images.
+        """
+        os.makedirs(save_folder, exist_ok=True)
+        for filename in good_ionograms:
+            ionogram_path = os.path.join(self.ionogram_folder, f"{filename}.png")
+            save_path = os.path.join(save_folder, f"{filename}.png")
+            ionogram_image = Image.open(ionogram_path)
+            ionogram_image.save(save_path)
+
+
