@@ -137,3 +137,32 @@ class MatchingPairs:
             ionogram_image.save(save_path)
 
 
+
+
+# Set your folders
+radar_folder = "EISCAT_samples"
+ionogram_folder = "Ionogram_images"
+
+# Initialize the class
+Pairs = MatchingPairs(ionogram_folder, radar_folder)
+
+# Define a variance threshold (adjust this based on your data)
+variance_threshold = 11  # Example threshold
+
+# Find empty or almost empty ionograms
+empty_ionograms, good_ionograms = Pairs.find_empty_and_good_ionograms(variance_threshold)
+
+
+# Plot the empty ionograms
+# Pairs.plot_empty_ionograms(empty_ionograms)
+# Pairs.plot_good_ionograms(good_ionograms)
+
+
+Pairs.plot_variance_distribution()
+
+Pairs.save_good_ionograms(good_ionograms)
+
+
+print(f"Empty ionograms: {len(empty_ionograms)}")
+print(f"Good ionograms: {len(good_ionograms)}")
+
