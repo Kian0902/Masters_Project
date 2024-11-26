@@ -141,7 +141,7 @@ class MatchingPairs:
 
 # Set your folders
 radar_folder = "EISCAT_samples"
-ionogram_folder = "Ionogram_images"
+ionogram_folder = "Ionogram_Images"
 
 # Initialize the class
 Pairs = MatchingPairs(ionogram_folder, radar_folder)

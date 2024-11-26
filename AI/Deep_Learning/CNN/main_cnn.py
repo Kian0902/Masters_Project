@@ -27,7 +27,7 @@ print(device)
 
 
 radar_folder = "EISCAT_samples"
-ionogram_folder = "Ionogram_images"
+ionogram_folder = "Good_Ionograms_Images"
 
 
 
@@ -35,33 +35,38 @@ Pairs = MatchingPairs(ionogram_folder, radar_folder)
 
 rad, ion = Pairs.find_pairs()
 
+rad = np.abs(rad)
 
-
-
-
+# for n in rad:
+#     if np.isnan(n).any():
+#         print(f"NaN detected {key}: {array.shape}")
+#     elif (n < 0).any():
+#         print(f"Negative value detected in array: {n}")
+    
+    
 A = StoreDataset(ion, np.log10(rad), transforms.Compose([transforms.ToTensor()]))
 
 
-
+print("Data stored")
 
 
 
 # Define the number of epochs and split the dataset into train and validation sets
-num_epochs = 160
-train_size = int(0.7 * len(A))
+num_epochs = 100
+train_size = int(0.8 * len(A))
 val_size = len(A) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(A, [train_size, val_size])
 
 train_loader = DataLoader(train_dataset, batch_size=100, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=100, shuffle=False)
+val_loader = DataLoader(val_dataset, batch_size=100, shuffle=True)
 
 
 
 model = CNN()
-criterion = nn.MSELoss()  
+criterion = nn.HuberLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.1)  # Use Adam optimizer
-scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=60, gamma=0.1)
-scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=140, gamma=0.1)
+scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
+# scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
 
 
 # Function to count the number of parameters
@@ -108,7 +113,7 @@ for epoch in range(num_epochs):
 
     # Step the learning rate scheduler
     scheduler1.step()
-    scheduler2.step()
+    # scheduler2.step()
     
     # Validation loop
     model.eval()  # Set model to evaluation mode
