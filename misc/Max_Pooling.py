@@ -17,6 +17,7 @@ def load_image(image_path):
     image = cv2.imread(image_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     # Resize image to a square for simplicity
+    image = cv2.resize(image, (81, 81))
     # Normalize image to [0, 1]
     image = image / 255.0
     # Convert image to PyTorch tensor and add a batch dimension
@@ -56,7 +57,7 @@ avgpool_layers = [
 # Main function
 def main():
     # Load your image (provide the correct path to your image)
-    image_path = 'Iono_ex_color.png'
+    image_path = 'Me.jpg'
     image_tensor = load_image(image_path)
 
     # Plot the original image
