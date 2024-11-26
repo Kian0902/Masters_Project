@@ -2,7 +2,7 @@ import os
 import torch
 import torch.nn as nn
 from torchvision import transforms
-
+import torch.nn.functional as F
 # Assuming utils.py and plot_ionogram are in the same folder
 # from utils import plot_ionogram
 
@@ -31,6 +31,14 @@ class CNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         )
+        
+        self.conv4 = nn.Sequential(
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(),
+            
+        )
+        
 
         self.fc1 = nn.Sequential(
             
@@ -55,21 +63,162 @@ class CNN(nn.Module):
 
     def forward(self, x):
         c1 = self.conv1(x)
-        # print(f'After conv1: {c1.shape}')
         c2 = self.conv2(c1)
-        # print(f'After conv2: {c2.shape}')
         c3 = self.conv3(c2)
-        # print(f'After conv3: {c3.shape}')
-
-        x_flat = c3.view(c3.size(0), -1)
-        # print(f'After flattening: {x_flat.shape}')
+        c4 = self.conv4(c3)
+        
+        x_flat = c4.view(c4.size(0), -1)
 
         x4 = self.fc1(x_flat)
-        # print(f'After fc1: {x4.shape}')
-        # x5 = self.fc2(x4)
-        # print(f'After fc2: {x5.shape}')
-
         return x4
+
+
+
+
+
+
+
+class BranchFNN(nn.Module):
+    def __init__(self):
+        super(BranchFNN, self).__init__()
+        
+        self.f1 = nn.Sequential(
+            nn.Linear(19, 64),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+        )
+    
+        self.f2 = nn.Sequential(
+            nn.Linear(64, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+        )
+        
+        self.f3 = nn.Sequential(
+            nn.Linear(256, 1024),
+            nn.BatchNorm1d(1024),
+            nn.ReLU(),
+        )
+    
+    def forward(self, x):
+        x1 = self.f1(x)
+        x2 = self.f2(x1)
+        x3 = self.f3(x2)
+        return x3
+
+
+
+
+
+
+class BranchCNN(nn.Module):
+    def __init__(self):
+        super(BranchCNN, self).__init__()
+
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        )
+
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        )
+
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            # nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+        )
+        
+        # self.conv4 = nn.Sequential(
+        #     nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
+        #     nn.BatchNorm2d(64),
+        #     nn.ReLU(),
+        # )
+        
+
+    def forward(self, x):
+        c1 = self.conv1(x)
+        c2 = self.conv2(c1)
+        c3 = self.conv3(c2)
+        # c4 = self.conv4(c3)
+        
+        x_flat = c3.view(c3.size(0), -1)
+
+        return x_flat
+
+
+
+
+
+
+class CombinedNetwork(nn.Module):
+    def __init__(self):
+        super(CombinedNetwork, self).__init__()
+        
+        # Instantiate the two branches
+        self.cnn_branch = BranchCNN()
+        self.ffnn_branch = BranchFNN()
+        
+
+        
+        self.fc1 = nn.Sequential(
+            nn.Linear(32 * 20 * 20 + 1024, 6656),
+            nn.BatchNorm1d(6656),
+            nn.ReLU(),
+            )
+        
+        # self.fc2 = nn.Sequential(
+        #     nn.Linear(13312, 6656),
+        #     nn.BatchNorm1d(6656),
+        #     nn.ReLU(),
+        #     )
+        
+        self.fc3 = nn.Sequential(
+            nn.Linear(6656, 1664),
+            nn.BatchNorm1d(1664),
+            nn.ReLU(),
+            )
+        
+        self.fc4 = nn.Sequential(
+            nn.Linear(1664, 416),
+            nn.BatchNorm1d(416),
+            nn.ReLU(),
+            )
+        
+        self.fc5 = nn.Sequential(
+            nn.Linear(416, 27),
+            )
+        
+    def forward(self, img, geo):
+        # Forward pass through each branch
+        img_out = self.cnn_branch(img)
+        geo_out = self.ffnn_branch(geo)
+        
+        # Concatenate outputs
+        combined = torch.cat((img_out, geo_out), dim=1)
+        
+        x = self.fc1(combined)
+        # x = self.fc2(x)
+        x = self.fc3(x)
+        x = self.fc4(x)
+        x = self.fc5(x)
+        return x
+
+
+
+
+
+
+
+
+
 
 
 # # Instantiate the model
