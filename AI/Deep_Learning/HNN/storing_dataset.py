@@ -8,12 +8,13 @@ Created on Sun Sep 29 15:17:01 2024
 
 
 import os
+import shutil
 import numpy as np
 import matplotlib.pyplot as plt
 
 from PIL import Image
 
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import Dataset
 
 import torch
 from torchvision import transforms
@@ -297,6 +298,30 @@ class Matching3Pairs:
         return RAD, ION, SP19
 
 
+    def save_matching_files(self, new_ionogram_folder, new_radar_folder, new_sp19_folder):
+        # Create new folders if they don't exist
+        os.makedirs(new_ionogram_folder, exist_ok=True)
+        os.makedirs(new_radar_folder, exist_ok=True)
+        os.makedirs(new_sp19_folder, exist_ok=True)
+
+        matching_filenames = self.get_matching_filenames()
+
+        for filename in matching_filenames:
+            # Copy ionogram files
+            ionogram_src = os.path.join(self.ionogram_folder, f"{filename}.png")
+            ionogram_dst = os.path.join(new_ionogram_folder, f"{filename}.png")
+            shutil.copy2(ionogram_src, ionogram_dst)
+
+            # Copy radar files
+            radar_src = os.path.join(self.radar_folder, f"{filename}.csv")
+            radar_dst = os.path.join(new_radar_folder, f"{filename}.csv")
+            shutil.copy2(radar_src, radar_dst)
+
+            # Copy sp19 files
+            sp19_src = os.path.join(self.sp19_folder, f"{filename}.csv")
+            sp19_dst = os.path.join(new_sp19_folder, f"{filename}.csv")
+            shutil.copy2(sp19_src, sp19_dst)
+
 
 
 
@@ -372,5 +397,22 @@ class Matching3ErrorPairs:
             i+=1
         
         return RAD, ION, SP19, ERROR
+
+
+
+
+# Example usage
+if __name__ == "__main__":
+    # ionogram_folder = "Good_Ionograms_Images"
+    # radar_folder = "EISCAT_test_samples"
+    # sp19_folder = "SP19_samples"
+
+    # new_ionogram_folder = "test_ionogram_folder"
+    # new_radar_folder = "test_radar_folder"
+    # new_sp19_folder = "test_sp19_folder"
+
+    # matcher = Matching3Pairs(ionogram_folder, radar_folder, sp19_folder)
+    # matcher.save_matching_files(new_ionogram_folder, new_radar_folder, new_sp19_folder)
+    print("...")
 
 
