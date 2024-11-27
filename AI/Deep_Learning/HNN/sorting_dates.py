@@ -50,9 +50,9 @@ def save(dataset, save_param, output_dir):
 
 
 
-filename = "X_avg"
+filename = "X_avg_test_data"
 
-out_dir = "EISCAT_samples_errors"
+out_dir = "EISCAT_test_samples"
 
 # Opening file
 with open(filename, 'rb') as f:
@@ -60,7 +60,7 @@ with open(filename, 'rb') as f:
 
 
 
-save(dataset, 'r_error', out_dir)
+save(dataset, 'r_param', out_dir)
 
 
 
