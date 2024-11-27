@@ -7,12 +7,7 @@ Created on Tue Nov 26 15:11:24 2024
 
 import os
 import pickle
-# import numpy as np
 import pandas as pd
-# import matplotlib.pyplot as plt
-
-# from datetime import datetime
-# from matplotlib.dates import DateFormatter
 
 from artist_sorting import ArtistSorter
 from artist_plotting import plot1, plot2
