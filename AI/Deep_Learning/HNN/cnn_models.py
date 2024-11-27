@@ -77,7 +77,6 @@ class CNN(nn.Module):
 
 
 
-
 class BranchFNN(nn.Module):
     def __init__(self):
         super(BranchFNN, self).__init__()
@@ -133,21 +132,21 @@ class BranchCNN(nn.Module):
             nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            # nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
+            #nn.MaxPool2d(kernel_size=2, stride=2, padding=0)
         )
         
-        # self.conv4 = nn.Sequential(
-        #     nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
-        #     nn.BatchNorm2d(64),
-        #     nn.ReLU(),
-        # )
+        #self.conv4 = nn.Sequential(
+        #    nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
+        #    nn.BatchNorm2d(64),
+        #    nn.ReLU(),
+        #)
         
 
     def forward(self, x):
         c1 = self.conv1(x)
         c2 = self.conv2(c1)
         c3 = self.conv3(c2)
-        # c4 = self.conv4(c3)
+        #c4 = self.conv4(c3)
         
         x_flat = c3.view(c3.size(0), -1)
 
@@ -169,31 +168,31 @@ class CombinedNetwork(nn.Module):
 
         
         self.fc1 = nn.Sequential(
-            nn.Linear(32 * 20 * 20 + 1024, 6656),
-            nn.BatchNorm1d(6656),
+            nn.Linear(32 * 20 * 20 + 1024, 6912),
+            nn.BatchNorm1d(6912),
             nn.ReLU(),
             )
         
-        # self.fc2 = nn.Sequential(
-        #     nn.Linear(13312, 6656),
-        #     nn.BatchNorm1d(6656),
-        #     nn.ReLU(),
-        #     )
+        self.fc2 = nn.Sequential(
+            nn.Linear(6912, 3456),
+            nn.BatchNorm1d(3456),
+            nn.ReLU(),
+            )
         
         self.fc3 = nn.Sequential(
-            nn.Linear(6656, 1664),
-            nn.BatchNorm1d(1664),
+            nn.Linear(3456, 1728),
+            nn.BatchNorm1d(1728),
             nn.ReLU(),
             )
         
         self.fc4 = nn.Sequential(
-            nn.Linear(1664, 416),
-            nn.BatchNorm1d(416),
+            nn.Linear(1728, 864),
+            nn.BatchNorm1d(864),
             nn.ReLU(),
             )
         
         self.fc5 = nn.Sequential(
-            nn.Linear(416, 27),
+            nn.Linear(864, 27),
             )
         
     def forward(self, img, geo):
@@ -205,14 +204,11 @@ class CombinedNetwork(nn.Module):
         combined = torch.cat((img_out, geo_out), dim=1)
         
         x = self.fc1(combined)
-        # x = self.fc2(x)
+        x = self.fc2(x)
         x = self.fc3(x)
         x = self.fc4(x)
         x = self.fc5(x)
         return x
-
-
-
 
 
 
@@ -308,7 +304,8 @@ class CombinedNetwork(nn.Module):
 
 
 
-
+if __name__ == "__main__":
+    print("...")
 
 
 
