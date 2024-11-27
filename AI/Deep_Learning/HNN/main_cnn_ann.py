@@ -49,6 +49,7 @@ Pairs = Matching3Pairs(ionogram_folder, radar_folder, sp19_folder)
 
 rad, ion, sp = Pairs.find_pairs()
 
+
 rad = np.abs(rad)
 rad[rad < 1e5] = 1e6
 
@@ -180,6 +181,9 @@ for epoch in range(num_epochs):
 # Load the best model weights
 model.load_state_dict(best_model_weights)
 
+# Save the best model to a file
+torch.save(best_model_weights, 'best_model.pth')
+print("Best model saved to 'best_model.pth'.")
 
 # Plot model outputs vs target values from validation data
 import matplotlib.pyplot as plt
