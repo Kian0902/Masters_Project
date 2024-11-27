@@ -16,7 +16,7 @@ from matplotlib.dates import DateFormatter
 
 
 
-def plot(data):
+def plot1(data):
     """
     Plot a comparison of original and averaged data using pcolormesh.
 
@@ -120,4 +120,16 @@ def plot2(data1, data2):
     
     # Display the plots
     plt.show()
+
+
+
+
+if __name__ == "__main__":
+    print("...")
+
+
+
+
+
+
 
