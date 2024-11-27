@@ -47,15 +47,7 @@ if __name__ == "__main__":
     
     
     for day in X_EISCAT:
-        plot1(X_artist[day])
-        # plot2(X_EISCAT[day], X_artist[day])
-        
-        
-    #     # for i in range(0, X_artist[day]['r_param'].shape[0]):
-    #     #     plt.plot(np.log10(X_artist[day]['r_param'][i]), X_artist[day]['r_h'].flatten())
-    #     # plt.show()
-    
-
+        plot2(X_EISCAT[day], X_artist[day])
 
 
 
