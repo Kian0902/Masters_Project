@@ -141,8 +141,19 @@ class CombinedNetwork(nn.Module):
 
 
 
-
-
+# Function for He initialization
+def he_initialization(module):
+    
+    # For Conv and fc layers
+    if isinstance(module, nn.Linear) or isinstance(module, nn.Conv2d):
+        nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
+        if module.bias is not None:
+            nn.init.constant_(module.bias, 0)
+            
+    # For Batchnorm Layers
+    elif isinstance(module, (nn.BatchNorm1d, nn.BatchNorm2d)):
+        nn.init.constant_(module.weight, 1)
+        nn.init.constant_(module.bias, 0)
 
 
 
