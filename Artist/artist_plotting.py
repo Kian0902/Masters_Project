@@ -42,7 +42,7 @@ def plot1(data):
     
     
     # Plotting original data
-    pcm_ne=ax[0].pcolormesh(r_time, r_h.flatten(), np.log10(r_param.T), shading='auto', cmap='turbo', vmin=9, vmax=12)
+    pcm_ne=ax[0].pcolormesh(r_time, r_h.flatten(), np.log10(r_param), shading='auto', cmap='turbo', vmin=9, vmax=12)
     ax[0].set_title('EISCAT UHF', fontsize=17)
     ax[0].set_xlabel('Time [hours]')
     ax[0].set_ylabel('Altitude [km]')
@@ -55,7 +55,7 @@ def plot1(data):
     
     for i in range(0, r_param.shape[0]):
         
-        ax[1].plot(np.log10(r_param[i]), r_h.flatten())
+        ax[1].plot(np.log10(r_param[i].T), r_h.flatten())
 
     
     
@@ -87,8 +87,19 @@ def plot2(data1, data2):
     r_param1 = data1['r_param']
     r_param2 = data2['r_param']
     
+    
+    
+    
+    
+    print(type(r_param1.shape), r_param1.shape)
+    print(r_time1.shape, type(r_time1))
+    print(r_time1[0], type(r_time1[0]))
+    
     # Date
     date_str = r_time1[0].strftime('%Y-%m-%d')
+    
+    print(date_str)
+    
     
     # Creating the plots
     fig, ax = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
@@ -96,7 +107,8 @@ def plot2(data1, data2):
     fig.tight_layout()
     fig.autofmt_xdate()
     x_limits = [r_time1[0], r_time1[-1]]
-
+    
+    print(x_limits)
 
     # Plotting original data
     ne_EISCAT = ax[0].pcolormesh(r_time1, r_h1.flatten(), np.log10(r_param1), shading='auto', cmap='turbo', vmin=10, vmax=12)
