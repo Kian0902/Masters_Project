@@ -60,8 +60,8 @@ class ArtistSorter:
             # Assign the arrays to the nested dictionary
             self.processed_data[formatted_date] = {
                 "r_time": r_time,
-                "r_h": r_h,
-                "r_param": r_param
+                "r_h": r_h.T,
+                "r_param": r_param.T
             }
 
     def get_processed_data_for_date(self, date):
