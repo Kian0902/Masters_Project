@@ -19,7 +19,7 @@ from sklearn.model_selection import train_test_split
 
 from utils import plot_ionogram
 from storing_dataset import Store3Dataset, Matching3Pairs
-from cnn_models import CombinedNetwork
+from cnn_models import CombinedNetwork, he_initialization
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -65,6 +65,9 @@ val_loader = DataLoader(val_dataset, batch_size=val_size, shuffle=True)
 
 num_epochs = 200
 model = CombinedNetwork().to(device)
+model.apply(he_initialization)
+
+
 # criterion = CustomLoss()
 criterion = nn.HuberLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.01)  # Use Adam optimizer
