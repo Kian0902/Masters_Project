@@ -122,6 +122,136 @@ class GeophysProcessing:
 
 
 
+class FeatureFilter:
+    def __init__(self, geophys_processor):
+        """
+        Initializes the FeatureFilter object.
+
+        Args:
+            geophys_processor (GeophysProcessing): The GeophysProcessing object containing the dataset.
+        """
+        self.geophys_processor = geophys_processor
+        self.df = geophys_processor.df
+
+    def apply_median_filter(self, feature, threshold, window_size):
+        """
+        Applies a median filter to a specified feature, replacing outliers with the local median.
+
+        Args:
+            feature (str): The feature to filter.
+            threshold (float): The threshold for outlier detection.
+            window_size (int): The size of the window for the median filter.
+        """
+        if feature not in self.geophys_processor.feature_names:
+            raise ValueError(f"Feature '{feature}' not found in the dataset.")
+
+        # Extract the feature data
+        feature_data = self.df[feature].copy()
+
+        # Identify outliers
+        median_filtered = medfilt(feature_data, kernel_size=window_size)
+        outliers = np.abs(feature_data - median_filtered) > threshold
+
+        # Replace outliers with local median
+        feature_data[outliers] = median_filtered[outliers]
+
+        # Update the DataFrame
+        self.df[feature] = feature_data
+
+    def update_geophys_processor(self):
+        """
+        Updates the GeophysProcessing object with the filtered data.
+        """
+        self.geophys_processor.df = self.df
+
+    def visualize_filtered_feature(self, feature, start_time, end_time):
+        """
+        Visualizes the specified feature after filtering over the given time period.
+
+        Args:
+            feature (str): The feature to visualize.
+            start_time (datetime): The start of the time period.
+            end_time (datetime): The end of the time period.
+        """
+        filtered_df = self.geophys_processor.filter_by_time_period(start_time, end_time)
+
+        plt.figure(figsize=(10, 5))
+        plt.plot(filtered_df.index, filtered_df[feature], label=f"{feature} (Filtered)")
+        plt.title(f"Filtered {feature} from {start_time} to {end_time}")
+        plt.xlabel("Time")
+        plt.ylabel("Value")
+        plt.legend()
+        plt.grid()
+        plt.show()
+
+
+
+# class GeophysProcessing:
+    
+#     def __init__(self, dataset):
+#         self.dataset = dataset
+#         self.feature_names = ['DoY/366', 'ToD/1440', 'Solar_Zenith/44', 'Kp', 'R', 'Dst',
+#                             'ap', 'F10_7', 'AE', 'AL', 'AU', 'PC_potential', 'Lyman_alpha',
+#                             'Bx', 'By', 'Bz', 'dBx', 'dBy', 'dBz']
+    
+    
+#     def check_quality(self):
+        
+#         # Convert dataset to pandas DataFrame
+#         df = pd.DataFrame(self.dataset, columns=self.feature_names)
+        
+#         if df.isnull().values.any():
+#             print("Bad values detected!")
+            
+#             # Check for NaN, inf, and None values
+#             nan_count = df.isna().sum()                    # Count NaN values
+#             inf_count = df.isin([np.inf, -np.inf]).sum()   # Count inf values
+#             none_count = df.isin([None]).sum()             # Count None values
+    
+            
+#             # Combine results into a summary DataFrame
+#             quality_summary = pd.DataFrame({
+#                 'Feature': self.feature_names,
+#                 'NaN Count': nan_count.values,
+#                 'Inf Count': inf_count.values,
+#                 'None Count': none_count.values
+#             })
+    
+#             # Print the results
+#             print("\nDataset Quality Summary:")
+#             print(quality_summary)
+        
+#         else:
+#             print("Data quality is good!")
+            
+    
+    
+#     def filter_missing_values(self):
+        
+#         if self.dataset.isnull().values.any():
+#             self.dataset = self.dataset.interpolate(method='linear', axis=0, limit_direction='forward')
+        
+#         else:
+#             print("No missing values detected!")
+    
+    
+    
+#     def plot_hist(self, feature=None):
+        
+#         data = self.dataset.to_numpy()
+        
+#         print(len(data))
+        
+#         sns.histplot(data[:,feature], bins=int(len(data)/1000), kde=True, color="C0")
+#         plt.xlabel('Values')
+#         plt.ylabel('Density')
+#         plt.title(f'Feature {feature}')
+#         plt.show()
+        
+
+
+        
+
 
 
 
