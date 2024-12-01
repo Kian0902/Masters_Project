@@ -256,6 +256,54 @@ class FeatureFilter:
 
 
 
+if __name__ == "__main__":
+    data = np.load("Geophysical.npy")
+    feature_names = ['DoY/366', 'ToD/1440', 'Solar_Zenith/44', 'Kp', 'R', 'Dst',
+                        'ap', 'F10_7', 'AE', 'AL', 'AU', 'PC_potential', 'Lyman_alpha',
+                        'Bx', 'By', 'Bz', 'dBx', 'dBy', 'dBz']
+
+    # process = GeophysProcessing(data)
+    # process.check_quality()
+    
+    
+    
+    folder_name="ionograms_1D"
+    datetimes = filename_to_datetime(folder_name)
+
+    
+    # Initialize the processor
+    process = GeophysProcessing(data, datetimes, feature_names)
+
+    # Example: Visualize features over a specific period
+    start = pd.Timestamp("2018-09-17")
+    end = pd.Timestamp("2022-12-18")
+    process.visualize_features(start, end, features=['dBx', 'dBy', 'dBz'])
+    
+    
+    
+    # Initialize FeatureFilter
+    filter_tool = FeatureFilter(process)
+
+    # Apply median filter to 'Kp' feature with threshold=2 and window_size=5
+    filter_tool.apply_median_filter('dBx', threshold=6, window_size=29)
+    filter_tool.apply_median_filter('dBy', threshold=6, window_size=29)
+    filter_tool.apply_median_filter('dBz', threshold=6, window_size=29)
+    # filter_tool.visualize_filtered_feature('Bx', start, end)
+    filter_tool.update_geophys_processor()
+    
+    
+    process.visualize_features(start, end, features=['dBx', 'dBy', 'dBz'])
+    # process.visualize_resampled(rule="H", features=['Bx'])
+
+
+
+
+
+
+
+
+
+
 
 
 
