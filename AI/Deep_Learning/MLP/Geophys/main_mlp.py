@@ -5,96 +5,142 @@ Created on Tue Sep 17 14:42:19 2024
 @author: Kian Sartipzadeh
 """
 
+import os
+import numpy as np
 import torch
 import torch.nn as nn
+from torchvision import transforms
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-import numpy as np
-from sklearn.model_selection import train_test_split
 
-from mlp_models import MLP19
-from storing_dataset import StoreDataset
-from training_mlp import train_model, plot_losses
-from testing_mlp import test_model, plot_results
+from storing_dataset import StoreDataset, MatchingPairs
+from mlp_model import FFN_Geophys, he_initialization
 
 
-# Check if GPU is available
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(device)
 
 
 
 
-# Importing data
-data_sp19 = np.load('sp19_data.npy')
-data_eiscat = np.load('eiscat_data.npy')
+eiscat_folder = "train_eiscat_folder"
+geophys_folder = "train_geophys_folder"
+
+
+Pairs = MatchingPairs(eiscat_folder, geophys_folder)
+
+eis, ge = Pairs.find_pairs()
+
+
+eis = np.abs(eis)
+eis[eis < 1e5] = 1e6
+
+
+A = StoreDataset(ge, np.log10(eis))
+print("Data stored")
 
 
 
 
-X_train, X_test, y_train, y_test = train_test_split(data_sp19, data_eiscat, train_size=0.8, shuffle=True)
+# Split the dataset into train and validation sets
+train_size = int(0.8 * len(A))
+val_size = len(A) - train_size
+train_dataset, val_dataset = torch.utils.data.random_split(A, [train_size, val_size])
+
+train_loader = DataLoader(train_dataset, batch_size=300, shuffle=True)
+val_loader = DataLoader(val_dataset, batch_size=val_size, shuffle=True)
+
+
+num_epochs = 450
+model = FFN_Geophys().to(device)
+model.apply(he_initialization)
+
+
+# criterion = nn.MSELoss()
+criterion = nn.HuberLoss()
+optimizer = optim.Adam(model.parameters(), lr=0.01)  # Use Adam optimizer
+
+scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=350, gamma=0.1)
+# #scheduler2 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=7, gamma=0.1)
+
+
+# Count the number of parameters
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(f"Total number of trainable parameters: {count_parameters(model)}")
 
 
 
-y_train[y_train < 10**5] = 10**5
-y_test[y_test < 10**5] = 10**5
-
-
-# Apply log10 to all the datasets
-y_train = np.log10(y_train)
-y_test = np.log10(y_test)
-
-
-y_train = np.round(y_train, decimals=3)
-y_test = np.round(y_test, decimals=3)
+# Initialize variables to track the best model
+best_val_loss = float('inf')
+best_model_weights = model.state_dict()
 
 
 
 
-# Split training data further into training and validation sets
-X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, train_size=0.8, shuffle=True)
+# Training loop
+for epoch in range(num_epochs):
+    model.train()  # Set model to training mode
+    running_loss = 0.0
+    for i, (geophys, targets) in enumerate(train_loader):
+        geophys, targets = geophys.to(device), targets.to(device)
+        
+        optimizer.zero_grad()
 
-# Creating datasets and data loaders for training, validation, and test sets
-train_dataset = StoreDataset(X_train, y_train)
-val_dataset = StoreDataset(X_val, y_val)
-test_dataset = StoreDataset(X_test, y_test)
+        outputs = model(geophys)
+        loss = criterion(outputs, targets)
 
-train_loader = DataLoader(train_dataset, batch_size=100, shuffle=True)
-val_loader = DataLoader(val_dataset, batch_size=100, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=len(test_dataset), shuffle=True)
+        # Backward pass and optimization
+        loss.backward()
+        optimizer.step()
 
-# Initialize model, loss function, optimizer, and scheduler
-in_dim = X_train.shape[1]
+        # Update running loss
+        running_loss += loss.item()
+        
+    # Step the learning rate scheduler
+    scheduler1.step()
+    #scheduler2.step()
+    
+    # Validation loop
+    model.eval()  # Set model to evaluation mode
+    val_loss = 0.0
+    val_outputs = []
+    val_targets = []
+    with torch.no_grad():
+        for geophys, targets in val_loader:
+            geophys, targets = geophys.to(device), targets.to(device)
 
-model = MLP19().to(device)
-loss_function = nn.MSELoss()
-optimizer = optim.Adam(model.parameters(), lr=0.01)
-scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=400, gamma=0.1)
+            # Forward pass
+            outputs = model(geophys)
+
+            # Store outputs and targets for plotting
+            val_outputs.append(outputs.cpu().numpy())
+            val_targets.append(targets.cpu().numpy())
+
+            # Compute loss
+            loss = criterion(outputs, targets)
+            val_loss += loss.item()
+
+    # Calculate average validation loss
+    avg_val_loss = val_loss / len(val_loader)
+
+    # Save the best model weights
+    if avg_val_loss < best_val_loss:
+        best_val_loss = avg_val_loss
+        best_model_weights = model.state_dict()
+        best_val_outputs = val_outputs
+        best_val_targets = val_targets
+    
+    # Print epoch summary
+    print(f"Epoch [{epoch + 1}/{num_epochs}], Training Loss: {running_loss / len(train_loader):.4f}, Validation Loss: {avg_val_loss:.4f}")
+
+# Save the best model to a file
+torch.save(best_model_weights, 'geophys_FFN_weights.pth')
+print("Weights from best model saved to 'geophys_FFN_weights.pth'.")
 
 
-
-# num_epochs = 500
-
-# model, train_loss, val_loss = train_model(model, train_loader, val_loader, loss_function, optimizer, scheduler, device, num_epochs)
-
-
-# plot_losses(train_loss, val_loss)
-
-
-best_model_path = 'best_model.pth'
-model.load_state_dict(torch.load(best_model_path, weights_only=True))
-
-
-avg_test_loss, r2, accuracy, predicted_outputs, true_outputs = test_model(model, test_loader, loss_function)
-
-print(f'Test Loss: {avg_test_loss:.4f}')
-print(f'R² Score: {r2:.4f}')
-print(f'Accuracy (within 2% tolerance): {accuracy:.2f}%')
-
-
-
-plot_results(predicted_outputs, true_outputs, num_plots=3)
+print("Training complete.")
 
 
 
