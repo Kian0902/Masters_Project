@@ -15,19 +15,19 @@ class BranchFNN(nn.Module):
         
         self.f1 = nn.Sequential(
             nn.Linear(19, 64),
-            nn.BatchNorm1d(64),
+            #nn.BatchNorm1d(64),
             nn.ReLU(),
         )
     
         self.f2 = nn.Sequential(
-            nn.Linear(64, 256),
-            nn.BatchNorm1d(256),
+            nn.Linear(64, 128),
+            #nn.BatchNorm1d(128),
             nn.ReLU(),
         )
         
         self.f3 = nn.Sequential(
-            nn.Linear(256, 1024),
-            nn.BatchNorm1d(1024),
+            nn.Linear(128, 256),
+            #nn.BatchNorm1d(1024),
             nn.ReLU(),
         )
     
@@ -36,6 +36,8 @@ class BranchFNN(nn.Module):
         x2 = self.f2(x1)
         x3 = self.f3(x2)
         return x3
+
+
 
 
 
@@ -86,6 +88,7 @@ class BranchCNN(nn.Module):
 
 
 
+
 class CombinedNetwork(nn.Module):
     def __init__(self):
         super(CombinedNetwork, self).__init__()
@@ -97,31 +100,31 @@ class CombinedNetwork(nn.Module):
 
         
         self.fc1 = nn.Sequential(
-            nn.Linear(128 * 10 * 10 + 1024, 6912),
-            nn.BatchNorm1d(6912),
+            nn.Linear(128 * 10 * 10 + 256, 6528),
+            nn.BatchNorm1d(6528),
             nn.ReLU(),
             )
         
         self.fc2 = nn.Sequential(
-            nn.Linear(6912, 3456),
-            nn.BatchNorm1d(3456),
+            nn.Linear(6528, 3264),
+            nn.BatchNorm1d(3264),
             nn.ReLU(),
             )
         
         self.fc3 = nn.Sequential(
-            nn.Linear(3456, 1728),
-            nn.BatchNorm1d(1728),
+            nn.Linear(3264, 1632),
+            nn.BatchNorm1d(1632),
             nn.ReLU(),
             )
         
         self.fc4 = nn.Sequential(
-            nn.Linear(1728, 864),
-            nn.BatchNorm1d(864),
+            nn.Linear(1632, 816),
+            nn.BatchNorm1d(816),
             nn.ReLU(),
             )
         
         self.fc5 = nn.Sequential(
-            nn.Linear(864, 27),
+            nn.Linear(816, 27),
             )
         
     def forward(self, img, geo):
