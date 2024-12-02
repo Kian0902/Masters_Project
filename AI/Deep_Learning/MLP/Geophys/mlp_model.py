@@ -14,10 +14,50 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 
-class MLP19(nn.Module):
+
+
+
+class FFN_Geophys(nn.Module):
+    def __init__(self):
+        super(FFN_Geophys, self).__init__()
+        
+        
+        # Layers
+        self.FC = nn.Sequential(
+            nn.Linear(19, 128),
+            # nn.BatchNorm1d(128),
+            nn.ReLU(),
+            
+            nn.Linear(128, 256),
+            # nn.BatchNorm1d(256),
+            nn.ReLU(),
+            
+            
+            nn.Linear(256, 128),
+            # nn.BatchNorm1d(128),
+            nn.ReLU(),
+            
+            nn.Linear(128, 64),
+            # nn.BatchNorm1d(64),
+            nn.ReLU(),
+            
+            nn.Linear(64, 27)
+        )
+
+    
+    def forward(self, x):
+        x = self.FC(x)
+        return x
+
+
+
+
+
+
+class MLP19_Chap(nn.Module):
     
     def __init__(self):
-        super(MLP19, self).__init__()
+        super(MLP19_Chap, self).__init__()
         
         # Layers
         self.layers = nn.Sequential(nn.Linear(19, 124),
@@ -72,7 +112,19 @@ class MLP19(nn.Module):
 
 
 
-
+# Function for He initialization
+def he_initialization(module):
+    
+    # For Conv and fc layers
+    if isinstance(module, nn.Linear):
+        nn.init.kaiming_normal_(module.weight, mode='fan_out', nonlinearity='relu')
+        if module.bias is not None:
+            nn.init.constant_(module.bias, 0)
+            
+    # For Batchnorm Layers
+    elif isinstance(module, (nn.BatchNorm1d)):
+        nn.init.constant_(module.weight, 1)
+        nn.init.constant_(module.bias, 0)
 
 
 
