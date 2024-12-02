@@ -277,7 +277,7 @@ if __name__ == "__main__":
     # Example: Visualize features over a specific period
     start = pd.Timestamp("2018-09-17")
     end = pd.Timestamp("2022-12-18")
-    process.visualize_features(start, end, features=['dBx', 'dBy', 'dBz'])
+    process.visualize_features(start, end, features=['Bx', 'By', 'Bz'])
     
     
     
@@ -285,14 +285,14 @@ if __name__ == "__main__":
     filter_tool = FeatureFilter(process)
 
     # Apply median filter to 'Kp' feature with threshold=2 and window_size=5
-    filter_tool.apply_median_filter('dBx', threshold=6, window_size=29)
-    filter_tool.apply_median_filter('dBy', threshold=6, window_size=29)
-    filter_tool.apply_median_filter('dBz', threshold=6, window_size=29)
+    filter_tool.apply_median_filter('Bx', threshold=6, window_size=29)
+    filter_tool.apply_median_filter('By', threshold=6, window_size=29)
+    filter_tool.apply_median_filter('Bz', threshold=6, window_size=29)
     # filter_tool.visualize_filtered_feature('Bx', start, end)
     filter_tool.update_geophys_processor()
     
     
-    process.visualize_features(start, end, features=['dBx', 'dBy', 'dBz'])
+    process.visualize_features(start, end, features=['Bx', 'By', 'Bz'])
     # process.visualize_resampled(rule="H", features=['Bx'])
 
 
