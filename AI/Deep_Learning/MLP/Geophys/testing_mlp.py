@@ -5,64 +5,125 @@ Created on Wed Sep 25 15:46:29 2024
 @author: Kian Sartipzadeh
 """
 
-import torch
+
+
+
+import pickle
 import numpy as np
-from sklearn.metrics import r2_score
 import matplotlib.pyplot as plt
 
+import torch
+import torch.nn as nn
+from torchvision import transforms
+from torch.utils.data import DataLoader
+
+from storing_dataset import MatchingPairs, StoreDataset
+
+from mlp_utils import from_csv_to_numpy, from_strings_to_datetime, plot_compare
+from mlp_model import FFN_Geophys
+from sklearn.metrics import r2_score
+
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device)
 
 
-def test_model(model, test_loader, loss_function):
-    model.eval()
-    total_test_loss = 0.0
-    predicted_outputs = []
-    true_outputs = []
-
-    with torch.no_grad():
-        for test_inputs, test_targets in test_loader:
-            test_inputs, test_targets = test_inputs.to(device), test_targets.to(device)
-            
-            z = torch.linspace(90, 400, 27).to(device)
-            test_outputs = model(test_inputs, z)
-            
-            outputs_np = test_outputs.cpu().numpy()
-            targets_np = test_targets.cpu().numpy()
-            
-            predicted_outputs.append(outputs_np)
-            true_outputs.append(targets_np)
-            
-            test_loss = loss_function(test_outputs, test_targets)
-            total_test_loss += test_loss.item()
-
-    avg_test_loss = total_test_loss / len(test_loader)
-    predicted_outputs = np.concatenate(predicted_outputs, axis=0)
-    true_outputs = np.concatenate(true_outputs, axis=0)
-
-    predicted_outputs_flat = predicted_outputs.flatten()
-    true_outputs_flat = true_outputs.flatten()
-
-    r2 = r2_score(true_outputs_flat, predicted_outputs_flat)
-
-    tolerance = 0.02
-    relative_error = np.abs(predicted_outputs_flat - true_outputs_flat) / np.abs(true_outputs_flat)
-    accuracy = np.mean(relative_error < tolerance) * 100
-
-    return avg_test_loss, r2, accuracy, predicted_outputs, true_outputs
 
 
-def plot_results(predicted_outputs, true_outputs, num_plots=None):
-    z = np.linspace(90, 400, 27)
-    print(num_plots)
-    
-    if not num_plots:
-        num_plots=len(predicted_outputs)
-    
-    plt.figure(figsize=(10, 6))
-    for i in range(num_plots):
-        plt.plot(predicted_outputs[i], z, label='Predicted', color="C1")
-        plt.plot(true_outputs[i], z, label='True', color="C0")
-        plt.xlabel('Log Electron Density')
-        plt.ylabel('Altitude (km)')
-        plt.legend()
-        plt.show()
+
+# Test data folder names
+test_eiscat_folder = "test_eiscat_folder"        # These are the true data
+test_geophys_folder = "test_geophys_folder"
+
+
+
+
+
+# Initializing class for matching pairs
+Pairs = MatchingPairs(test_eiscat_folder, test_geophys_folder)
+
+
+# Returning matching sample pairs
+eis, ge = Pairs.find_pairs()
+
+
+eis = np.abs(eis)
+eis[eis < 1e5] = 1e6
+
+
+# Storing the sample pairs
+A = StoreDataset(ge, np.log10(eis))
+
+# Creating DataLoader
+batch_size = len(A)
+test_loader = DataLoader(A, batch_size=batch_size, shuffle=False)
+
+
+
+model = FFN_Geophys()
+
+# criterion = nn.MSELoss()
+criterion = nn.HuberLoss()
+
+# Loading the trained network weights
+weights_path = 'geophys_FFN_weights.pth'
+model.load_state_dict(torch.load(weights_path, weights_only=True))
+model.to(device)
+
+
+
+model.eval()
+
+
+
+predictions = []
+true_targets = []
+
+
+with torch.no_grad():
+    for data, targets in test_loader:
+        
+        data = data.to(device)
+        targets = targets.to(device)
+        
+        
+        outputs = model(data)
+        
+        loss = criterion(outputs, targets)
+        print(loss)
+        predictions.extend(outputs.cpu().numpy())
+        true_targets.extend(targets.cpu().numpy())
+
+
+model_ne = np.array(predictions)
+eiscat_ne = np.array(true_targets)
+
+
+
+# Calculate R² score for each feature
+r2_scores = [r2_score(10**eiscat_ne[:, i], 10**model_ne[:, i]) for i in range(model_ne.shape[1])]
+
+# Print R² scores for all features
+for i, r2 in enumerate(r2_scores):
+    print(f"R² score for feature {i + 1}: {r2:.4f}")
+
+
+# Processing Artist sample files
+eis_times = from_csv_to_numpy(test_eiscat_folder)[-1]
+eis_time = from_strings_to_datetime(eis_times)  # convert filenames to datetimes
+
+
+
+
+plot_compare(eiscat_ne, model_ne, eis_time)
+
+
+
+
+
+
+
+
+
+
+
+
