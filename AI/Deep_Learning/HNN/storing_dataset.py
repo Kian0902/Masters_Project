@@ -18,7 +18,7 @@ from torch.utils.data import Dataset
 
 import torch
 from torchvision import transforms
-
+from tqdm import tqdm
 
 
 
@@ -306,7 +306,7 @@ class Matching3Pairs:
 
         matching_filenames = self.get_matching_filenames()
 
-        for filename in matching_filenames:
+        for filename in tqdm(matching_filenames):
             # Copy ionogram files
             ionogram_src = os.path.join(self.ionogram_folder, f"{filename}.png")
             ionogram_dst = os.path.join(new_ionogram_folder, f"{filename}.png")
@@ -403,16 +403,16 @@ class Matching3ErrorPairs:
 
 # Example usage
 if __name__ == "__main__":
-    # ionogram_folder = "Good_Ionograms_Images"
-    # radar_folder = "EISCAT_test_samples"
-    # sp19_folder = "SP19_samples"
+    ionogram_folder = "Good_Ionograms_Images"
+    radar_folder = "EISCAT_test_samples"
+    sp19_folder = "SP19_samples"
 
-    # new_ionogram_folder = "test_ionogram_folder"
-    # new_radar_folder = "test_radar_folder"
-    # new_sp19_folder = "test_sp19_folder"
+    new_ionogram_folder = "test_ionogram_folder"
+    new_radar_folder = "test_eiscat_folder"
+    new_sp19_folder = "test_geophys_folder"
 
-    # matcher = Matching3Pairs(ionogram_folder, radar_folder, sp19_folder)
-    # matcher.save_matching_files(new_ionogram_folder, new_radar_folder, new_sp19_folder)
+    matcher = Matching3Pairs(ionogram_folder, radar_folder, sp19_folder)
+    matcher.save_matching_files(new_ionogram_folder, new_radar_folder, new_sp19_folder)
     print("...")
 
 
