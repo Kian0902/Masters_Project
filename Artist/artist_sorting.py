@@ -8,7 +8,7 @@ Created on Wed Nov 27 13:34:18 2024
 
 import pandas as pd
 import numpy as np
-
+from tqdm import tqdm
 
 
 class ArtistSorter:
@@ -39,7 +39,7 @@ class ArtistSorter:
 
 
         # Loop over each unique date to create the nested structure
-        for date in unique_dates:
+        for date in tqdm(unique_dates):
             formatted_date = f"{date.year}-{date.month}-{date.day}"
             
             # Filter the dataframe for the current date
