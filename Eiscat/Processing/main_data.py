@@ -98,8 +98,8 @@ def detect_nan_in_arrays(data_dict):
 
 # # Use the local folder name containing data
 # folder_name_in  = "EISCAT_Madrigal/selected_test_eiscat"
-folder_name_out = "EISCAT_MAT/All"
-
+folder_name_out = "EISCAT_MAT/EISCAT_test_data"
+# folder_name_out = "EISCAT_MAT/All"
 
 # Extract info from hdf5 files
 # madrigal_processor = EISCATDataProcessor(folder_name_in, folder_name_out)
@@ -191,7 +191,7 @@ for day in X_avg:
 
 
 
-save_data(X_avg, file_name="X_avg_train_data")
+save_data(X_avg, file_name="X_avg_test_data")
 
 
 
