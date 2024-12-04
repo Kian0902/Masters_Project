@@ -141,7 +141,7 @@ def plot_eiscat_vs_artist(X_eiscat, X_artist):
     
     
     # Creating the plots
-    fig, ax = plt.subplots(1, 2, figsize=(10, 8), sharey=True)
+    fig, ax = plt.subplots(1, 2, figsize=(12, 8), sharey=True)
     fig.suptitle(f'Date: {date_str}', fontsize=20)
     fig.tight_layout()
     fig.autofmt_xdate()
@@ -164,7 +164,7 @@ def plot_eiscat_vs_artist(X_eiscat, X_artist):
     ax[1].set_xlim(x_limits)
     
     # Add colorbar for the original data
-    cbar = fig.colorbar(ne_EISCAT, ax=ax[1], orientation='vertical', fraction=0.03, pad=0.04, aspect=44, shrink=3)
+    cbar = fig.colorbar(ne_EISCAT, ax=ax[1], orientation='vertical', fraction=0.053, pad=0.04)
     cbar.set_label(r'$log_{10}(n_e)$ [n/cm$^3$]', fontsize=17)
     
     
