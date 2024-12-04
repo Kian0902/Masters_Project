@@ -79,32 +79,6 @@ def interpolate_data(data: dict, r_h):
 
 
 
-X_artist = load_data_dict("artist_test_days.pkl")
-X_EISCAT = load_data_dict(file_name="X_avg_test_data")
-
-
-
-
-for day in X_artist:
-    X_uhf = X_EISCAT[day]
-    X_art = X_artist[day]
-    # plot_data(X)
-    r_uhf = X_uhf['r_h']
-    # plot_eiscat_vs_artist(X_uhf, X_art)
-    
-    X_filt = filter_range(X_art, 'r_h', 90, 400)
-    # plot_eiscat_vs_artist(X_uhf, X_filt)
-    
-    
-    X_inter = interpolate_data(X_filt, r_uhf)
-    plot_eiscat_vs_artist(X_uhf, X_inter)
-    
-
-
-
-
-
-
 
 
 
