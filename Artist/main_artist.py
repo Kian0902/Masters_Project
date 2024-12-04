@@ -77,7 +77,7 @@ if __name__ == "__main__":
         
         X_inter = interpolate_data(X_filt, r_uhf)
         plot_eiscat_vs_artist(X_uhf, X_inter)
-        artist_processed[day] = X_artist[day]
+        artist_processed[day] = X_inter
     
     save_data_dict(artist_processed, file_name="processed_artist_test_days.pkl")
     
