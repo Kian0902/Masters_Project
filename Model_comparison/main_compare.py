@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 from storing_dataset import Matching3Pairs, Store3Dataset
 
 
-from eval_utils import save_dict, load_dict, convert_pred_to_dict, from_csv_to_numpy, from_strings_to_array, from_strings_to_datetime, filter_artist_times, inspect_dict
+from eval_utils import save_dict, load_dict, convert_pred_to_dict, convert_ionograms_to_dict, from_csv_to_numpy, from_strings_to_array, from_strings_to_datetime, filter_artist_times, inspect_dict
 from eval_plotting import plot_compare, plot_compare_all, plot_compare_r2, plot_results, RadarPlotter
 from eval_predict import apply_model
 from hnn_model import CombinedNetwork
@@ -71,30 +71,33 @@ Eiscat_support = load_dict("X_avg_test_data")
 X_art_new = filter_artist_times(X_eis, X_hnn, X_art)
 
 
+X_ion = convert_ionograms_to_dict(ion, X_eis)
 
 
-# for day in X_hnn:
-#     plot_compare_all(Eiscat_support[day], X_eis[day], X_hnn[day], X_art_new[day])
-    
+
+
 
 
 # Times must be in the format yyyymmdd_hhmm
-selected_dates_and_times = ["20190105_1045", "20190105_1800", "20190105_2030",
+# selected_dates_and_times = ["20190105_1045", "20190105_1800", "20190105_2030",
+#                             "20191215_2030", "20191215_2115", "20191215_2245",
+#                             "20200227_0145", "20200227_1200", "20200227_2030"]
+selected_dates_and_times = ["20190105_1045", "20190105_1400", "20190105_2030",
                             "20191215_2030", "20191215_2115", "20191215_2245",
-                            "20200227_0145", "20200227_1200", "20200227_2030"]
+                            "20200227_0145", "20200227_1200", "20200227_1615"]
 
 # selected_dates_and_times = ["20190105_1045", "20190105_1800", "20190105_2030"]
 selected_datetimes = from_strings_to_datetime(selected_dates_and_times)
 
 
 for day in X_hnn:
-    radar_plotter = RadarPlotter(Eiscat_support[day], X_eis[day], X_hnn[day], X_art_new[day])
+    radar_plotter = RadarPlotter(Eiscat_support[day], X_eis[day], X_hnn[day], X_art_new[day], X_ion[day])
     radar_plotter.select_measurements_by_datetime(selected_datetimes)  # Select 3 measurements
     radar_plotter.plot_compare_all()  # Plot all radar data with selected measurements highlighted
     radar_plotter.plot_selected_measurements()  # Plot the selected measurements
     radar_plotter.plot_error_profiles()
-
-
+    radar_plotter.plot_ionogram_measurements_and_errors()
+    # break
 
 
 
