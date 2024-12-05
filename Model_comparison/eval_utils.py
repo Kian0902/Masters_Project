@@ -152,7 +152,29 @@ def inspect_dict(d, indent=0):
 
 
 
+def filter_artist_times(dict_eis: dict, dict_hnn: dict, dict_art: dict):
+    filtered_art = {}
 
+    for date in dict_art:
+        # Convert 'r_time' arrays to datetime objects
+        r_time_eis = from_array_to_datetime(dict_eis[date]['r_time'])
+        r_time_hnn = from_array_to_datetime(dict_hnn[date]['r_time'])
+        r_time_art = from_array_to_datetime(dict_art[date]['r_time'])
+        
+        # Find common timestamps
+        common_times = np.intersect1d(np.intersect1d(r_time_eis, r_time_hnn), r_time_art)
+        
+        # Get indices of common timestamps in radar3's 'r_time'
+        common_indices = np.isin(r_time_art, common_times)
+
+        # Filter 'r_time' and 'r_param' arrays in radar3
+        filtered_art[date] = {
+            'r_time': dict_art[date]['r_time'][common_indices],
+            'r_h': dict_art[date]['r_h'],
+            'r_param': dict_art[date]['r_param'][:, common_indices]
+        }
+    
+    return filtered_art
 
 
 
