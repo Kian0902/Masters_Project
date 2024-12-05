@@ -17,7 +17,8 @@ from torch.utils.data import DataLoader
 from storing_dataset import Matching3Pairs, Store3Dataset
 
 
-from eval_utils import save_dict, load_dict, convert_pred_to_dict, from_csv_to_numpy, from_strings_to_array, from_strings_to_datetime, plot_compare, plot_compare_all, plot_compare_r2, plot_results
+from eval_utils import save_dict, load_dict, convert_pred_to_dict, from_csv_to_numpy, from_strings_to_array, from_strings_to_datetime, filter_artist_times, inspect_dict
+from eval_plotting import plot_compare, plot_compare_all, plot_compare_r2, plot_results, RadarPlotter
 from eval_predict import apply_model
 from hnn_model import CombinedNetwork
 from sklearn.metrics import r2_score
@@ -63,22 +64,33 @@ X_hnn = convert_pred_to_dict(r_t, r_times, X_pred)
 
 X_true = from_csv_to_numpy(test_radar_folder)[0]
 X_eis = convert_pred_to_dict(r_t, r_times, X_true)
-
-
-
+X_art = load_dict("processed_artist_test_days.pkl")
 Eiscat_support = load_dict("X_avg_test_data")
 
 
-X_art = load_dict("processed_artist_test_days.pkl")
+X_art_new = filter_artist_times(X_eis, X_hnn, X_art)
 
+
+
+
+# for day in X_hnn:
+#     plot_compare_all(Eiscat_support[day], X_eis[day], X_hnn[day], X_art_new[day])
+    
+
+
+# Times must be in the format yyyymmdd_hhmm
+selected_dates_and_times = ["20190105_1045", "20190105_1800", "20190105_2030",
+                            "20191215_2030", "20191215_2115", "20191215_2245",
+                            "20200227_0145", "20200227_1200", "20200227_2030",]
+selected_datetimes = from_strings_to_datetime(selected_dates_and_times)
 
 
 for day in X_hnn:
-    plot_compare_all(Eiscat_support[day], X_eis[day], X_hnn[day], X_art[day])
-
-
-
-
+    radar_plotter = RadarPlotter(Eiscat_support[day], X_eis[day], X_hnn[day], X_art_new[day])
+    radar_plotter.select_measurements_by_datetime(selected_datetimes)  # Select 3 measurements
+    radar_plotter.plot_compare_all()  # Plot all radar data with selected measurements highlighted
+    radar_plotter.plot_selected_measurements()  # Plot the selected measurements
+    
 
 
 
