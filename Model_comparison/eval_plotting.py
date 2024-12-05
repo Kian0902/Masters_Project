@@ -218,11 +218,12 @@ def plot_results(ne_pred, ne_true):
 
 
 class RadarPlotter:
-    def __init__(self, support, X_EISCAT, X_HNN, X_Artist):
+    def __init__(self, support, X_EISCAT, X_HNN, X_Artist, X_Ionogram):
         self.support = support
         self.X_EISCAT = X_EISCAT
         self.X_HNN = X_HNN
         self.X_Artist = X_Artist
+        self.X_Ionogram = X_Ionogram
         self.selected_indices = []
 
     def plot_compare_all(self):
@@ -340,6 +341,11 @@ class RadarPlotter:
     
     
     
+    
+    # =============================================================================
+    #                        Plotting Normalized Errors
+    
+        
     def error_function(self, X_eiscat, X):
         error = np.abs(X_eiscat - X)/X_eiscat
         return error
@@ -417,12 +423,148 @@ class RadarPlotter:
         plt.tight_layout()
         plt.show()
 
+    #     
+    # =============================================================================
+
+    def plot_ionogram_measurements_and_errors(self):
+        """
+        Plot the ionogram images, the selected measurements, and the error profiles for the selected dates.
+        This method creates an nx3 grid of subplots, where n is the number of selected dates.
+        """
+        if not self.selected_indices:
+            print("No measurements selected. Please run select_measurements(n) or select_measurements_by_datetime(datetimes) first.")
+            return
+        
+        sns.set(style="dark", context=None, palette=None)
+        
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        n = len(self.selected_indices)
+        
+        fig, axes = plt.subplots(n, 3, figsize=(14, 5*n))
+        
+        if n == 1:
+            axes = [axes]  # Ensure axes is iterable if there's only one subplot
+        
+        for i, idx in enumerate(self.selected_indices):
+            # Plot ionogram image
+            ionogram_img = self.X_Ionogram["r_param"][idx]
+            ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
+            ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
+            
+                
+            axes[i][0].imshow(ionogram_img)
+            axes[i][0].set_title(f'Ionogram - Time: {r_time[idx].strftime("%H:%M")}', fontsize=15)
+            axes[i][0].axis('off')
+            
+            # Plot selected measurements using existing method
+            self.plot_single_measurement(axes[i][1], idx)
+            
+            # Plot error profiles using existing method
+            self.plot_single_error(axes[i][2], idx)
+            
+            
+        date_str = r_time[self.selected_indices[0]].strftime('%Y-%m-%d')
+        fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.01)
+        plt.tight_layout()
+        plt.show()
+    
+    def plot_single_measurement(self, ax, idx):
+        """
+        Plot a single selected measurement on a given axis.
+        """
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        r_h = self.support["r_h"].flatten()
+        
+        ax.plot(np.log10(self.X_EISCAT["r_param"][:, idx]), r_h, label='EISCAT', linestyle='-')
+        ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
+        if self.X_Artist is not None:
+            ax.plot(np.log10(self.X_Artist["r_param"][:, idx]), r_h, label='Artist 4.5', linestyle='-')
+        
+        time_str = r_time[idx].strftime('%H:%M')
+        ax.set_xlabel(r'$log_{10}(n_e)$ [$n/cm^3$]', fontsize=13)
+        ax.set_title(f'Measurements - Time: {time_str}', fontsize=15)
+        ax.grid(True)
+        ax.legend()
+
+    def plot_single_error(self, ax, idx):
+        """
+        Plot a single error profile on a given axis.
+        """
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        r_h = self.support["r_h"].flatten()
+        error_hnn, error_artist, valid_artist_mask = self.calculate_errors(idx)
+        
+        # ax.plot(error_hnn, r_h, label='Error: EISCAT vs DL Model', linestyle='-', color='C1')
+        # if np.any(valid_artist_mask):
+        #     ax.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
+        # else:
+        #     ax.plot(error_artist, r_h, 'r-', linewidth=2, label='No Artist Data')
+        # Plot errors
+        ax.plot(error_hnn, r_h, label='Error: EISCAT vs DL Model', linestyle='-', color='C1')
+        if np.any(valid_artist_mask):
+            ax.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
+            # Plot red line for NaN indices from the last valid value or first valid value
+            nan_indices = np.where(~valid_artist_mask)[0]
+            last_valid_index = np.max(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
+            first_valid_index = np.min(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
+            for nan_idx in nan_indices:
+                if nan_idx < first_valid_index or nan_idx > last_valid_index:
+                    # Draw a line from the closest valid value to the NaN index
+                    closest_valid_index = first_valid_index if nan_idx < first_valid_index else last_valid_index
+                    ax.plot([error_artist[closest_valid_index], error_artist[nan_idx]], [r_h[closest_valid_index], r_h[nan_idx]], 'r--', linewidth=2, label='Missing values' if nan_idx == nan_indices[0] else "")
+        else:
+            # Plot all error values if all are NaN
+            ax.plot(error_artist, r_h,  'r-', linewidth=2, label='No Artist Data')
+        
+        
+        # Set x-axis limits based on valid error data
+        if np.any(valid_artist_mask):
+            ax.set_xlim(left=0, right=max(np.max(error_hnn), np.max(error_artist[valid_artist_mask])) * 1.1)
+        else:
+           ax.set_xlim(left=0, right=np.max(error_hnn) * 1.1)
+        
+        
+        time_str = r_time[idx].strftime('%H:%M')
+        ax.set_xlabel('Error', fontsize=13)
+        ax.set_title(f'Error Profiles - Time: {time_str}', fontsize=15)
+        ax.grid(True)
+        ax.legend()
 
 
-
-
-
-
+    # def plot_ionogram_measurements_and_errors(self):
+    #     """
+    #     Plot the ionogram images, the selected measurements, and the error profiles for the selected dates.
+    #     This method creates an nx3 grid of subplots, where n is the number of selected dates.
+    #     """
+    #     if not self.selected_indices:
+    #         print("No measurements selected. Please run select_measurements(n) or select_measurements_by_datetime(datetimes) first.")
+    #         return
+        
+    #     sns.set(style="dark", context=None, palette=None)
+        
+    #     r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+    #     n = len(self.selected_indices)
+        
+    #     fig, axes = plt.subplots(n, 3, figsize=(15, 5 * n))
+        
+    #     if n == 1:
+    #         axes = [axes]  # Ensure axes is iterable if there's only one subplot
+        
+    #     for i, idx in enumerate(self.selected_indices):
+    #         # Plot ionogram image
+    #         ionogram_img = self.X_ion["r_param"][idx]
+    #         axes[i][0].imshow(ionogram_img)
+    #         axes[i][0].set_title(f'Ionogram - Time: {r_time[idx].strftime("%H:%M")}', fontsize=15)
+    #         axes[i][0].axis('off')
+            
+    #         # Plot selected measurements
+    #         self.plot_single_measurement(axes[i][1], idx)
+            
+    #         # Plot error profiles
+    #         self.plot_single_error(axes[i][2], idx)
+        
+    #     plt.tight_layout()
+    #     plt.show()
 
 
 
