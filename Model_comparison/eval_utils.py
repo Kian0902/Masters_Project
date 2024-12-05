@@ -114,6 +114,30 @@ def convert_pred_to_dict(r_t, r_times, ne_pred):
 
 
 
+def convert_ionograms_to_dict(ionograms, eiscat_dict):
+    # Initialize an empty dictionary for X_ion
+    X_ion = {}
+
+    # Iterate over the radar dictionary and construct the X_ion dictionary
+    for date_key, radar_data in eiscat_dict.items():
+        r_time = radar_data['r_time']  # This should be the array with shape (M, 6)
+        num_measurements = r_time.shape[0]  # This gives us M, the number of measurements
+        
+        # Get the ionograms corresponding to the current date
+        # Assuming `ion` is a list of ionograms measured in the same order as `r_times`
+        ionogram_list = []
+        for idx in range(num_measurements):
+            ionogram_list.append(ionograms.pop(0))  # Pop the next ionogram corresponding to this measurement
+        
+        # Add the data to X_ion
+        X_ion[date_key] = {
+            'r_time': r_time,
+            'r_param': np.array(ionogram_list, dtype=object)  # r_param is an array of shape (M,) containing ionograms
+        }
+
+    return X_ion
+
+
 
 
 def inspect_dict(d, indent=0):
