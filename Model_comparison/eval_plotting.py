@@ -334,14 +334,88 @@ class RadarPlotter:
         axes[0].set_ylabel('Altitude [km]', fontsize=13)
         
         date_str = r_time[idx].strftime('%Y-%m-%d')
-        fig.suptitle(f'{date_str}', fontsize=20)
+        fig.suptitle(f'EISCAT vs HNN vs Artist for {n} Chosen Times\nDate: {date_str}', fontsize=20)
         plt.tight_layout()
         plt.show()
+    
+    
+    
+    def error_function(self, X_eiscat, X):
+        error = np.abs(X_eiscat - X)/X_eiscat
+        return error
+    
+    
+    def calculate_errors(self, idx):
+        eiscat_param = np.log10(self.X_EISCAT["r_param"][:, idx])
+        hnn_param = self.X_HNN["r_param"][:, idx]
+        artist_param = np.log10(self.X_Artist["r_param"][:, idx])
+        
+        # Check if all values are NaN
+        if np.all(np.isnan(artist_param)):
+            valid_artist_mask = np.full(artist_param.shape, False)
+            artist_param = np.zeros_like(artist_param)
+        else:
+            valid_artist_mask = ~np.isnan(artist_param)
+            artist_param = np.nan_to_num(artist_param, nan=0)
+        
+        error_hnn = self.error_function(eiscat_param, hnn_param)
+        error_artist = self.error_function(eiscat_param, artist_param)
+        
+        return error_hnn, error_artist, valid_artist_mask
+    
+    def plot_error_profiles(self):
+        if not self.selected_indices:
+            print("No measurements selected. Please run select_measurements(n) or select_measurements_by_datetime(datetimes) first.")
+            return
 
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        r_h = self.support["r_h"].flatten()
+        n = len(self.selected_indices)
 
+        fig, axes = plt.subplots(1, n, figsize=(5 * n, 7), sharey=True)
 
+        if n == 1:
+            axes = [axes]  # Ensure axes is iterable if there's only one subplot
 
+        for ax, idx in zip(axes, self.selected_indices):
+            # Calculate errors
+            error_hnn, error_artist, valid_artist_mask = self.calculate_errors(idx)
 
+            # Plot errors
+            ax.plot(error_hnn, r_h, label='Error: EISCAT vs DL Model', linestyle='-', color='C1')
+            if np.any(valid_artist_mask):
+                ax.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
+                # Plot red line for NaN indices from the last valid value or first valid value
+                nan_indices = np.where(~valid_artist_mask)[0]
+                last_valid_index = np.max(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
+                first_valid_index = np.min(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
+                for nan_idx in nan_indices:
+                    if nan_idx < first_valid_index or nan_idx > last_valid_index:
+                        # Draw a line from the closest valid value to the NaN index
+                        closest_valid_index = first_valid_index if nan_idx < first_valid_index else last_valid_index
+                        ax.plot([error_artist[closest_valid_index], error_artist[nan_idx]], [r_h[closest_valid_index], r_h[nan_idx]], 'r--', linewidth=2, label='Missing values' if nan_idx == nan_indices[0] else "")
+            else:
+                # Plot all error values if all are NaN
+                ax.plot(error_artist, r_h,  'r-', linewidth=2, label='No Artist Data')
+            
+            time_str = r_time[idx].strftime('%H:%M')
+            ax.set_xlabel('Error', fontsize=13)
+            ax.set_title(f'Time: {time_str}', fontsize=15)
+            ax.grid(True)
+            ax.legend()
+
+            # Set x-axis limits based on valid error data
+            if np.any(valid_artist_mask):
+                ax.set_xlim(left=0, right=max(np.max(error_hnn), np.max(error_artist[valid_artist_mask])) * 1.1)
+            else:
+               ax.set_xlim(left=0, right=np.max(error_hnn) * 1.1)
+                
+        axes[0].set_ylabel('Altitude [km]', fontsize=13)
+
+        date_str = r_time[self.selected_indices[0]].strftime('%Y-%m-%d')
+        fig.suptitle(f'Normalized Error Profiles\nDate: {date_str}', fontsize=20)
+        plt.tight_layout()
+        plt.show()
 
 
 
