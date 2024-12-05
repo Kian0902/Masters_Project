@@ -81,7 +81,9 @@ X_art_new = filter_artist_times(X_eis, X_hnn, X_art)
 # Times must be in the format yyyymmdd_hhmm
 selected_dates_and_times = ["20190105_1045", "20190105_1800", "20190105_2030",
                             "20191215_2030", "20191215_2115", "20191215_2245",
-                            "20200227_0145", "20200227_1200", "20200227_2030",]
+                            "20200227_0145", "20200227_1200", "20200227_2030"]
+
+# selected_dates_and_times = ["20190105_1045", "20190105_1800", "20190105_2030"]
 selected_datetimes = from_strings_to_datetime(selected_dates_and_times)
 
 
@@ -90,7 +92,7 @@ for day in X_hnn:
     radar_plotter.select_measurements_by_datetime(selected_datetimes)  # Select 3 measurements
     radar_plotter.plot_compare_all()  # Plot all radar data with selected measurements highlighted
     radar_plotter.plot_selected_measurements()  # Plot the selected measurements
-    
+    radar_plotter.plot_error_profiles()
 
 
 
