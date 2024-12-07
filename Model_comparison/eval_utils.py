@@ -239,10 +239,28 @@ def apply_log10(radar_data):
         transformed_data[day] = {
             'r_time': data['r_time'],
             'r_h': data['r_h'],
-            'r_param': np.log10(data['r_param'])
+            'r_param': np.log10(data['r_param']),
+            'r_h_peak': data['r_h_peak'],
+            'r_param_peak': np.log10(data['r_param_peak'])
         }
     return transformed_data
 
+
+def revert_log10(radar_data):
+    """
+    Apply np.log10 to the 'r_param' key values in the radar data dictionary.
+    :param radar_data: Dictionary containing radar data with dates as keys and sub-dictionaries
+                       with keys 'r_time', 'r_h', 'r_param'.
+    :return: A new dictionary with the same structure but with 'r_param' transformed by np.log10.
+    """
+    transformed_data = {}
+    for day, data in radar_data.items():
+        transformed_data[day] = {
+            'r_time': data['r_time'],
+            'r_h': data['r_h'],
+            'r_param': 10**data['r_param']
+        }
+    return transformed_data
 
 
 #                                       (End)
