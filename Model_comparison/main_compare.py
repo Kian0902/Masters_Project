@@ -11,7 +11,7 @@ from torchvision import transforms
 from storing_dataset import Matching3Pairs, Store3Dataset
 
 
-from eval_utils import save_dict, load_dict, apply_log10, add_key_from_dict_to_dict, convert_pred_to_dict, convert_ionograms_to_dict, from_csv_to_numpy, from_strings_to_array, from_strings_to_datetime, filter_artist_times, inspect_dict
+from eval_utils import save_dict, load_dict, apply_log10, revert_log10, add_key_from_dict_to_dict, convert_pred_to_dict, convert_ionograms_to_dict, from_csv_to_numpy, from_strings_to_array, from_strings_to_datetime, filter_artist_times, inspect_dict
 from eval_plotting import RadarPlotter
 from eval_predict import apply_model
 from eval_peaks import IonosphericPeakFinder
@@ -68,7 +68,6 @@ X_hnn = add_key_from_dict_to_dict(Eiscat_support, X_hnn)
 X_art = add_key_from_dict_to_dict(Eiscat_support, X_art)
 
 
-# X_eis = apply_log10(X_eis)
 
 
 X_ion = convert_ionograms_to_dict(ion, X_eis)
@@ -82,7 +81,6 @@ X_hnn = hnn_peak_finder.get_peaks()
 
 art_peak_finder = IonosphericPeakFinder(X_art)
 X_art = art_peak_finder.get_peaks()
-
 
 
 
