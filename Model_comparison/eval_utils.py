@@ -23,6 +23,9 @@ def save_dict(dataset: dict, file_name: str):
         pickle.dump(dataset, file)
 
 
+# =============================================================================
+#           Functions for handeling filenames and datetimes
+#                               (Start)
 
 def from_strings_to_datetime(data_strings):
     data = from_strings_to_array(data_strings)
@@ -60,8 +63,6 @@ def from_strings_to_array(date_strings):
 
 
 
-
-
 def from_csv_to_numpy(folder):
     list_files = [f for f in os.listdir(folder) if f.endswith('.csv')]
     
@@ -82,11 +83,16 @@ def from_csv_to_numpy(folder):
 def from_csv_to_filename(folder):
     list_files = [os.path.splitext(f)[0] for f in os.listdir(folder) if f.endswith('.csv')]
     return list_files
+#                                       (End)
+# =============================================================================
 
 
 
 
 
+# =============================================================================
+#                    Functions for handeling dictionaries
+#                                 (Start)
 
 def add_key_from_dict_to_dict(from_X, to_X):
     # Reorder the keys in to_X to match the order in from_X
@@ -221,6 +227,26 @@ def filter_artist_times(dict_eis: dict, dict_hnn: dict, dict_art: dict):
 
 
 
+def apply_log10(radar_data):
+    """
+    Apply np.log10 to the 'r_param' key values in the radar data dictionary.
+    :param radar_data: Dictionary containing radar data with dates as keys and sub-dictionaries
+                       with keys 'r_time', 'r_h', 'r_param'.
+    :return: A new dictionary with the same structure but with 'r_param' transformed by np.log10.
+    """
+    transformed_data = {}
+    for day, data in radar_data.items():
+        transformed_data[day] = {
+            'r_time': data['r_time'],
+            'r_h': data['r_h'],
+            'r_param': np.log10(data['r_param'])
+        }
+    return transformed_data
+
+
+
+#                                       (End)
+# =============================================================================
 
 
 
