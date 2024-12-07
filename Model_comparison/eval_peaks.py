@@ -6,87 +6,79 @@ Created on Sat Dec  7 15:02:44 2024
 """
 
 
-
-
-
 import numpy as np
 from scipy.signal import find_peaks
 
 class IonosphericPeakFinder:
     def __init__(self, radar_data):
         """
-        Initializes the peak finder class.
-        
-        Parameters:
-            radar_data (dict): Nested dictionary with keys as dates and values as dictionaries containing 
-                              'r_time', 'r_h', and 'r_param'.
+        Initialize the IonosphericPeakFinder class with nested radar data for multiple days.
+        :param radar_data: Nested dictionary with daily radar data.
         """
         self.radar_data = radar_data
 
-    def find_peaks(self, r_h, r_param, prominence=1e10):
+    def find_peaks(self, dataset):
         """
-        Finds peaks for a single day of radar data.
+        Find peaks for a single day's dataset.
+        :param dataset: Dictionary containing radar data for a single day with keys 'r_time', 'r_h', 'r_param'.
+        :return: Arrays of peak altitudes and corresponding parameters.
+        """
         
-        Parameters:
-            r_h (numpy array): Array of altitude points (N, 1).
-            r_param (numpy array): Array of radar parameters (N, M).
-            prominence (float): Prominence for peak detection (default is 1e10).
-        
-        Returns:
-            list of dict: A list containing dictionaries with keys 'E_region', 'F_region', and 'E+F_region',
-                          each containing the peak altitude and value for each measurement.
+        r_h = dataset['r_h'].flatten()  # Flatten altitude points (N,)
+        r_param = dataset['r_param']    # Electron density profiles (N, M)
+
+        h_peaks = np.zeros((2, r_param.shape[1]))  # Shape (P, M), where P=2 for E and F peaks
+        r_peaks = np.zeros((2, r_param.shape[1]))
+
+        # Defining E and F-region altitude ranges
+        e_reg = (160 >= r_h) & (90 < r_h)
+        f_reg = (325 >= r_h) & (160 < r_h)
+
+        for m in range(r_param.shape[1]):
+            # Finding E and F-region peaks
+            e_peaks, e_properties = find_peaks(r_param[e_reg, m], prominence=True)
+            f_peaks, f_properties = find_peaks(r_param[f_reg, m], prominence=True)
+
+            # Handling E-region
+            if e_peaks.size > 0:
+                e_peak_index = e_properties['prominences'].argmax()
+                h_peaks[0, m] = r_h[e_reg][e_peaks][e_peak_index]
+                r_peaks[0, m] = r_param[e_reg, m][e_peaks][e_peak_index]
+            else:
+                h_peaks[0, m] = r_h[e_reg][r_param[e_reg, m].argmax()]
+                r_peaks[0, m] = r_param[e_reg, m].max()
+
+            # Handling F-region
+            if f_peaks.size > 0:
+                f_peak_index = f_properties['prominences'].argmax()
+                h_peaks[1, m] = r_h[f_reg][f_peaks][f_peak_index]
+                r_peaks[1, m] = r_param[f_reg, m][f_peaks][f_peak_index]
+            else:
+                h_peaks[1, m] = r_h[f_reg][r_param[f_reg, m].argmax()]
+                r_peaks[1, m] = r_param[f_reg, m].max()
+
+        return h_peaks, r_peaks
+
+    def gets_peaks(self):
         """
-        results = []
-        for measurement_idx in range(r_param.shape[1]):
-            profile = r_param[:, measurement_idx]
-            peaks, properties = find_peaks(profile, prominence=prominence)
-
-            e_region_peak = None
-            f_region_peak = None
-            e_f_region_peak = None
-
-            for peak_idx in peaks:
-                altitude = r_h[peak_idx, 0]
-                if 90 <= altitude <= 150:  # E-region altitude range
-                    e_region_peak = (altitude, profile[peak_idx])
-                elif 150 < altitude <= 400:  # F-region altitude range
-                    f_region_peak = (altitude, profile[peak_idx])
-                if 90 <= altitude <= 400:  # Combined E+F-region range
-                    if e_f_region_peak is None or profile[peak_idx] > e_f_region_peak[1]:
-                        e_f_region_peak = (altitude, profile[peak_idx])
-
-            results.append({
-                'E_region': e_region_peak,
-                'F_region': f_region_peak,
-                'E+F_region': e_f_region_peak,
-            })
-
-        return results
-
-    def get_peaks(self):
+        Process the radar data for all days to find peaks and corresponding altitudes.
+        :return: New nested dictionary with additional keys for peak altitudes and values.
         """
-        Analyze all radar data to find peaks for each day and measurement.
-        
-        Returns:
-            dict: Nested dictionary with dates as keys and values as lists of peak information for each measurement.
-        """
-        all_peaks = {}
-        for date, data in self.radar_data.items():
-            r_h = data['r_h']
-            r_param = data['r_param']
-            peaks = self.find_peaks(r_h, r_param)
-            all_peaks[date] = peaks
+        processed_data = {}
 
-        return all_peaks
+        for date, dataset in self.radar_data.items():
+            h_peaks, r_peaks = self.find_peaks(dataset)
 
+            # Copy original data and add new keys for peaks
+            processed_data[date] = {
+                'r_time': dataset['r_time'],
+                'r_h': dataset['r_h'],
+                'r_param': dataset['r_param'],
+                'r_h_peak': h_peaks,
+                'r_param_peak': r_peaks
+            }
 
-
-
-
-
-
-
-
+        return processed_data
 
 
 
