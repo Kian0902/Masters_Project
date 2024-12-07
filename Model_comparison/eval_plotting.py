@@ -12,9 +12,9 @@ from datetime import datetime
 from matplotlib.gridspec import GridSpec
 from eval_utils import from_array_to_datetime
 import random
-
+from matplotlib.colors import ListedColormap, Normalize
 import seaborn as sns
-
+sns.set(style="dark", context=None, palette=None)
 
 
 def plot_compare(ne_true, ne_pred, r_time):
@@ -120,10 +120,10 @@ def plot_compare_r2(ne_true, ne_pred, r2_scores, r_time):
 
 
 
-def plot_compare_all(support, X_EISCAT, X_HNN, X_Artist):
+def plot_compare_all(X_EISCAT, X_HNN, X_Artist):
     r_time = X_EISCAT["r_time"]
     art_time = X_Artist["r_time"]
-    r_h = support["r_h"].flatten()
+    r_h = X_EISCAT["r_h"].flatten()
     
     ne_eis = np.log10(X_EISCAT["r_param"])
     ne_hnn = X_HNN["r_param"]
@@ -218,18 +218,186 @@ def plot_results(ne_pred, ne_true):
 
 
 class RadarPlotter:
-    def __init__(self, support, X_EISCAT, X_HNN, X_Artist, X_Ionogram):
-        self.support = support
+    def __init__(self, X_EISCAT, X_HNN, X_Artist, X_Ionogram):
         self.X_EISCAT = X_EISCAT
         self.X_HNN = X_HNN
         self.X_Artist = X_Artist
         self.X_Ionogram = X_Ionogram
         self.selected_indices = []
-
+    
+    
+    def plot_all_peaks(self):
+        
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        
+        r_h = self.X_EISCAT["r_h"].flatten()
+        
+        ne_eis = np.log10(self.X_EISCAT["r_param"])
+        ne_hnn = self.X_HNN["r_param"]
+        ne_art = np.log10(self.X_Artist["r_param"])
+        
+        
+        
+        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
+        hnn_param_peak = self.X_HNN["r_param_peak"]
+        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
+        
+        eis_h_peak = self.X_EISCAT["r_h_peak"]
+        hnn_h_peak = self.X_HNN["r_h_peak"]
+        art_h_peak = self.X_Artist["r_h_peak"]
+        
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+        
+        print(ne_eis.shape[1])
+        
+        print(hnn_param_peak.shape)
+        
+        for m in range(ne_eis.shape[1]):
+            fig, ax = plt.subplots()
+            fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
+            
+            ax.plot(ne_eis[:, m], r_h, color="C0")
+            ax.plot(ne_hnn[:, m], r_h, color="C1")
+            ax.plot(ne_art[:, m], r_h, color="C2")
+            ax.scatter(eis_param_peak[0, m], eis_h_peak[0, m], color="C0", marker="o")
+            ax.scatter(eis_param_peak[1, m], eis_h_peak[1, m], color="C0", marker="o")
+            ax.scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1", marker="X")
+            ax.scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="C1", marker="X")
+            ax.scatter(art_param_peak[0, m], art_h_peak[0, m], color="C2", marker="s")
+            ax.scatter(art_param_peak[1, m], art_h_peak[1, m], color="C2", marker="s")
+            ax.set_xlim(xmin=9.5, xmax=12.1)
+            ax.set_ylim(ymin=88, ymax=402)
+            # ax[1].plot(ne_hnn[:, m], r_h, color="C0")
+            # ax[1].scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1")
+            # ax[1].scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="red")
+            
+            plt.show()
+            
+    def plot_compare_all_peaks(self):
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        # art_time = from_array_to_datetime(self.X_Artist["r_time"])
+        
+        
+        
+        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
+        hnn_param_peak = self.X_HNN["r_param_peak"]
+        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
+        
+        eis_h_peak = self.X_EISCAT["r_h_peak"]
+        hnn_h_peak = self.X_HNN["r_h_peak"]
+        art_h_peak = self.X_Artist["r_h_peak"]
+        
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+        
+        # Create a grid layout
+        fig = plt.figure(figsize=(16, 8))
+        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
+        
+        # Shared y-axis setup
+        ax0 = fig.add_subplot(gs[0])
+        ax1 = fig.add_subplot(gs[1], sharey=ax0)
+        
+        
+        fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
+        
+        Min, Max = 9.5, 12.1 
+        
+        
+        ax0.scatter(r_time, eis_param_peak[0,:], color="C0", label="EISCAT UHF")
+        ax0.scatter(r_time, hnn_param_peak[0,:], color="C1", label="KIANN")
+        ax0.scatter(r_time, art_param_peak[0,:], color="C2", label="Artist 4.5")
+        ax0.set_title('E-region Peaks', fontsize=17)
+        ax0.set_xlabel('Time', fontsize=15)
+        ax0.set_ylabel('Electron Densities', fontsize=15)
+        ax0.set_ylim(ymin=Min, ymax=Max)
+        ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ax0.legend()
+        ax0.grid(True)
+        
+        
+        # Plotting E-peaks
+        ax1.scatter(r_time, eis_param_peak[1,:], color="C0", label="EISCAT UHF")
+        ax1.scatter(r_time, hnn_param_peak[1,:], color="C1", label="KIANN")
+        ax1.scatter(r_time, art_param_peak[1,:], color="C2", label="Artist 4.5")
+        ax1.set_title('F-region Peaks', fontsize=17)
+        ax1.set_xlabel('Time', fontsize=15)
+        ax1.set_ylim(ymin=Min, ymax=Max)
+        ax1.tick_params(labelleft=False)
+        ax1.legend()
+        ax1.grid(True)
+        ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        for ax in [ax0, ax1]:
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        
+        
+        plt.show()
+        
+        
+    def plot_compare_all_peak_regions(self):
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        art_time = from_array_to_datetime(self.X_Artist["r_time"])
+        
+        
+        
+        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
+        hnn_param_peak = self.X_HNN["r_param_peak"]
+        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
+        
+        eis_h_peak = self.X_EISCAT["r_h_peak"]
+        hnn_h_peak = self.X_HNN["r_h_peak"]
+        art_h_peak = self.X_Artist["r_h_peak"]
+        
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+        
+        # Create a grid layout
+        fig = plt.figure(figsize=(16, 8))
+        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
+        
+        # Shared y-axis setup
+        ax0 = fig.add_subplot(gs[0])
+        ax1 = fig.add_subplot(gs[1], sharey=ax0)
+        
+        
+        fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
+        
+        Min, Max = 9.9, 12.1 
+        
+        
+        ax0.scatter(hnn_param_peak[0,:], eis_param_peak[0,:], color="C0")
+        ax0.scatter(art_param_peak[0,:], eis_param_peak[0,:], color="C1")
+        ax0.set_title('E-region Peaks', fontsize=17)
+        ax0.set_xlabel('HNN', fontsize=15)
+        ax0.set_ylabel('EISCAT', fontsize=15)
+        ax0.set_xlim(xmin=Min, xmax=Max)
+        ax0.set_ylim(ymin=Min, ymax=Max)
+        ax0.grid(True)
+        
+        
+        # Plotting E-peaks
+        ax1.scatter(hnn_param_peak[1,:], eis_param_peak[1,:], color="C0")
+        ax1.scatter(art_param_peak[1,:], eis_param_peak[1,:], color="C1")
+        ax1.set_title('F-region Peaks', fontsize=17)
+        ax1.set_xlabel('HNN', fontsize=15)
+        # ax1.set_ylabel('EISCAT', fontsize=15)
+        ax1.set_xlim(xmin=Min, xmax=Max)
+        ax1.set_ylim(ymin=Min, ymax=Max)
+        ax1.tick_params(labelleft=False)
+        ax1.grid(True)
+        
+        plt.show()
+    
+    
+    
+    
+    
     def plot_compare_all(self):
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         art_time = from_array_to_datetime(self.X_Artist["r_time"])
-        r_h = self.support["r_h"].flatten()
+        r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
         ne_hnn = self.X_HNN["r_param"]
@@ -286,6 +454,50 @@ class RadarPlotter:
         plt.show()
     
     
+    def plot_compare_closest(self):
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        r_h = self.X_EISCAT["r_h"].flatten()
+        
+        ne_eis = np.log10(self.X_EISCAT["r_param"])
+        ne_hnn = self.X_HNN["r_param"]
+        ne_art = np.log10(self.X_Artist["r_param"])
+        
+        # Calculate absolute differences
+        diff_hnn = self.error_function(ne_eis, ne_hnn)
+        diff_art = self.error_function(ne_eis, ne_art)
+
+        # Calculate the difference in magnitude to depict which one is closer
+        diff_magnitude = diff_art - diff_hnn
+        
+        
+        # Define a diverging colormap: blue for Artist closer, red for HNN closer
+        cmap = plt.get_cmap('bwr')
+        norm = Normalize(vmin=-np.max(np.abs(diff_magnitude)), vmax=np.max(np.abs(diff_magnitude)))
+        
+        # print(norm)
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+        
+        # Create the figure and axis
+        fig, ax = plt.subplots(figsize=(10, 8))
+        
+        # Plot the comparison with magnitude differences
+        mesh = ax.pcolormesh(r_time, r_h, diff_magnitude, shading='auto', cmap=cmap, norm=norm)
+        ax.set_title(f'Comparison: HNN vs Artist (Closer to EISCAT) - {date_str}', fontsize=17)
+        ax.set_xlabel('Time [hours]', fontsize=13)
+        ax.set_ylabel('Altitude [km]', fontsize=15)
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        # Rotate x-axis labels for better visibility
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        
+        # Add a colorbar with magnitude labels
+        cbar = fig.colorbar(mesh, ax=ax, orientation='vertical')
+        cbar.set_label('Difference Magnitude (Artist closer < 0 < HNN closer)', fontsize=13)
+        
+        plt.show()
+    
+    
     def select_measurements(self, n):
         """
         Randomly select n measurements and store their indices.
@@ -313,7 +525,7 @@ class RadarPlotter:
         sns.set(style="dark", context=None, palette=None)
         
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        r_h = self.support["r_h"].flatten()
+        r_h = self.X_EISCAT["r_h"].flatten()
         n = len(self.selected_indices)
         
         fig, axes = plt.subplots(1, n, figsize=(5*n, 7), sharey=True)
@@ -375,7 +587,7 @@ class RadarPlotter:
             return
 
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        r_h = self.support["r_h"].flatten()
+        r_h = self.X_EISCAT["r_h"].flatten()
         n = len(self.selected_indices)
 
         fig, axes = plt.subplots(1, n, figsize=(5 * n, 7), sharey=True)
@@ -435,7 +647,6 @@ class RadarPlotter:
             print("No measurements selected. Please run select_measurements(n) or select_measurements_by_datetime(datetimes) first.")
             return
         
-        sns.set(style="dark", context=None, palette=None)
         
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         n = len(self.selected_indices)
@@ -473,7 +684,7 @@ class RadarPlotter:
         Plot a single selected measurement on a given axis.
         """
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        r_h = self.support["r_h"].flatten()
+        r_h = self.X_EISCAT["r_h"].flatten()
         
         ax.plot(np.log10(self.X_EISCAT["r_param"][:, idx]), r_h, label='EISCAT', linestyle='-')
         ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
@@ -483,6 +694,7 @@ class RadarPlotter:
         time_str = r_time[idx].strftime('%H:%M')
         ax.set_xlabel(r'$log_{10}(n_e)$ [$n/cm^3$]', fontsize=13)
         ax.set_title(f'Measurements - Time: {time_str}', fontsize=15)
+        ax.set_xlim(xmin=9, xmax=12.5)
         ax.grid(True)
         ax.legend()
 
@@ -491,7 +703,7 @@ class RadarPlotter:
         Plot a single error profile on a given axis.
         """
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        r_h = self.support["r_h"].flatten()
+        r_h = self.X_EISCAT["r_h"].flatten()
         error_hnn, error_artist, valid_artist_mask = self.calculate_errors(idx)
         
         # ax.plot(error_hnn, r_h, label='Error: EISCAT vs DL Model', linestyle='-', color='C1')
@@ -529,199 +741,6 @@ class RadarPlotter:
         ax.set_title(f'Error Profiles - Time: {time_str}', fontsize=15)
         ax.grid(True)
         ax.legend()
-
-
-    # def plot_ionogram_measurements_and_errors(self):
-    #     """
-    #     Plot the ionogram images, the selected measurements, and the error profiles for the selected dates.
-    #     This method creates an nx3 grid of subplots, where n is the number of selected dates.
-    #     """
-    #     if not self.selected_indices:
-    #         print("No measurements selected. Please run select_measurements(n) or select_measurements_by_datetime(datetimes) first.")
-    #         return
-        
-    #     sns.set(style="dark", context=None, palette=None)
-        
-    #     r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-    #     n = len(self.selected_indices)
-        
-    #     fig, axes = plt.subplots(n, 3, figsize=(15, 5 * n))
-        
-    #     if n == 1:
-    #         axes = [axes]  # Ensure axes is iterable if there's only one subplot
-        
-    #     for i, idx in enumerate(self.selected_indices):
-    #         # Plot ionogram image
-    #         ionogram_img = self.X_ion["r_param"][idx]
-    #         axes[i][0].imshow(ionogram_img)
-    #         axes[i][0].set_title(f'Ionogram - Time: {r_time[idx].strftime("%H:%M")}', fontsize=15)
-    #         axes[i][0].axis('off')
-            
-    #         # Plot selected measurements
-    #         self.plot_single_measurement(axes[i][1], idx)
-            
-    #         # Plot error profiles
-    #         self.plot_single_error(axes[i][2], idx)
-        
-    #     plt.tight_layout()
-    #     plt.show()
-
-
-
-
-
-
-
-# def plot_compare_all(support, X_EISCAT, X_HNN, X_Artist):
-    
-    
-#     r_time   = X_EISCAT["r_time"]
-#     art_time = X_Artist["r_time"]
-    
-    
-#     r_h = support["r_h"].flatten()
-    
-#     ne_eis = np.log10(X_EISCAT["r_param"])
-#     ne_hnn = X_HNN["r_param"]
-#     ne_art = np.log10(X_Artist["r_param"])
-    
-    
-    
-#     r_time   = from_array_to_datetime(r_time)
-#     art_time = from_array_to_datetime(art_time)
-    
-    
-#     date_str = r_time[0].strftime('%Y-%m-%d')
-
-
-#     # Creating the plots
-#     fig, ax = plt.subplots(1, 3, figsize=(14, 8), sharey=True)
-#     fig.tight_layout()
-#     fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.08)
-    
-    
-#     x_limits = [r_time[0], r_time[-1]]
-    
-#     # Plotting original data
-#     ne_EISCAT = ax[0].pcolormesh(r_time, r_h.flatten(), ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
-#     ax[0].set_title('EISCAT UHF', fontsize=17)
-#     ax[0].set_xlabel('Time [hours]', fontsize=13)
-#     ax[0].set_ylabel('Altitude [km]', fontsize=15)
-#     ax[0].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    
-    
-#     # Plotting original data
-#     ax[1].pcolormesh(r_time, r_h.flatten(), ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
-#     ax[1].set_title('DL model', fontsize=17)
-#     ax[1].set_xlabel('Time [hours]', fontsize=13)
-#     ax[1].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    
-    
-#     # Plotting original data
-#     ax[2].pcolormesh(art_time, r_h.flatten(), ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
-#     ax[2].set_title('Artist 4.5', fontsize=17)
-#     ax[2].set_xlabel('Time [hours]', fontsize=13)
-#     ax[2].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#     ax[2].set_xlim(x_limits)
-    
-    
-    
-#     # Add colorbar for the original data
-#     cbar = fig.colorbar(ne_EISCAT, ax=ax[2], orientation='vertical', fraction=0.1, pad=0.04)
-#     cbar.set_label(r'$log_{10}(n_e)$ [n/cm$^3$]', fontsize=17)
-    
-#     plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# def plot_compare_all(ne_true, ne_pred, ne_art, r_time, art_time):
-    
-    
-    
-    
-    
-#     # Eiscat altitudes
-#     r_h = np.array([[91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
-#             [103.57141624],[106.57728701],[110.08393175],[114.60422289],
-#             [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
-#             [152.05174717],[162.57986185],[174.09833378],[186.65837945],
-#             [200.15192581],[214.62769852],[230.12198695],[246.64398082],
-#             [264.11728204],[282.62750673],[302.15668686],[322.70723831],
-#             [344.19596481],[366.64409299],[390.113117]])
-    
-#     # Artist altitudes
-#     art_h = np.arange(80, 485, 5)
-    
-#     date_str = r_time[0].strftime('%Y-%m-%d')
-
-
-#     # Creating the plots
-#     fig, ax = plt.subplots(1, 3, figsize=(14, 8), sharey=True)
-#     fig.tight_layout()
-#     fig.suptitle(f'Date: {date_str}', fontsize=15)
-    
-    
-    
-#     x_limits = [r_time[0], r_time[-1]]
-#     print(x_limits)
-    
-#     # Plotting original data
-#     ne_EISCAT = ax[0].pcolormesh(r_time, r_h.flatten(), ne_true.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
-#     ax[0].set_title('EISCAT UHF', fontsize=17)
-#     ax[0].set_xlabel('Time [hours]')
-#     ax[0].set_ylabel('Altitude [km]')
-#     ax[0].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    
-    
-#     # Plotting original data
-#     ax[1].pcolormesh(r_time, r_h.flatten(), ne_pred.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
-#     ax[1].set_title('Ours', fontsize=17)
-#     ax[1].set_xlabel('Time [hours]')
-#     ax[1].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    
-    
-#     # Plotting original data
-#     ax[2].pcolormesh(art_time, art_h, ne_art.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
-#     ax[2].set_title('Artist 4.5', fontsize=17)
-#     ax[2].set_xlabel('Time [hours]')
-#     ax[2].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#     ax[2].set_xlim(x_limits)
-    
-    
-    
-#     # Add colorbar for the original data
-#     cbar = fig.colorbar(ne_EISCAT, ax=ax[2], orientation='vertical', fraction=0.03, pad=0.04, aspect=44, shrink=3)
-#     cbar.set_label(r'$log_{10}(n_e)$ [g/cm$^3$]', fontsize=17)
-    
-#     fig.autofmt_xdate()
-#     plt.show()
-
-
-
-# (15,) <class 'numpy.ndarray'>
-# 2019-03-07 20:15:00 <class 'datetime.datetime'>
-# 2019-03-07
-# [datetime.datetime(2019, 3, 7, 20, 15), datetime.datetime(2019, 3, 7, 23, 59)]
-
-
-# (133,) <class 'numpy.ndarray'>
-# 2019-03-07 20:15:00 <class 'datetime.datetime'>
-# 2019-03-07
-# [datetime.datetime(2019, 3, 7, 20, 15), datetime.datetime(2021, 1, 7, 0, 0)]
-
 
 
 
