@@ -251,7 +251,7 @@ class RadarPlotter:
         
         print(ne_eis.shape[1])
         
-        print(hnn_param_peak.shape)
+        print(hnn_param_peak)
         
         for m in range(ne_eis.shape[1]):
             fig, ax = plt.subplots()
