@@ -9,7 +9,7 @@ import os
 import pickle
 import numpy as np
 from datetime import datetime
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 
 
@@ -21,7 +21,6 @@ def load_dict(file_name):
 def save_dict(dataset: dict, file_name: str):
     with open(file_name, 'wb') as file:
         pickle.dump(dataset, file)
-
 
 
 
@@ -83,6 +82,26 @@ def from_csv_to_numpy(folder):
 def from_csv_to_filename(folder):
     list_files = [os.path.splitext(f)[0] for f in os.listdir(folder) if f.endswith('.csv')]
     return list_files
+
+
+
+
+
+
+def add_key_from_dict_to_dict(from_X, to_X):
+    # Reorder the keys in to_X to match the order in from_X
+    for date_key in to_X.keys():
+        if date_key in from_X and "r_h" in from_X[date_key]:
+            # Add r_h from EISCAT_support
+            to_X[date_key]["r_h"] = from_X[date_key]["r_h"]
+            
+            # Reorder keys to match the order in EISCAT_support
+            ordered_keys = list(from_X[date_key].keys())  # Get the desired key order
+            to_X[date_key] = OrderedDict((key, to_X[date_key][key]) for key in ordered_keys if key in to_X[date_key])
+    
+    return to_X
+
+
 
 
 
