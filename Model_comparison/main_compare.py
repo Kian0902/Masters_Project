@@ -85,7 +85,6 @@ X_art = art_peak_finder.get_peaks()
 
 
 
-
 # Times must be in the format yyyymmdd_hhmm
 selected_dates_and_times = ["20190105_1045", "20190105_1400", "20190105_2030",
                             "20191215_2030", "20191215_2115", "20191215_2245",
@@ -98,8 +97,10 @@ selected_datetimes = from_strings_to_datetime(selected_dates_and_times)
 
 for day in X_hnn:
     radar_plotter = RadarPlotter(X_eis[day], X_hnn[day], X_art[day], X_ion[day])
+    radar_plotter.plot_compare_all_interactive()
+    # break
     # radar_plotter.plot_all_peaks()
-    radar_plotter.plot_compare_all_peaks()
+    # radar_plotter.plot_compare_all_peaks()
     # radar_plotter.plot_compare_all_peak_regions()
     # break
     # radar_plotter.select_measurements_by_datetime(selected_datetimes)
@@ -108,7 +109,7 @@ for day in X_hnn:
     # radar_plotter.plot_selected_measurements()
     # radar_plotter.plot_error_profiles()
     # radar_plotter.plot_ionogram_measurements_and_errors()
-    
+    break
 
 
 
