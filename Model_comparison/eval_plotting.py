@@ -7,212 +7,18 @@ Created on Thu Dec  5 14:31:51 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, Normalize
 from matplotlib.dates import DateFormatter
-from datetime import datetime
+import matplotlib.dates as mdates
 from matplotlib.gridspec import GridSpec
+from matplotlib.widgets import Cursor
+from datetime import datetime
+
 from eval_utils import from_array_to_datetime
 import random
-from matplotlib.colors import ListedColormap, Normalize
+
 import seaborn as sns
 sns.set(style="dark", context=None, palette=None)
-
-
-def plot_compare(ne_true, ne_pred, r_time):
-    
-    
-    # Eiscat altitudes
-    r_h = np.array([[91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
-           [103.57141624],[106.57728701],[110.08393175],[114.60422289],
-           [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
-           [152.05174717],[162.57986185],[174.09833378],[186.65837945],
-           [200.15192581],[214.62769852],[230.12198695],[246.64398082],
-           [264.11728204],[282.62750673],[302.15668686],[322.70723831],
-           [344.19596481],[366.64409299],[390.113117]])
-    
-
-    date_str = r_time[0].strftime('%Y-%m-%d')
-
-
-    # Creating the plots
-    fig, ax = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
-    fig.suptitle(f'Date: {date_str}', fontsize=20)
-    fig.tight_layout()
-    
-    
-    # Plotting original data
-    ne_EISCAT = ax[0].pcolormesh(r_time, r_h.flatten(), ne_true.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
-    ax[0].set_title('EISCAT UHF', fontsize=17)
-    ax[0].set_xlabel('Time [hours]', fontsize=13)
-    ax[0].set_ylabel('Altitude [km]', fontsize=15)
-    ax[0].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    
-    # Plotting predicted data
-    ne_HNN = ax[1].pcolormesh(r_time, r_h.flatten(), ne_pred.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
-    ax[1].set_title('HNN', fontsize=17)
-    ax[1].set_xlabel('Time [hours]', fontsize=13)
-    ax[1].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    
-    
-    # Add colorbar for the predicted data
-    cbar = fig.colorbar(ne_HNN, ax=ax[1], orientation='vertical', fraction=0.048, pad=0.04)
-    cbar.set_label(r'$log_{10}(n_e)$ [g/cm$^3$]', fontsize=17, labelpad=15)
-    
-    fig.autofmt_xdate()
-    plt.show()
-
-
-
-
-def plot_compare_r2(ne_true, ne_pred, r2_scores, r_time):
-    
-    
-    # Eiscat altitudes
-    r_h = np.array([[91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
-           [103.57141624],[106.57728701],[110.08393175],[114.60422289],
-           [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
-           [152.05174717],[162.57986185],[174.09833378],[186.65837945],
-           [200.15192581],[214.62769852],[230.12198695],[246.64398082],
-           [264.11728204],[282.62750673],[302.15668686],[322.70723831],
-           [344.19596481],[366.64409299],[390.113117]])
-    
-
-    date_str = r_time[0].strftime('%Y-%m-%d')
-
-    
-    # Creating the plots
-    fig, ax = plt.subplots(1, 3, figsize=(16, 6), gridspec_kw={'width_ratios': [1, 0.2, 1]}, sharey=True)
-    fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.02)
-    fig.tight_layout()
-
-    # Plotting original data
-    ne_EISCAT = ax[0].pcolormesh(r_time, r_h, ne_true.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
-    ax[0].set_title('EISCAT UHF', fontsize=17)
-    ax[0].set_xlabel('Time [hours]', fontsize=13)
-    ax[0].set_ylabel('Altitude [km]', fontsize=15)
-    ax[0].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-
-    # Plotting R2-scores as a line plot
-    ax[1].plot(r2_scores, r_h, color='C0', label=r'$R^2$')
-    ax[1].set_title(r'$R^2$ Scores', fontsize=17)
-    ax[1].set_xlabel(r'$R^2$', fontsize=13)
-    ax[1].grid()
-    ax[1].legend()
-    ax[1].set_xlim(xmin=-0.1, xmax=1.1)
-    
-    # Plotting predicted data
-    ne_HNN = ax[2].pcolormesh(r_time, r_h, ne_pred.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
-    ax[2].set_title('HNN', fontsize=17)
-    ax[2].set_xlabel('Time [hours]', fontsize=13)
-    ax[2].xaxis.set_major_formatter(DateFormatter('%H:%M'))
-
-    # Add colorbar for the predicted data
-    cbar = fig.colorbar(ne_HNN, ax=ax[2], orientation='vertical', fraction=0.048, pad=0.04)
-    cbar.set_label(r'$log_{10}(n_e)$ [g/cm$^3$]', fontsize=17, labelpad=15)
-
-    fig.autofmt_xdate()
-    plt.show()
-
-
-
-
-
-
-
-
-
-def plot_compare_all(X_EISCAT, X_HNN, X_Artist):
-    r_time = X_EISCAT["r_time"]
-    art_time = X_Artist["r_time"]
-    r_h = X_EISCAT["r_h"].flatten()
-    
-    ne_eis = np.log10(X_EISCAT["r_param"])
-    ne_hnn = X_HNN["r_param"]
-    ne_art = np.log10(X_Artist["r_param"])
-    
-    r_time = from_array_to_datetime(r_time)
-    art_time = from_array_to_datetime(art_time)
-    
-    date_str = r_time[0].strftime('%Y-%m-%d')
-
-    # Create a grid layout
-    fig = plt.figure(figsize=(16, 8))
-    gs = GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.1)
-
-    # Shared y-axis setup
-    ax0 = fig.add_subplot(gs[0])
-    ax1 = fig.add_subplot(gs[1], sharey=ax0)
-    ax2 = fig.add_subplot(gs[2], sharey=ax0)
-    cax = fig.add_subplot(gs[3])
-
-    fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
-
-    # x_limits = [r_time[0], r_time[-1]]
-
-    # Plotting EISCAT
-    ne_EISCAT = ax0.pcolormesh(r_time, r_h.flatten(), ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
-    ax0.set_title('EISCAT UHF', fontsize=17)
-    ax0.set_xlabel('Time [hours]', fontsize=13)
-    ax0.set_ylabel('Altitude [km]', fontsize=15)
-    ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-
-    # Plotting DL model
-    ax1.pcolormesh(r_time, r_h.flatten(), ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
-    ax1.set_title('DL model', fontsize=17)
-    ax1.set_xlabel('Time [hours]', fontsize=13)
-    ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    ax1.tick_params(labelleft=False)  # Suppress y-axis labels for this subplot
-
-    # Plotting Artist 4.5
-    ax2.pcolormesh(art_time, r_h.flatten(), ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
-    ax2.set_title('Artist 4.5', fontsize=17)
-    ax2.set_xlabel('Time [hours]', fontsize=13)
-    ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    # ax2.set_xlim(x_limits)
-    ax2.tick_params(labelleft=False)  # Suppress y-axis labels for this subplot
-
-    # Rotate x-axis labels
-    for ax in [ax0, ax1, ax2]:
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-
-    # Add colorbar
-    cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
-    cbar.set_label(r'$log_{10}(n_e)$ [n/cm$^3$]', fontsize=17)
-    
-    plt.show()
-
-
-
-
-
-
-
-
-def plot_results(ne_pred, ne_true):
-    
-    
-    r_h = np.array([[91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
-           [103.57141624],[106.57728701],[110.08393175],[114.60422289],
-           [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
-           [152.05174717],[162.57986185],[174.09833378],[186.65837945],
-           [200.15192581],[214.62769852],[230.12198695],[246.64398082],
-           [264.11728204],[282.62750673],[302.15668686],[322.70723831],
-           [344.19596481],[366.64409299],[390.113117  ]])
-    
-    
-    
-    fig, ax = plt.subplots(figsize=(8, 6))
-    fig.suptitle('Model Results', fontsize=15)
-    
-    ax.set_title('EISCAT vs HNN', fontsize=15)
-    ax.plot(ne_true, r_h.flatten(), color="C0", label="EISCAT_ne")
-    ax.plot(ne_pred, r_h.flatten(), color="C1", label="Pred_ne")
-    ax.set_xlabel("Electron Density  log10(ne)")
-    ax.set_ylabel("Altitude (km)")
-    ax.set_xlim(8.9, 12.1)
-    ax.grid(True)
-    ax.legend()
-    
-    plt.show()
 
 
 
@@ -224,6 +30,138 @@ class RadarPlotter:
         self.X_Artist = X_Artist
         self.X_Ionogram = X_Ionogram
         self.selected_indices = []
+        
+    def plot_compare_all_interactive(self):
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        art_time = from_array_to_datetime(self.X_Artist["r_time"])
+        r_h = self.X_EISCAT["r_h"].flatten()
+
+        # Logarithmic scaling for electron density
+        ne_eis = np.log10(self.X_EISCAT["r_param"])
+        ne_hnn = self.X_HNN["r_param"]
+        ne_art = np.log10(self.X_Artist["r_param"])
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+
+        # Create the figure and layout
+        fig = plt.figure(figsize=(18, 10))
+        gs = GridSpec(2, 4, height_ratios=[3, 1], width_ratios=[1, 1, 1, 0.05], hspace=0.5, wspace=0.2)
+
+        ax0 = fig.add_subplot(gs[0, 0])
+        ax1 = fig.add_subplot(gs[0, 1], sharey=ax0)
+        ax2 = fig.add_subplot(gs[0, 2], sharey=ax0)
+        cax = fig.add_subplot(gs[0, 3])
+        
+        
+        # Detail plot axes
+        ax_detail = fig.add_subplot(gs[1, :3])
+        
+        fig.suptitle(f'Date: {date_str}', fontsize=20, y=0.95)
+        
+        # Plot EISCAT data
+        ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax0.set_title('EISCAT UHF')
+        ax0.set_xlabel('Time [hours]')
+        ax0.set_ylabel('Altitude [km]')
+        ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        # Plot HNN data
+        ax1.pcolormesh(r_time, r_h, ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax1.set_title('DL Model (HNN)')
+        ax1.set_xlabel('Time [hours]')
+        ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ax1.tick_params(labelleft=False)
+        
+        # Plot Artist data
+        ax2.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax2.set_title('Artist 4.5')
+        ax2.set_xlabel('Time [hours]')
+        ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ax2.tick_params(labelleft=False)
+        
+        # Rotate x-axis labels
+        for ax in [ax0, ax1, ax2]:
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        
+        # Add colorbar
+        cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
+        cbar.set_label(r'$log_{10}(n_e)$ [n/cm$^3$]')
+        
+        # Initialize the detail plot
+        ax_detail.set_title("Click on a heatmap to view the profile")
+        ax_detail.set_xlabel("Altitude [km]")
+        ax_detail.set_ylabel("Electron Density (log scale)")
+        ax_detail.grid()
+        
+        # Function to update the detailed plot
+        def update_detail_plot(time_idx):
+            ax_detail.clear()
+            ax_detail.plot(r_h, ne_eis[:, time_idx], label="EISCAT", color='blue')
+            ax_detail.plot(r_h, ne_hnn[:, time_idx], label="HNN", color='green')
+            ax_detail.plot(r_h, ne_art[:, time_idx], label="Artist", color='red')
+            ax_detail.set_title(f"Profiles for Time Index {time_idx}")
+            ax_detail.set_xlabel("Altitude [km]")
+            ax_detail.set_ylabel("Electron Density (log scale)")
+            ax_detail.legend()
+            ax_detail.grid()
+            fig.canvas.draw_idle()
+
+        # Handle click events
+        def on_click(event):
+            if event.inaxes in [ax0, ax1, ax2]:
+                # Convert xdata to datetime for comparison
+                click_time = mdates.num2date(event.xdata).replace(tzinfo=None)
+                time_idx = np.argmin([abs((t - click_time).total_seconds()) for t in r_time])
+                update_detail_plot(time_idx)
+
+        # Add interactivity
+        fig.canvas.mpl_connect("button_press_event", on_click)
+        Cursor(ax0, useblit=True, color='red', linewidth=1)
+        Cursor(ax1, useblit=True, color='red', linewidth=1)
+        Cursor(ax2, useblit=True, color='red', linewidth=1)
+
+        plt.show()
+        
+        
+        
+        
+        # fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
+
+        # # Plotting EISCAT
+        # ne_EISCAT = ax0.pcolormesh(r_time, r_h.flatten(), ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        # ax0.set_title('EISCAT UHF', fontsize=17)
+        # ax0.set_xlabel('Time [hours]', fontsize=13)
+        # ax0.set_ylabel('Altitude [km]', fontsize=15)
+        # ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+
+        # # Plotting DL model
+        # ax1.pcolormesh(r_time, r_h.flatten(), ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        # ax1.set_title('DL model', fontsize=17)
+        # ax1.set_xlabel('Time [hours]', fontsize=13)
+        # ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        # ax1.tick_params(labelleft=False)  # Suppress y-axis labels for this subplot
+
+        # # Plotting Artist 4.5
+        # ax2.pcolormesh(art_time, r_h.flatten(), ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        # ax2.set_title('Artist 4.5', fontsize=17)
+        # ax2.set_xlabel('Time [hours]', fontsize=13)
+        # ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        # # ax2.set_xlim(x_limits)
+        # ax2.tick_params(labelleft=False)  # Suppress y-axis labels for this subplot
+
+        # # Rotate x-axis labels
+        # for ax in [ax0, ax1, ax2]:
+        #     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+
+        # # Add colorbar
+        # cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
+        # cbar.set_label(r'$log_{10}(n_e)$ [n/cm$^3$]', fontsize=17)
+        
+        # plt.show()
+        
+        
+        
+        
     
     
     def plot_all_peaks(self):
@@ -741,6 +679,219 @@ class RadarPlotter:
         ax.set_title(f'Error Profiles - Time: {time_str}', fontsize=15)
         ax.grid(True)
         ax.legend()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def plot_compare(ne_true, ne_pred, r_time):
+    
+    
+    # Eiscat altitudes
+    r_h = np.array([[91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
+           [103.57141624],[106.57728701],[110.08393175],[114.60422289],
+           [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
+           [152.05174717],[162.57986185],[174.09833378],[186.65837945],
+           [200.15192581],[214.62769852],[230.12198695],[246.64398082],
+           [264.11728204],[282.62750673],[302.15668686],[322.70723831],
+           [344.19596481],[366.64409299],[390.113117]])
+    
+
+    date_str = r_time[0].strftime('%Y-%m-%d')
+
+
+    # Creating the plots
+    fig, ax = plt.subplots(1, 2, figsize=(12, 6), sharey=True)
+    fig.suptitle(f'Date: {date_str}', fontsize=20)
+    fig.tight_layout()
+    
+    
+    # Plotting original data
+    ne_EISCAT = ax[0].pcolormesh(r_time, r_h.flatten(), ne_true.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    ax[0].set_title('EISCAT UHF', fontsize=17)
+    ax[0].set_xlabel('Time [hours]', fontsize=13)
+    ax[0].set_ylabel('Altitude [km]', fontsize=15)
+    ax[0].xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    
+    # Plotting predicted data
+    ne_HNN = ax[1].pcolormesh(r_time, r_h.flatten(), ne_pred.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    ax[1].set_title('HNN', fontsize=17)
+    ax[1].set_xlabel('Time [hours]', fontsize=13)
+    ax[1].xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    
+    
+    # Add colorbar for the predicted data
+    cbar = fig.colorbar(ne_HNN, ax=ax[1], orientation='vertical', fraction=0.048, pad=0.04)
+    cbar.set_label(r'$log_{10}(n_e)$ [g/cm$^3$]', fontsize=17, labelpad=15)
+    
+    fig.autofmt_xdate()
+    plt.show()
+
+
+
+
+def plot_compare_r2(ne_true, ne_pred, r2_scores, r_time):
+    
+    
+    # Eiscat altitudes
+    r_h = np.array([[91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
+           [103.57141624],[106.57728701],[110.08393175],[114.60422289],
+           [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
+           [152.05174717],[162.57986185],[174.09833378],[186.65837945],
+           [200.15192581],[214.62769852],[230.12198695],[246.64398082],
+           [264.11728204],[282.62750673],[302.15668686],[322.70723831],
+           [344.19596481],[366.64409299],[390.113117]])
+    
+
+    date_str = r_time[0].strftime('%Y-%m-%d')
+
+    
+    # Creating the plots
+    fig, ax = plt.subplots(1, 3, figsize=(16, 6), gridspec_kw={'width_ratios': [1, 0.2, 1]}, sharey=True)
+    fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.02)
+    fig.tight_layout()
+
+    # Plotting original data
+    ne_EISCAT = ax[0].pcolormesh(r_time, r_h, ne_true.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    ax[0].set_title('EISCAT UHF', fontsize=17)
+    ax[0].set_xlabel('Time [hours]', fontsize=13)
+    ax[0].set_ylabel('Altitude [km]', fontsize=15)
+    ax[0].xaxis.set_major_formatter(DateFormatter('%H:%M'))
+
+    # Plotting R2-scores as a line plot
+    ax[1].plot(r2_scores, r_h, color='C0', label=r'$R^2$')
+    ax[1].set_title(r'$R^2$ Scores', fontsize=17)
+    ax[1].set_xlabel(r'$R^2$', fontsize=13)
+    ax[1].grid()
+    ax[1].legend()
+    ax[1].set_xlim(xmin=-0.1, xmax=1.1)
+    
+    # Plotting predicted data
+    ne_HNN = ax[2].pcolormesh(r_time, r_h, ne_pred.T, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    ax[2].set_title('HNN', fontsize=17)
+    ax[2].set_xlabel('Time [hours]', fontsize=13)
+    ax[2].xaxis.set_major_formatter(DateFormatter('%H:%M'))
+
+    # Add colorbar for the predicted data
+    cbar = fig.colorbar(ne_HNN, ax=ax[2], orientation='vertical', fraction=0.048, pad=0.04)
+    cbar.set_label(r'$log_{10}(n_e)$ [g/cm$^3$]', fontsize=17, labelpad=15)
+
+    fig.autofmt_xdate()
+    plt.show()
+
+
+
+
+
+
+
+
+
+def plot_compare_all(X_EISCAT, X_HNN, X_Artist):
+    r_time = X_EISCAT["r_time"]
+    art_time = X_Artist["r_time"]
+    r_h = X_EISCAT["r_h"].flatten()
+    
+    ne_eis = np.log10(X_EISCAT["r_param"])
+    ne_hnn = X_HNN["r_param"]
+    ne_art = np.log10(X_Artist["r_param"])
+    
+    r_time = from_array_to_datetime(r_time)
+    art_time = from_array_to_datetime(art_time)
+    
+    date_str = r_time[0].strftime('%Y-%m-%d')
+
+    # Create a grid layout
+    fig = plt.figure(figsize=(16, 8))
+    gs = GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.1)
+
+    # Shared y-axis setup
+    ax0 = fig.add_subplot(gs[0])
+    ax1 = fig.add_subplot(gs[1], sharey=ax0)
+    ax2 = fig.add_subplot(gs[2], sharey=ax0)
+    cax = fig.add_subplot(gs[3])
+
+    fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
+
+    # x_limits = [r_time[0], r_time[-1]]
+
+    # Plotting EISCAT
+    ne_EISCAT = ax0.pcolormesh(r_time, r_h.flatten(), ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    ax0.set_title('EISCAT UHF', fontsize=17)
+    ax0.set_xlabel('Time [hours]', fontsize=13)
+    ax0.set_ylabel('Altitude [km]', fontsize=15)
+    ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+
+    # Plotting DL model
+    ax1.pcolormesh(r_time, r_h.flatten(), ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    ax1.set_title('DL model', fontsize=17)
+    ax1.set_xlabel('Time [hours]', fontsize=13)
+    ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    ax1.tick_params(labelleft=False)  # Suppress y-axis labels for this subplot
+
+    # Plotting Artist 4.5
+    ax2.pcolormesh(art_time, r_h.flatten(), ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    ax2.set_title('Artist 4.5', fontsize=17)
+    ax2.set_xlabel('Time [hours]', fontsize=13)
+    ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    # ax2.set_xlim(x_limits)
+    ax2.tick_params(labelleft=False)  # Suppress y-axis labels for this subplot
+
+    # Rotate x-axis labels
+    for ax in [ax0, ax1, ax2]:
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+
+    # Add colorbar
+    cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
+    cbar.set_label(r'$log_{10}(n_e)$ [n/cm$^3$]', fontsize=17)
+    
+    plt.show()
+
+
+
+
+
+
+
+
+def plot_results(ne_pred, ne_true):
+    
+    
+    r_h = np.array([[91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
+           [103.57141624],[106.57728701],[110.08393175],[114.60422289],
+           [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
+           [152.05174717],[162.57986185],[174.09833378],[186.65837945],
+           [200.15192581],[214.62769852],[230.12198695],[246.64398082],
+           [264.11728204],[282.62750673],[302.15668686],[322.70723831],
+           [344.19596481],[366.64409299],[390.113117  ]])
+    
+    
+    
+    fig, ax = plt.subplots(figsize=(8, 6))
+    fig.suptitle('Model Results', fontsize=15)
+    
+    ax.set_title('EISCAT vs HNN', fontsize=15)
+    ax.plot(ne_true, r_h.flatten(), color="C0", label="EISCAT_ne")
+    ax.plot(ne_pred, r_h.flatten(), color="C1", label="Pred_ne")
+    ax.set_xlabel("Electron Density  log10(ne)")
+    ax.set_ylabel("Altitude (km)")
+    ax.set_xlim(8.9, 12.1)
+    ax.grid(True)
+    ax.legend()
+    
+    plt.show()
+
+
 
 
 
