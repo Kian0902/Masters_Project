@@ -109,7 +109,7 @@ for day in X_hnn:
     # radar_plotter.plot_selected_measurements()
     # radar_plotter.plot_error_profiles()
     # radar_plotter.plot_ionogram_measurements_and_errors()
-    break
+    # break
 
 
 
