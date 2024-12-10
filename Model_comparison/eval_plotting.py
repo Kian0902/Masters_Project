@@ -195,6 +195,68 @@ class RadarPlotter:
     
     
     
+    def plot_selected_measurements_std(self):
+        """
+        Plot the selected measurements from all three radars in a 1xn grid of subplots.
+        """
+        if not self.selected_indices:
+            print("No measurements selected. Please run select_measurements(n) or select_measurements_by_datetime(datetimes) first.")
+            return
+        
+        sns.set(style="dark", context=None, palette=None)
+        
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        r_h = self.X_EISCAT["r_h"].flatten()
+        n = len(self.selected_indices)
+        
+        fig, axes = plt.subplots(1, n, figsize=(5*n, 7), sharey=True)
+        
+        if n == 1:
+            axes = [axes]  # Ensure axes is iterable if there's only one subplot
+        
+        for ax, idx in zip(axes, self.selected_indices):
+            
+            ne_eis = self.X_EISCAT["r_param"][:, idx]
+            ne_eis_err = self.X_EISCAT["r_error"][:, idx]
+            
+            ne_kian = self.X_HNN["r_param"][:, idx]
+            ne_art = self.X_Artist["r_param"][:, idx]
+            
+            
+            ax.plot(ne_eis, r_h, label='EISCAT', linestyle='-')
+            # ax.plot(10**ne_kian, r_h, label='KIAN-Net', linestyle='-')
+            # ax.plot(ne_art, r_h, label='Artist 4.5', linestyle='-')
+            
+            print(ne_eis)
+            print(ne_eis_err)
+            
+            # err = ne_eis - ne_eis_err
+            
+            # print(ne_eis - ne_eis_err)
+            # print(ne_eis + ne_eis_err)
+            # ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
+            
+            ax.fill_betweenx(r_h, ne_eis - ne_eis_err, ne_eis + ne_eis_err, alpha=0.3)
+            # ax.set_xscale("log")
+            
+            
+            time_str = r_time[idx].strftime('%H:%M')
+            ax.set_xlabel(r'$log_{10}(n_e)$ [$n/cm^3$]', fontsize=13)
+            ax.set_title(f'Time: {time_str}', fontsize=15)
+            ax.grid(True)
+            ax.legend()
+        
+        axes[0].set_ylabel('Altitude [km]', fontsize=13)
+        
+        date_str = r_time[idx].strftime('%Y-%m-%d')
+        fig.suptitle(f'EISCAT vs HNN vs Artist for {n} Chosen Times\nDate: {date_str}', fontsize=20)
+        plt.tight_layout()
+        plt.show()
+    
+    
+    
+    
+    
     # =============================================================================
     #                        Plotting Normalized Errors
     
