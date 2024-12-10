@@ -94,12 +94,12 @@ def from_csv_to_filename(folder):
 #                    Functions for handeling dictionaries
 #                                 (Start)
 
-def add_key_from_dict_to_dict(from_X, to_X):
+def add_key_from_dict_to_dict(from_X, to_X, key):
     # Reorder the keys in to_X to match the order in from_X
     for date_key in to_X.keys():
-        if date_key in from_X and "r_h" in from_X[date_key]:
-            # Add r_h from EISCAT_support
-            to_X[date_key]["r_h"] = from_X[date_key]["r_h"]
+        if date_key in from_X and key in from_X[date_key]:
+            # Add key from EISCAT_support
+            to_X[date_key][key] = from_X[date_key][key]
             
             # Reorder keys to match the order in EISCAT_support
             ordered_keys = list(from_X[date_key].keys())  # Get the desired key order
@@ -108,7 +108,40 @@ def add_key_from_dict_to_dict(from_X, to_X):
     return to_X
 
 
+def add_key_with_matching_times(from_X, to_X, key):
+    """
+    Adds a key from `from_X` to `to_X` and aligns the data based on matching datetime objects in 'r_time'.
 
+    Args:
+        from_X (dict): Source dictionary.
+        to_X (dict): Target dictionary to which the key is added.
+        key (str): The key to be transferred and aligned.
+
+    Returns:
+        dict: Updated target dictionary with the aligned key added.
+    """
+    for date_key in to_X.keys():
+        if date_key in from_X and key in from_X[date_key]:
+            # Extract datetime arrays from both dictionaries
+            from_times = from_X[date_key]['r_time']
+            to_times = to_X[date_key]['r_time']
+
+            # Find matching datetime indices
+            from_indices = {tuple(time): idx for idx, time in enumerate(from_times)}
+            matching_indices = [from_indices[tuple(time)] for time in to_times if tuple(time) in from_indices]
+
+            # Filter the values of the key in from_X to match the matching indices
+            if matching_indices:
+                aligned_values = from_X[date_key][key][:, matching_indices]
+                to_X[date_key][key] = aligned_values
+            else:
+                print(f"No matching times found for date {date_key}")
+
+            # Optional: Reorder keys in to_X[date_key] to match from_X
+            ordered_keys = list(from_X[date_key].keys())
+            to_X[date_key] = OrderedDict((k, to_X[date_key][k]) for k in ordered_keys if k in to_X[date_key])
+
+    return to_X
 
 
 
