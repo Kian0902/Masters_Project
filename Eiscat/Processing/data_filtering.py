@@ -63,7 +63,7 @@ class EISCATDataFilter:
             # Filter outliers
             if self.apply_outlier_filter and dataset_outliers is not None:
                 self.dataset[key] = self.filter_outlier(self.dataset[key], dataset_outliers[key], filter_size)
-            
+                
             
             # Plotting after filtering for each day if requested
             if plot_after_each_day:

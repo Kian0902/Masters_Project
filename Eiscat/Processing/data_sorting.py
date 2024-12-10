@@ -76,7 +76,7 @@ class EISCATDataSorter:
         # ===========================================
         
         data = loadmat(file)  # importing .mat file as dict
-        include = ["r_time", "r_h", "r_param", "r_error"]
+        include = ["r_time", "r_h", "r_param", "r_error", "r_systemp"]
         
         # includes keys in same order as in the include list
         data = {key: (data[key] if key == "r_time" else data[key].T) for key in include if key in data}
