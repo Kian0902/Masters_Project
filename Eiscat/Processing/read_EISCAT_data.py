@@ -20,6 +20,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import scipy.io as sio
 
+from tqdm import tqdm
 
 
 
@@ -51,6 +52,7 @@ class EISCATDataProcessor:
         self.resultpath = os.path.abspath(os.path.join(os.getcwd(), folder_name_out))
         self.datafiles = self._find_data_files()
         self.num_datafiles = len(self.datafiles)
+        
     
     
     
@@ -62,7 +64,7 @@ class EISCATDataProcessor:
         ------------------------------------------------
         file_names (list)  | A list of filenames (str) of all .hfd5 files found in the input directory.
         """
-        file_names = [f for f in os.listdir(self.datapath) if f.endswith('.hdf5')]
+        file_names = [f for f in os.listdir(self.datapath) if f.startswith('MAD')]
         return file_names
     
     
@@ -106,10 +108,14 @@ class EISCATDataProcessor:
         file_path = os.path.join(self.datapath, file)
         with h5py.File(file_path, 'r') as f:
             data = f['/Data/Table Layout']
-
+            
+            # Basic info
+            # print("Dataset dtype:", data.dtype)
+            
             year = int(file[8:12])
             month = int(file[13:15])
             day = int(file[16:18])
+            
             
             # Convert time data into datetime format
             t = [datetime(year, month, day, int(h), int(m), int(s))
@@ -117,6 +123,8 @@ class EISCATDataProcessor:
             
             
             range_data = data['range'][:]
+            
+            
             
             # Find indices where range data shows significant drops (indicating a new time step)
             ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
@@ -162,6 +170,8 @@ class EISCATDataProcessor:
                 Ti_i = np.full((nT, nZ), np.nan)     # Ion temperature
                 Vi_i = np.full((nT, nZ), np.nan)     # Ion velocity
                 El_i = np.full((nT, nZ), np.nan)     # Elevation angle
+                SysTmp_i = np.full((nT, nZ), np.nan) # System temperature
+                
                 
                 # Store data for this time step, truncating if necessary
                 Ne_i[valid_mask] = data['ne'][valid_data_indices]
@@ -170,6 +180,7 @@ class EISCATDataProcessor:
                 Te_i[valid_mask] = te[valid_data_indices]
                 Ti_i[valid_mask] = data['ti'][valid_data_indices]
                 range_i[valid_mask] = range_data[valid_data_indices]
+                SysTmp_i[valid_mask] = data['systmp'][valid_data_indices]
                 
                 # Store data for this time step, truncating if necessary
                 Ne_i  = self.interpolate_nan(Ne_i)
@@ -178,11 +189,11 @@ class EISCATDataProcessor:
                 Te_i  = self.interpolate_nan(Te_i)
                 Ti_i  = self.interpolate_nan(Ti_i)
                 range_i = self.interpolate_nan(range_i)
+                SysTmp_i = self.interpolate_nan(SysTmp_i)
                 
                 
-                
-                self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+                # self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, SysTmp_i, year, month, day)
                 
             
             else:
@@ -196,10 +207,53 @@ class EISCATDataProcessor:
                 Te_i = np.where(elevation_mask[:, None], te.reshape(shape), 0)
                 Ti_i = np.where(elevation_mask[:, None], data['ti'].reshape(shape), 0)
                 range_i = np.where(elevation_mask[:, None], range_data.reshape(shape), 0)
+                SysTmp_i = np.where(elevation_mask[:, None], data['systmp'].reshape(shape), 0)
+                
+                
+                # self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
+                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, SysTmp_i, year, month, day)
             
-                self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
+
+    
+    
+    def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, SysTmp_i, year, month, day):
+        datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
+        r_time = datetime_matrix
+        r_h = np.nanmean(range_i, axis=0)
+        r_param = Ne_i
+        r_error = DNe_i
+        r_systemp = SysTmp_i
+        
+        name = f"{year}-{month}-{day}.mat"
+        sio.savemat(os.path.join(self.resultpath, name), {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error, 'r_systemp': r_systemp})
+    
+    
+    def process_all_files(self):
+        for idx in range(self.num_datafiles):
+            self.process_file(idx)
             
+        print(f"Processing complete. Processed {self.num_datafiles} data files.")
+
+
+
+
+if __name__ == "__main__":
+    print("...")
+    # # Usage example:
+    # datapath = "EISCAT_Madrigal/UHF_All"
+    # resultpath = "EISCAT_MAT/Temp"
+    
+    # processor = EISCATDataProcessor(datapath, resultpath)
+    
+    # # processor.process_file(17)
+    
+    # processor.process_all_files()
+    # # break
+
+
+
+
+
             # else:
             #     El_it  = data['elm'].reshape(shape)
             #     Ne_i  = data['ne'].reshape(shape)
@@ -212,88 +266,48 @@ class EISCATDataProcessor:
             #     self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
             #     self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
     
-    def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
+    # def plot_and_save_results(self, t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day):
         
         
-        print(t_i.shape, range_i.shape, Ne_i.shape)
+    #     # print(t_i.shape, range_i.shape, Ne_i.shape)
         
-        plt.figure()
+    #     plt.figure()
         
-        # Electron density plot
-        ax1 = plt.subplot(4, 1, 1)
-        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ne_i.T, shading='auto')
-        plt.colorbar()
-        plt.clim(1e9, 5e11)
+    #     # Electron density plot
+    #     ax1 = plt.subplot(4, 1, 1)
+    #     plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ne_i.T, shading='auto')
+    #     plt.colorbar()
+    #     plt.clim(1e9, 5e11)
         
-        # Electron temperature plot
-        ax2 = plt.subplot(4, 1, 2)
-        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Te_i.T, shading='auto')
-        plt.colorbar()
-        plt.clim(500, 4000)
+    #     # Electron temperature plot
+    #     ax2 = plt.subplot(4, 1, 2)
+    #     plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Te_i.T, shading='auto')
+    #     plt.colorbar()
+    #     plt.clim(500, 4000)
         
-        # Ion temperature plot
-        ax3 = plt.subplot(4, 1, 3)
-        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ti_i.T, shading='auto')
-        plt.colorbar()
-        plt.clim(500, 3000)
+    #     # Ion temperature plot
+    #     ax3 = plt.subplot(4, 1, 3)
+    #     plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Ti_i.T, shading='auto')
+    #     plt.colorbar()
+    #     plt.clim(500, 3000)
         
-        # Ion velocity plot
-        ax4 = plt.subplot(4, 1, 4)
-        plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Vi_i.T, shading='auto')
-        plt.colorbar()
-        plt.clim(-400, 400)
+    #     # Ion velocity plot
+    #     ax4 = plt.subplot(4, 1, 4)
+    #     plt.pcolormesh(t_i, np.nanmean(range_i, axis=0), Vi_i.T, shading='auto')
+    #     plt.colorbar()
+    #     plt.clim(-400, 400)
         
-        # Set the colormap and link the axes of all plots
-        plt.set_cmap('turbo')
-        plt.subplots_adjust(hspace=0.5)
-        plt.show()
+    #     # Set the colormap and link the axes of all plots
+    #     plt.set_cmap('turbo')
+    #     plt.subplots_adjust(hspace=0.5)
+    #     plt.show()
         
-        # # Save the figure as a .png file in the result folder
-        os.chdir(self.resultpath)
-        name = f"{year}-{month}-{day}.png"
-        plt.savefig(name)
-        plt.close()
+    #     # # Save the figure as a .png file in the result folder
+    #     os.chdir(self.resultpath)
+    #     name = f"{year}-{month}-{day}.png"
+    #     plt.savefig(name)
+    #     plt.close()
     
-    
-    
-    def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, year, month, day):
-        datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
-        r_time = datetime_matrix
-        r_h = np.nanmean(range_i, axis=0)
-        r_param = Ne_i
-        r_error = DNe_i
-        
-        name = f"{year}-{month}-{day}.mat"
-        sio.savemat(os.path.join(self.resultpath, name), {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error})
-    
-    
-    def process_all_files(self):
-        for iE in range(self.num_datafiles):
-            self.process_file(iE)
-        print(f"Processing complete. Processed {self.num_datafiles} data files.")
-
-
-
-
-
-
-
-# # Usage example:
-# datapath = "Processing_inputs/beata_uhf_madrigal"
-# resultpath = "Processing_outputs/Ne_uhf_madrigal"
-
-# processor = EISCATDataProcessor(datapath, resultpath)
-
-# # processor.process_file(17)
-
-# processor.process_all_files()
-
-
-
-
-
-
-
 
 
 
