@@ -34,7 +34,7 @@ class EISCATOutlierDetection:
     def batch_detection(self, method_name: str, save_plot=False):
         
         for key in list(self.dataset.keys()):
-            
+            # print(key)
             self.dataset_outliers[key] = self.detect_outliers(self.dataset[key], method_name=method_name, save_plot=save_plot)
             
     
