@@ -5,24 +5,10 @@ Created on Tue Dec 10 17:24:01 2024
 @author: Kian Sartipzadeh
 """
 
-
+import os
 import pickle
 import numpy as np
 from datetime import datetime
-
-def save_data(dataset: dict, file_name: str):
-    with open(file_name, 'wb') as file:
-        pickle.dump(dataset, file)
-
-
-
-
-def detect_nan_in_arrays(data_dict):
-    for key, array in data_dict.items():
-        if np.isnan(array).any():
-            print(f"NaN detected {key}: {array.shape}")
-
-
 
 
 
@@ -35,6 +21,20 @@ def save_dict(dataset: dict, file_name: str):
     with open(file_name, 'wb') as file:
         pickle.dump(dataset, file)
 
+
+
+
+
+def get_day_data(dataset, day_idx):
+    list_days = list(dataset.keys())
+    day = list_days[day_idx]
+    return dataset[day]
+
+
+def get_day(dataset, day_idx):
+    list_days = list(dataset.keys())
+    day = list_days[day_idx]
+    return {day: dataset[day]}
 
 
 
@@ -118,6 +118,45 @@ def inspect_dict(d, indent=0):
 
 
 
+class MatchingFiles:
+    """
+    Class for handeling matching files between two folders.
+    
+    This becomes useful when faced with two data sources with matching
+    filenames. Here the user has the option to delete the matching files
+    from one or the other folders.
+    
+    Example: We have two folders containing radar data VHF and UHF but want
+    to prioritize keeping the UHF data. Here, the sure has the option to delete
+    the matching files in VHF folder.
+    """
+    def __init__(self, folder_1, folder_2):
+        self.folder_1 = folder_1
+        self.folder_2 = folder_2
+    
+    
+    def list_mat_files(self, folder):
+        return [f for f in os.listdir(folder) if f.endswith('.mat')]
+
+    
+    def get_matching_filenames(self):
+        filenames_1 = self.list_mat_files(self.folder_1)
+        filenames_2 = self.list_mat_files(self.folder_2)
+        
+        folder_1_filenames = set(os.path.splitext(f)[0] for f in filenames_1)
+        folder_2_filenames = set(os.path.splitext(f)[0] for f in filenames_2)
+        
+        return sorted(list(folder_1_filenames.intersection(folder_2_filenames)))
+        
+    def remove_matching_vhf_files(self):
+        matching_filenames = self.get_matching_filenames()
+        for filename in matching_filenames:
+            file_path = os.path.join(self.folder_1, f"{filename}.mat")
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"Removed: {file_path}")
+            else:
+                print(f"File not found: {file_path}")
 
 
 
