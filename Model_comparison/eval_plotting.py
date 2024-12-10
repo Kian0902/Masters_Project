@@ -31,327 +31,6 @@ class RadarPlotter:
         self.X_Ionogram = X_Ionogram
         self.selected_indices = []
         
-    def plot_compare_all_interactive(self):
-        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        art_time = from_array_to_datetime(self.X_Artist["r_time"])
-        r_h = self.X_EISCAT["r_h"].flatten()
-
-        # Logarithmic scaling for electron density
-        ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_hnn = self.X_HNN["r_param"]
-        ne_art = np.log10(self.X_Artist["r_param"])
-        
-        date_str = r_time[0].strftime('%Y-%m-%d')
-
-        # Create the figure and layout
-        fig = plt.figure(figsize=(18, 10))
-        gs = GridSpec(2, 4, height_ratios=[1, 1], width_ratios=[1, 1, 1, 0.05], hspace=0.5, wspace=0.2)
-        
-        
-        ax0 = fig.add_subplot(gs[0, 0])
-        ax1 = fig.add_subplot(gs[0, 1], sharey=ax0)
-        ax2 = fig.add_subplot(gs[0, 2], sharey=ax0)
-        cax = fig.add_subplot(gs[0, 3])
-        
-        
-
-        fig.suptitle(f'Date: {date_str}', fontsize=20, y=0.95)
-        
-        # Plot EISCAT data
-        ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax0.set_title('EISCAT UHF')
-        ax0.set_xlabel('Time [hours]')
-        ax0.set_ylabel('Altitude [km]')
-        ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        
-        # Plot HNN data
-        ax1.pcolormesh(r_time, r_h, ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax1.set_title('DL Model (HNN)')
-        ax1.set_xlabel('Time [hours]')
-        ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        ax1.tick_params(labelleft=False)
-        
-        # Plot Artist data
-        ax2.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax2.set_title('Artist 4.5')
-        ax2.set_xlabel('Time [hours]')
-        ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        ax2.tick_params(labelleft=False)
-        
-        # Rotate x-axis labels
-        for ax in [ax0, ax1, ax2]:
-            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-        
-        
-        
-        
-        # Add colorbar
-        cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
-        cbar.set_label(r'$log_{10}(n_e)$ [n/cm$^3$]')
-        
-        
-        # Detail plot axes
-        ax_iono = fig.add_subplot(gs[1, 0])
-        ax_detail = fig.add_subplot(gs[1, 1])
-        ax_error = fig.add_subplot(gs[1, 2])
-        
-        
-        # Function to update the detailed plot
-        def update_detail_plot(time_idx):
-            ax_detail.clear()
-            ax_detail.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0')
-            ax_detail.plot(ne_hnn[:, time_idx], r_h, label="HNN", color='C1')
-            ax_detail.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2')
-            ax_detail.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-            ax_detail.set_xlabel("Electron Density")
-            ax_detail.set_ylabel("Altitude [km]")
-            ax_detail.legend()
-            ax_detail.grid()
-            fig.canvas.draw_idle()
-        
-        
-        def update_ionogram(time_idx):
-            ionogram_img = self.X_Ionogram["r_param"][time_idx]
-            ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
-            ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
-            
-            ax_iono.clear()
-            ax_iono.imshow(ionogram_img)
-            ax_iono.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-            fig.canvas.draw_idle()
-        
-        def update_error(time_idx):
-            
-            error_hnn, error_artist, valid_artist_mask = self.calculate_errors(time_idx)
-            
-            ax_error.clear()
-            ax_error.plot(error_hnn, r_h, label='Error: EISCAT vs DL Model', linestyle='-', color='C1')
-            if np.any(valid_artist_mask):
-                ax_error.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
-                # Plot red line for NaN indices from the last valid value or first valid value
-                nan_indices = np.where(~valid_artist_mask)[0]
-                last_valid_index = np.max(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
-                first_valid_index = np.min(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
-                for nan_idx in nan_indices:
-                    if nan_idx < first_valid_index or nan_idx > last_valid_index:
-                        # Draw a line from the closest valid value to the NaN index
-                        closest_valid_index = first_valid_index if nan_idx < first_valid_index else last_valid_index
-                        ax_error.plot([error_artist[closest_valid_index], error_artist[nan_idx]], [r_h[closest_valid_index], r_h[nan_idx]], 'r--', linewidth=2, label='Missing values' if nan_idx == nan_indices[0] else "")
-            else:
-                # Plot all error values if all are NaN
-                ax_error.plot(error_artist, r_h,  'r-', linewidth=2, label='No Artist Data')
-            
-            
-            # Set x-axis limits based on valid error data
-            if np.any(valid_artist_mask):
-                ax_error.set_xlim(left=0, right=max(np.max(error_hnn), np.max(error_artist[valid_artist_mask])) * 1.1)
-            else:
-               ax_error.set_xlim(left=0, right=np.max(error_hnn) * 1.1)
-            
-            ax_error.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-            ax_error.set_xlabel("Error")
-            ax_error.set_ylabel("Altitude [km]")
-            ax_error.legend()
-            ax_error.grid()
-            fig.canvas.draw_idle()
-        
-        
-        # Handle click events
-        def on_click(event):
-            if event.inaxes in [ax0, ax1, ax2]:
-                # Convert xdata to datetime for comparison
-                click_time = mdates.num2date(event.xdata).replace(tzinfo=None)
-                time_idx = np.argmin([abs((t - click_time).total_seconds()) for t in r_time])
-                update_ionogram(time_idx)
-                update_detail_plot(time_idx)
-                update_error(time_idx)
-                
-                
-                # Clear any existing vertical lines
-                for ax in [ax0, ax1, ax2]:
-                    for line in ax.lines:
-                        line.remove()
-                
-                # Add a red staple line to all three color plots
-                for ax in [ax0, ax1, ax2]:
-                    ax.axvline(event.xdata, color='red', linestyle='--', linewidth=2)
-                        
-        # Add interactivity
-        fig.canvas.mpl_connect("button_press_event", on_click)
-        Cursor(ax0, useblit=True, color='red', linewidth=1)
-        Cursor(ax1, useblit=True, color='red', linewidth=1)
-        Cursor(ax2, useblit=True, color='red', linewidth=1)
-        
-        plt.show()
-        
-        
-        
-    
-    
-    def plot_all_peaks(self):
-        
-        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        
-        r_h = self.X_EISCAT["r_h"].flatten()
-        
-        ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_hnn = self.X_HNN["r_param"]
-        ne_art = np.log10(self.X_Artist["r_param"])
-        
-        
-        
-        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-        hnn_param_peak = self.X_HNN["r_param_peak"]
-        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
-        
-        eis_h_peak = self.X_EISCAT["r_h_peak"]
-        hnn_h_peak = self.X_HNN["r_h_peak"]
-        art_h_peak = self.X_Artist["r_h_peak"]
-        
-        
-        date_str = r_time[0].strftime('%Y-%m-%d')
-
-        
-        for m in range(ne_eis.shape[1]):
-            fig, ax = plt.subplots()
-            fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
-            
-            ax.plot(ne_eis[:, m], r_h, color="C0")
-            ax.plot(ne_hnn[:, m], r_h, color="C1")
-            ax.plot(ne_art[:, m], r_h, color="C2")
-            ax.scatter(eis_param_peak[0, m], eis_h_peak[0, m], color="C0", marker="o")
-            ax.scatter(eis_param_peak[1, m], eis_h_peak[1, m], color="C0", marker="o")
-            ax.scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1", marker="X")
-            ax.scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="C1", marker="X")
-            ax.scatter(art_param_peak[0, m], art_h_peak[0, m], color="C2", marker="s")
-            ax.scatter(art_param_peak[1, m], art_h_peak[1, m], color="C2", marker="s")
-            ax.set_xlim(xmin=9.5, xmax=12.1)
-            ax.set_ylim(ymin=88, ymax=402)
-            # ax[1].plot(ne_hnn[:, m], r_h, color="C0")
-            # ax[1].scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1")
-            # ax[1].scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="red")
-            
-            plt.show()
-            
-    def plot_compare_all_peaks(self):
-        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        # art_time = from_array_to_datetime(self.X_Artist["r_time"])
-        
-        
-        
-        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-        hnn_param_peak = self.X_HNN["r_param_peak"]
-        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
-        
-        eis_h_peak = self.X_EISCAT["r_h_peak"]
-        hnn_h_peak = self.X_HNN["r_h_peak"]
-        art_h_peak = self.X_Artist["r_h_peak"]
-        
-        
-        date_str = r_time[0].strftime('%Y-%m-%d')
-        
-        # Create a grid layout
-        fig = plt.figure(figsize=(16, 8))
-        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
-        
-        # Shared y-axis setup
-        ax0 = fig.add_subplot(gs[0])
-        ax1 = fig.add_subplot(gs[1], sharey=ax0)
-        
-        
-        fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
-        
-        Min, Max = 9.5, 12.1 
-        
-        
-        ax0.scatter(r_time, eis_param_peak[0,:], color="C0", label="EISCAT UHF")
-        ax0.scatter(r_time, hnn_param_peak[0,:], color="C1", label="KIANN")
-        ax0.scatter(r_time, art_param_peak[0,:], color="C2", label="Artist 4.5")
-        ax0.set_title('E-region Peaks', fontsize=17)
-        ax0.set_xlabel('Time', fontsize=15)
-        ax0.set_ylabel('Electron Densities', fontsize=15)
-        ax0.set_ylim(ymin=Min, ymax=Max)
-        ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        ax0.legend()
-        ax0.grid(True)
-        
-        
-        # Plotting E-peaks
-        ax1.scatter(r_time, eis_param_peak[1,:], color="C0", label="EISCAT UHF")
-        ax1.scatter(r_time, hnn_param_peak[1,:], color="C1", label="KIANN")
-        ax1.scatter(r_time, art_param_peak[1,:], color="C2", label="Artist 4.5")
-        ax1.set_title('F-region Peaks', fontsize=17)
-        ax1.set_xlabel('Time', fontsize=15)
-        ax1.set_ylim(ymin=Min, ymax=Max)
-        ax1.tick_params(labelleft=False)
-        ax1.legend()
-        ax1.grid(True)
-        ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        
-        for ax in [ax0, ax1]:
-            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
-        
-        
-        plt.show()
-        
-        
-    def plot_compare_all_peak_regions(self):
-        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        art_time = from_array_to_datetime(self.X_Artist["r_time"])
-        
-        
-        
-        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-        hnn_param_peak = self.X_HNN["r_param_peak"]
-        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
-        
-        eis_h_peak = self.X_EISCAT["r_h_peak"]
-        hnn_h_peak = self.X_HNN["r_h_peak"]
-        art_h_peak = self.X_Artist["r_h_peak"]
-        
-        
-        date_str = r_time[0].strftime('%Y-%m-%d')
-        
-        # Create a grid layout
-        fig = plt.figure(figsize=(16, 8))
-        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
-        
-        # Shared y-axis setup
-        ax0 = fig.add_subplot(gs[0])
-        ax1 = fig.add_subplot(gs[1], sharey=ax0)
-        
-        
-        fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
-        
-        Min, Max = 9.9, 12.1 
-        
-        
-        ax0.scatter(hnn_param_peak[0,:], eis_param_peak[0,:], color="C0")
-        ax0.scatter(art_param_peak[0,:], eis_param_peak[0,:], color="C1")
-        ax0.set_title('E-region Peaks', fontsize=17)
-        ax0.set_xlabel('HNN', fontsize=15)
-        ax0.set_ylabel('EISCAT', fontsize=15)
-        ax0.set_xlim(xmin=Min, xmax=Max)
-        ax0.set_ylim(ymin=Min, ymax=Max)
-        ax0.grid(True)
-        
-        
-        # Plotting E-peaks
-        ax1.scatter(hnn_param_peak[1,:], eis_param_peak[1,:], color="C0")
-        ax1.scatter(art_param_peak[1,:], eis_param_peak[1,:], color="C1")
-        ax1.set_title('F-region Peaks', fontsize=17)
-        ax1.set_xlabel('HNN', fontsize=15)
-        # ax1.set_ylabel('EISCAT', fontsize=15)
-        ax1.set_xlim(xmin=Min, xmax=Max)
-        ax1.set_ylim(ymin=Min, ymax=Max)
-        ax1.tick_params(labelleft=False)
-        ax1.grid(True)
-        
-        plt.show()
-    
-    
-    
-    
     
     def plot_compare_all(self):
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
@@ -405,6 +84,7 @@ class RadarPlotter:
         for idx in self.selected_indices:
             for ax in [ax0, ax1, ax2]:
                 ax.axvline(r_time[idx], color='red', linestyle='--', linewidth=3)
+
         
         # Add colorbar
         cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
@@ -421,19 +101,17 @@ class RadarPlotter:
         ne_hnn = self.X_HNN["r_param"]
         ne_art = np.log10(self.X_Artist["r_param"])
         
+        ne_art = np.nan_to_num(ne_art, nan=0)
+        
+        
         # Calculate absolute differences
         diff_hnn = self.error_function(ne_eis, ne_hnn)
         diff_art = self.error_function(ne_eis, ne_art)
-
+        
+        
         # Calculate the difference in magnitude to depict which one is closer
         diff_magnitude = diff_art - diff_hnn
         
-        
-        # Define a diverging colormap: blue for Artist closer, red for HNN closer
-        cmap = plt.get_cmap('bwr')
-        norm = Normalize(vmin=-np.max(np.abs(diff_magnitude)), vmax=np.max(np.abs(diff_magnitude)))
-        
-        # print(norm)
         
         date_str = r_time[0].strftime('%Y-%m-%d')
         
@@ -441,8 +119,8 @@ class RadarPlotter:
         fig, ax = plt.subplots(figsize=(10, 8))
         
         # Plot the comparison with magnitude differences
-        mesh = ax.pcolormesh(r_time, r_h, diff_magnitude, shading='auto', cmap=cmap, norm=norm)
-        ax.set_title(f'Comparison: HNN vs Artist (Closer to EISCAT) - {date_str}', fontsize=17)
+        mesh = ax.pcolormesh(r_time, r_h, diff_magnitude, shading='auto', cmap='bwr', vmin=-0.1, vmax=0.1)
+        ax.set_title(f'KIAN-Net vs Artist 4.5   Proximity to EISCAT\nDate: {date_str}\n', fontsize=17)
         ax.set_xlabel('Time [hours]', fontsize=13)
         ax.set_ylabel('Altitude [km]', fontsize=15)
         ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
@@ -452,7 +130,11 @@ class RadarPlotter:
         
         # Add a colorbar with magnitude labels
         cbar = fig.colorbar(mesh, ax=ax, orientation='vertical')
-        cbar.set_label('Difference Magnitude (Artist closer < 0 < HNN closer)', fontsize=13)
+        cbar.set_label('(Artist 4.5 < 0 < KIAN-Net)', fontsize=13)
+        
+        # Add text at the top and bottom of the colorbar
+        cbar.ax.text(1, 1.02, 'KIAN-Net', transform=cbar.ax.transAxes, ha='center', va='bottom', fontsize=13, weight='bold')
+        cbar.ax.text(1, -0.02, 'Artist 4.5', transform=cbar.ax.transAxes, ha='center', va='top', fontsize=13, weight='bold')
         
         plt.show()
     
@@ -701,10 +383,349 @@ class RadarPlotter:
         ax.grid(True)
         ax.legend()
 
+    
+    # =============================================================================
+    #                        Interactive Plot
+    #                             (Start)
+    
 
+    def plot_compare_all_interactive(self):
+        """
+        Method for creating interactive plot. Here the user has the option to
+        click on any M measurement on the colorplots to view the corresponding
+        ionogram, electron densities and the errors.
+        """
+        
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        art_time = from_array_to_datetime(self.X_Artist["r_time"])
+        r_h = self.X_EISCAT["r_h"].flatten()
 
+        # Logarithmic scaling for electron density
+        ne_eis = np.log10(self.X_EISCAT["r_param"])
+        ne_hnn = self.X_HNN["r_param"]
+        ne_art = np.log10(self.X_Artist["r_param"])
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
 
+        # Create the figure and layout
+        fig = plt.figure(figsize=(18, 10))
+        gs = GridSpec(2, 4, height_ratios=[1, 1], width_ratios=[1, 1, 1, 0.05], hspace=0.5, wspace=0.2)
+        
+        
+        ax0 = fig.add_subplot(gs[0, 0])
+        ax1 = fig.add_subplot(gs[0, 1], sharey=ax0)
+        ax2 = fig.add_subplot(gs[0, 2], sharey=ax0)
+        cax = fig.add_subplot(gs[0, 3])
+        
+        
 
+        fig.suptitle(f'Date: {date_str}', fontsize=20, y=0.95)
+        
+        # Plot EISCAT data
+        ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax0.set_title('EISCAT UHF')
+        ax0.set_xlabel('Time [hours]')
+        ax0.set_ylabel('Altitude [km]')
+        ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        # Plot HNN data
+        ax1.pcolormesh(r_time, r_h, ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax1.set_title('DL Model (HNN)')
+        ax1.set_xlabel('Time [hours]')
+        ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ax1.tick_params(labelleft=False)
+        
+        # Plot Artist data
+        ax2.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax2.set_title('Artist 4.5')
+        ax2.set_xlabel('Time [hours]')
+        ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ax2.tick_params(labelleft=False)
+        
+        # Rotate x-axis labels
+        for ax in [ax0, ax1, ax2]:
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        
+        
+        
+        
+        # Add colorbar
+        cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
+        cbar.set_label(r'$log_{10}(n_e)$ [n/cm$^3$]')
+        
+        
+        # Detail plot axes
+        ax_iono = fig.add_subplot(gs[1, 0])
+        ax_detail = fig.add_subplot(gs[1, 1])
+        ax_error = fig.add_subplot(gs[1, 2])
+        
+        
+        # Function to update the detailed plot
+        def update_detail_plot(time_idx):
+            ax_detail.clear()
+            ax_detail.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0')
+            ax_detail.plot(ne_hnn[:, time_idx], r_h, label="HNN", color='C1')
+            ax_detail.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2')
+            ax_detail.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
+            ax_detail.set_xlabel("Electron Density")
+            ax_detail.set_ylabel("Altitude [km]")
+            ax_detail.legend()
+            ax_detail.grid()
+            fig.canvas.draw_idle()
+        
+        
+        def update_ionogram(time_idx):
+            ionogram_img = self.X_Ionogram["r_param"][time_idx]
+            ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
+            ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
+            
+            ax_iono.clear()
+            ax_iono.imshow(ionogram_img)
+            ax_iono.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
+            fig.canvas.draw_idle()
+        
+        def update_error(time_idx):
+            
+            error_hnn, error_artist, valid_artist_mask = self.calculate_errors(time_idx)
+            
+            ax_error.clear()
+            ax_error.plot(error_hnn, r_h, label='Error: EISCAT vs DL Model', linestyle='-', color='C1')
+            if np.any(valid_artist_mask):
+                ax_error.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
+                # Plot red line for NaN indices from the last valid value or first valid value
+                nan_indices = np.where(~valid_artist_mask)[0]
+                last_valid_index = np.max(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
+                first_valid_index = np.min(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
+                for nan_idx in nan_indices:
+                    if nan_idx < first_valid_index or nan_idx > last_valid_index:
+                        # Draw a line from the closest valid value to the NaN index
+                        closest_valid_index = first_valid_index if nan_idx < first_valid_index else last_valid_index
+                        ax_error.plot([error_artist[closest_valid_index], error_artist[nan_idx]], [r_h[closest_valid_index], r_h[nan_idx]], 'r--', linewidth=2, label='Missing values' if nan_idx == nan_indices[0] else "")
+            else:
+                # Plot all error values if all are NaN
+                ax_error.plot(error_artist, r_h,  'r-', linewidth=2, label='No Artist Data')
+            
+            
+            # Set x-axis limits based on valid error data
+            if np.any(valid_artist_mask):
+                ax_error.set_xlim(left=0, right=max(np.max(error_hnn), np.max(error_artist[valid_artist_mask])) * 1.1)
+            else:
+               ax_error.set_xlim(left=0, right=np.max(error_hnn) * 1.1)
+            
+            ax_error.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
+            ax_error.set_xlabel("Error")
+            ax_error.set_ylabel("Altitude [km]")
+            ax_error.legend()
+            ax_error.grid()
+            fig.canvas.draw_idle()
+        
+        
+        # Handle click events
+        def on_click(event):
+            if event.inaxes in [ax0, ax1, ax2]:
+                # Convert xdata to datetime for comparison
+                click_time = mdates.num2date(event.xdata).replace(tzinfo=None)
+                time_idx = np.argmin([abs((t - click_time).total_seconds()) for t in r_time])
+                update_ionogram(time_idx)
+                update_detail_plot(time_idx)
+                update_error(time_idx)
+                
+                
+                # Clear any existing vertical lines
+                for ax in [ax0, ax1, ax2]:
+                    for line in ax.lines:
+                        line.remove()
+                
+                # Add a red staple line to all three color plots
+                for ax in [ax0, ax1, ax2]:
+                    ax.axvline(event.xdata, color='red', linestyle='--', linewidth=2)
+                        
+        # Add interactivity
+        fig.canvas.mpl_connect("button_press_event", on_click)
+        Cursor(ax0, useblit=True, color='red', linewidth=1)
+        Cursor(ax1, useblit=True, color='red', linewidth=1)
+        Cursor(ax2, useblit=True, color='red', linewidth=1)
+        
+        plt.show()
+    
+    
+    
+    
+    #                             (end)
+    #                        Interactive Plot
+    # =============================================================================
+        
+    
+    
+    # =============================================================================
+    #                        Peak Ne Plots
+    #                             (Start)
+    
+    
+    def plot_all_peaks(self):
+        
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        
+        r_h = self.X_EISCAT["r_h"].flatten()
+        
+        ne_eis = np.log10(self.X_EISCAT["r_param"])
+        ne_hnn = self.X_HNN["r_param"]
+        ne_art = np.log10(self.X_Artist["r_param"])
+        
+        
+        
+        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
+        hnn_param_peak = self.X_HNN["r_param_peak"]
+        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
+        
+        eis_h_peak = self.X_EISCAT["r_h_peak"]
+        hnn_h_peak = self.X_HNN["r_h_peak"]
+        art_h_peak = self.X_Artist["r_h_peak"]
+        
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+
+        
+        for m in range(ne_eis.shape[1]):
+            fig, ax = plt.subplots()
+            fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
+            
+            ax.plot(ne_eis[:, m], r_h, color="C0")
+            ax.plot(ne_hnn[:, m], r_h, color="C1")
+            ax.plot(ne_art[:, m], r_h, color="C2")
+            ax.scatter(eis_param_peak[0, m], eis_h_peak[0, m], color="C0", marker="o")
+            ax.scatter(eis_param_peak[1, m], eis_h_peak[1, m], color="C0", marker="o")
+            ax.scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1", marker="X")
+            ax.scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="C1", marker="X")
+            ax.scatter(art_param_peak[0, m], art_h_peak[0, m], color="C2", marker="s")
+            ax.scatter(art_param_peak[1, m], art_h_peak[1, m], color="C2", marker="s")
+            ax.set_xlim(xmin=9.5, xmax=12.1)
+            ax.set_ylim(ymin=88, ymax=402)
+            # ax[1].plot(ne_hnn[:, m], r_h, color="C0")
+            # ax[1].scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1")
+            # ax[1].scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="red")
+            
+            plt.show()
+            
+    def plot_compare_all_peaks(self):
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        # art_time = from_array_to_datetime(self.X_Artist["r_time"])
+        
+        
+        
+        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
+        hnn_param_peak = self.X_HNN["r_param_peak"]
+        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
+        
+        eis_h_peak = self.X_EISCAT["r_h_peak"]
+        hnn_h_peak = self.X_HNN["r_h_peak"]
+        art_h_peak = self.X_Artist["r_h_peak"]
+        
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+        
+        # Create a grid layout
+        fig = plt.figure(figsize=(16, 8))
+        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
+        
+        # Shared y-axis setup
+        ax0 = fig.add_subplot(gs[0])
+        ax1 = fig.add_subplot(gs[1], sharey=ax0)
+        
+        
+        fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
+        
+        Min, Max = 9.5, 12.1 
+        
+        
+        ax0.scatter(r_time, eis_param_peak[0,:], color="C0", label="EISCAT UHF")
+        ax0.scatter(r_time, hnn_param_peak[0,:], color="C1", label="KIANN")
+        ax0.scatter(r_time, art_param_peak[0,:], color="C2", label="Artist 4.5")
+        ax0.set_title('E-region Peaks', fontsize=17)
+        ax0.set_xlabel('Time', fontsize=15)
+        ax0.set_ylabel('Electron Densities', fontsize=15)
+        ax0.set_ylim(ymin=Min, ymax=Max)
+        ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ax0.legend()
+        ax0.grid(True)
+        
+        
+        # Plotting E-peaks
+        ax1.scatter(r_time, eis_param_peak[1,:], color="C0", label="EISCAT UHF")
+        ax1.scatter(r_time, hnn_param_peak[1,:], color="C1", label="KIANN")
+        ax1.scatter(r_time, art_param_peak[1,:], color="C2", label="Artist 4.5")
+        ax1.set_title('F-region Peaks', fontsize=17)
+        ax1.set_xlabel('Time', fontsize=15)
+        ax1.set_ylim(ymin=Min, ymax=Max)
+        ax1.tick_params(labelleft=False)
+        ax1.legend()
+        ax1.grid(True)
+        ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        for ax in [ax0, ax1]:
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        
+        
+        plt.show()
+        
+        
+    def plot_compare_all_peak_regions(self):
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        art_time = from_array_to_datetime(self.X_Artist["r_time"])
+        
+        
+        
+        eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
+        hnn_param_peak = self.X_HNN["r_param_peak"]
+        art_param_peak = np.log10(self.X_Artist["r_param_peak"])
+        
+        eis_h_peak = self.X_EISCAT["r_h_peak"]
+        hnn_h_peak = self.X_HNN["r_h_peak"]
+        art_h_peak = self.X_Artist["r_h_peak"]
+        
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+        
+        # Create a grid layout
+        fig = plt.figure(figsize=(16, 8))
+        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
+        
+        # Shared y-axis setup
+        ax0 = fig.add_subplot(gs[0])
+        ax1 = fig.add_subplot(gs[1], sharey=ax0)
+        
+        
+        fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
+        
+        Min, Max = 9.9, 12.1 
+        
+        
+        ax0.scatter(hnn_param_peak[0,:], eis_param_peak[0,:], color="C0")
+        ax0.scatter(art_param_peak[0,:], eis_param_peak[0,:], color="C1")
+        ax0.set_title('E-region Peaks', fontsize=17)
+        ax0.set_xlabel('HNN', fontsize=15)
+        ax0.set_ylabel('EISCAT', fontsize=15)
+        ax0.set_xlim(xmin=Min, xmax=Max)
+        ax0.set_ylim(ymin=Min, ymax=Max)
+        ax0.grid(True)
+        
+        
+        # Plotting E-peaks
+        ax1.scatter(hnn_param_peak[1,:], eis_param_peak[1,:], color="C0")
+        ax1.scatter(art_param_peak[1,:], eis_param_peak[1,:], color="C1")
+        ax1.set_title('F-region Peaks', fontsize=17)
+        ax1.set_xlabel('HNN', fontsize=15)
+        # ax1.set_ylabel('EISCAT', fontsize=15)
+        ax1.set_xlim(xmin=Min, xmax=Max)
+        ax1.set_ylim(ymin=Min, ymax=Max)
+        ax1.tick_params(labelleft=False)
+        ax1.grid(True)
+        
+        plt.show()
+    
+    #                             (end)
+    #                         Peak Ne plots
+    # =============================================================================
 
 
 
