@@ -10,7 +10,7 @@ import pickle
 import numpy as np
 from datetime import datetime
 from collections import defaultdict, OrderedDict
-
+from sklearn.metrics import r2_score
 
 
 def load_dict(file_name):
@@ -21,6 +21,198 @@ def load_dict(file_name):
 def save_dict(dataset: dict, file_name: str):
     with open(file_name, 'wb') as file:
         pickle.dump(dataset, file)
+
+
+
+
+def get_altitude_r2_score(data_eis, data_pred):
+    """
+    Calculate R2 scores for each altitude point between EISCAT reference data 
+    and HNN predictions.
+    
+    Parameters:
+        eiscat_data (numpy.ndarray): Array of shape (N, M), where N is the number of altitude heights
+                                     and M is the number of time points. Contains the reference electron
+                                     densities from EISCAT.
+        hnn_predictions (numpy.ndarray): Array of shape (N, M), where N is the number of altitude heights
+                                         and M is the number of time points. Contains the predicted electron
+                                         densities from the HNN model.
+                                         
+    Returns:
+        numpy.ndarray: Array of shape (N,), where each element is the R2 score for the corresponding altitude.
+    """
+    # Validate input shapes
+    if data_eis.shape != data_pred.shape:
+        raise ValueError("EISCAT data and predictions must have the same shape.")
+    
+    # Number of altitudes
+    num_altitudes = data_eis.shape[0]
+    
+    # Initialize an array to store R2 scores for each altitude
+    r2_scores = np.zeros(num_altitudes)
+    
+    # Calculate R2 scores for each altitude
+    for i in range(num_altitudes):
+        # Extract data for altitude i across all time points
+        true_altitude = data_eis[i, :]
+        pred_altitude = data_pred[i, :]
+        
+        # Compute R2 score and store it
+        r2_scores[i] = r2_score(true_altitude, pred_altitude)
+    
+    return r2_scores
+
+
+def get_measurements_r2_score(data_eis, data_pred):
+    """
+    Calculate R2 scores for each altitude point between EISCAT reference data 
+    and HNN predictions.
+    
+    Parameters:
+        eiscat_data (numpy.ndarray): Array of shape (N, M), where N is the number of altitude heights
+                                     and M is the number of time points. Contains the reference electron
+                                     densities from EISCAT.
+        hnn_predictions (numpy.ndarray): Array of shape (N, M), where N is the number of altitude heights
+                                         and M is the number of time points. Contains the predicted electron
+                                         densities from the HNN model.
+                                         
+    Returns:
+        numpy.ndarray: Array of shape (N,), where each element is the R2 score for the corresponding altitude.
+    """
+    
+    data_eis = data_eis.T
+    data_pred = data_pred.T
+    
+    # Validate input shapes
+    if data_eis.shape != data_pred.shape:
+        raise ValueError("EISCAT data and predictions must have the same shape.")
+    
+    # Number of altitudes
+    num_measurements = data_eis.shape[0]
+    
+    # Initialize an array to store R2 scores for each altitude
+    r2_scores = np.zeros(num_measurements)
+    
+    # Calculate R2 scores for each altitude
+    for i in range(num_measurements):
+        # Extract data for altitude i across all time points
+        true_altitude = data_eis[i, :]
+        pred_altitude = data_pred[i, :]
+        
+        # Compute R2 score and store it
+        r2_scores[i] = r2_score(true_altitude, pred_altitude)
+    
+    return r2_scores.T
+
+
+
+
+
+
+
+
+def get_altitude_r2_score_nans(data_eis, data_pred):
+    """
+    Calculate R2 scores for each altitude point between EISCAT reference data 
+    and HNN predictions, ignoring NaN values.
+    
+    Parameters:
+        data_eis (numpy.ndarray): Array of shape (N, M), where N is the number of altitude heights
+                                  and M is the number of time points. Contains the reference electron
+                                  densities from EISCAT.
+        data_pred (numpy.ndarray): Array of shape (N, M), where N is the number of altitude heights
+                                   and M is the number of time points. Contains the predicted electron
+                                   densities from the HNN model.
+                                         
+    Returns:
+        numpy.ndarray: Array of shape (N,), where each element is the R2 score for the corresponding altitude.
+                       If no valid data points exist for an altitude, the R2 score is set to `np.nan`.
+    """
+    # Validate input shapes
+    if data_eis.shape != data_pred.shape:
+        raise ValueError("EISCAT data and predictions must have the same shape.")
+    
+    # Number of altitudes
+    num_altitudes = data_eis.shape[0]
+    
+    # Initialize an array to store R2 scores for each altitude
+    r2_scores = np.full(num_altitudes, np.nan)  # Default to NaN for altitudes with insufficient data
+    
+    # Calculate R2 scores for each altitude
+    for i in range(num_altitudes):
+        # Extract data for altitude i across all time points
+        true_altitude = data_eis[i, :]
+        pred_altitude = data_pred[i, :]
+        
+        # Filter out NaN values
+        valid_indices = ~np.isnan(true_altitude) & ~np.isnan(pred_altitude)
+        true_valid = true_altitude[valid_indices]
+        pred_valid = pred_altitude[valid_indices]
+        
+        # Compute R2 score only if there are sufficient valid points
+        if len(true_valid) > 1:  # At least two points are needed for R2 calculation
+            r2_scores[i] = r2_score(true_valid, pred_valid)
+    
+    return r2_scores
+
+
+
+def get_measurements_r2_score_nans(data_eis, data_pred):
+    """
+    Calculate R2 scores for each altitude point between EISCAT reference data 
+    and HNN predictions, ignoring NaN values.
+    
+    Parameters:
+        data_eis (numpy.ndarray): Array of shape (N, M), where N is the number of altitude heights
+                                  and M is the number of time points. Contains the reference electron
+                                  densities from EISCAT.
+        data_pred (numpy.ndarray): Array of shape (N, M), where N is the number of altitude heights
+                                   and M is the number of time points. Contains the predicted electron
+                                   densities from the HNN model.
+                                         
+    Returns:
+        numpy.ndarray: Array of shape (N,), where each element is the R2 score for the corresponding altitude.
+                       If no valid data points exist for an altitude, the R2 score is set to `np.nan`.
+    """
+    
+    data_eis = data_eis.T
+    data_pred = data_pred.T
+    
+    # Validate input shapes
+    if data_eis.shape != data_pred.shape:
+        raise ValueError("EISCAT data and predictions must have the same shape.")
+    
+    # Number of altitudes
+    num_measurements = data_eis.shape[0]
+    
+    # Initialize an array to store R2 scores for each altitude
+    r2_scores = np.full(num_measurements, np.nan)  # Default to NaN for altitudes with insufficient data
+    
+    # Calculate R2 scores for each altitude
+    for i in range(num_measurements):
+        # Extract data for altitude i across all time points
+        true_altitude = data_eis[i, :]
+        pred_altitude = data_pred[i, :]
+        
+        # Filter out NaN values
+        valid_indices = ~np.isnan(true_altitude) & ~np.isnan(pred_altitude)
+        true_valid = true_altitude[valid_indices]
+        pred_valid = pred_altitude[valid_indices]
+        
+        # Compute R2 score only if there are sufficient valid points
+        if len(true_valid) > 1:  # At least two points are needed for R2 calculation
+            r2_scores[i] = r2_score(true_valid, pred_valid)
+    
+    return r2_scores.T
+
+
+
+
+
+
+
+
+
 
 
 # =============================================================================
