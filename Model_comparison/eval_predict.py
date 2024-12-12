@@ -74,9 +74,9 @@ def model_predict(stored_dataset, DL_model, model_weights):
 if __name__ == "__main__":
 
     # Test data folder names
-    test_ionogram_folder = "testing_data/test_ionogram_folder_E+F"
-    test_radar_folder = "testing_data/test_eiscat_folder_E+F"        # These are the true data
-    test_sp19_folder = "testing_data/test_geophys_folder_E+F"
+    test_ionogram_folder = "testing_data/test_ionogram_folder_E"
+    test_radar_folder = "testing_data/test_eiscat_folder_E"        # These are the true data
+    test_sp19_folder = "testing_data/test_geophys_folder_E"
 
 
     # Initializing class for matching pairs
