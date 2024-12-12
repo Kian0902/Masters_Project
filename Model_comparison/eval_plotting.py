@@ -16,10 +16,22 @@ from datetime import datetime
 
 from eval_utils import from_array_to_datetime, get_altitude_r2_score, get_measurements_r2_score, get_altitude_r2_score_nans, get_measurements_r2_score_nans
 import random
-
+from scipy.stats import linregress
 import seaborn as sns
-# sns.set(style="dark", context=None, palette=None)
+# For all plots: sns.set(style="dark", context=None, palette=None)
+# For single plot: with sns.axes_style("dark"):
 
+from sklearn.metrics import r2_score
+
+from matplotlib.ticker import FuncFormatter
+
+# Define a custom formatter for the x-axis ticks
+def format_ticks(x, _):
+    if x.is_integer():
+        return f'{int(x)}'  # Convert integers to display without decimals
+    return f'{x}'  # Keep floats as is
+
+formatter = FuncFormatter(format_ticks)
 
 
 
@@ -30,17 +42,6 @@ class RadarPlotter:
         self.X_Artist = X_Artist
         self.X_Ionogram = X_Ionogram
         self.selected_indices = []
-    
-    def norm_scores(self, scores):
-        
-        min_value = np.min(scores)
-        max_value = np.max(scores)
-        
-        # Normalize the array
-        norm_scores = (scores - min_value) / (max_value - min_value)
-        # norm_scores = 2 * (scores - min_value) / (max_value - min_value) - 1
-        return norm_scores
-        
     
     
     def plot_compare_all_r2_window(self):
@@ -58,54 +59,6 @@ class RadarPlotter:
         art_r2_scores_alt = get_altitude_r2_score_nans(ne_eis, ne_art)
         art_r2_scores_mea = get_measurements_r2_score_nans(ne_eis, ne_art)
         
-        
-        # Compute aggregated R^2 scores
-        kian_r2_scores_alt = np.nan_to_num(kian_r2_scores_alt, nan=-1)
-        kian_r2_scores_alt[kian_r2_scores_alt < 0] = 0
-        kian_r2_scores_mea = np.nan_to_num(kian_r2_scores_mea, nan=-1)
-        kian_r2_scores_mea[kian_r2_scores_mea < 0] = 0
-        
-        kian_r2_mean_alt = np.mean(kian_r2_scores_alt)
-        kian_r2_mean_mea = np.mean(kian_r2_scores_mea)
-        
-        art_r2_scores_alt = np.nan_to_num(art_r2_scores_alt, nan=-1)
-        art_r2_scores_alt[art_r2_scores_alt < 0] = 0
-        art_r2_scores_mea = np.nan_to_num(art_r2_scores_mea, nan=-1)
-        art_r2_scores_mea[art_r2_scores_mea < 0] = 0
-        
-        art_r2_mean_alt = np.mean(art_r2_scores_alt)
-        art_r2_mean_mea = np.mean(art_r2_scores_mea)
-        
-        
-        print(kian_r2_mean_alt, kian_r2_mean_mea)
-        print(art_r2_mean_alt, art_r2_mean_mea)
-        
-        
-        
-        # # Normalize scores for comparability
-        # kian_score      = (kian_r2_mean_alt + kian_r2_mean_mea) / 2
-        # kian_art_score  = (kian_r2_mean_alt + art_r2_mean_mea) / 2
-        # art_kian_score  = (art_r2_mean_alt + kian_r2_mean_mea) / 2
-        # art_score       = (art_r2_mean_alt + art_r2_mean_mea) / 2
-        
-        
-        # print(kian_score, kian_art_score, art_kian_score, art_score)
-        kian_score, kian_art_score, art_kian_score, art_score = self.norm_scores(np.array([kian_r2_mean_alt, kian_r2_mean_mea, art_r2_mean_alt, art_r2_mean_mea]))
-        
-        print(kian_score, kian_art_score, art_kian_score, art_score)
-        
-        # Assign corners to the models
-        kian_corner = np.array([0.5, 1])  # Top-left
-        kian_art_corner = np.array([1, 0.5])  # Bottom-left
-        art_kian_corner = np.array([0, 0.5])  # Top-right
-        art_corner = np.array([0.5, 0])  # Bottom-right
-        
-        # Compute weighted position of the dot
-        total_score = kian_score + kian_art_score + art_score + art_kian_score
-        dot_position = (kian_corner * kian_score + art_corner * art_score + art_kian_corner * art_kian_score + kian_art_corner * kian_art_score) / total_score
-        
-        print(dot_position)
-        print("\n")
         date_str = r_time[0].strftime('%Y-%m-%d')
 
         
@@ -152,6 +105,7 @@ class RadarPlotter:
         # KIAN-Net r2-scores altitude
         ax01.plot(kian_r2_scores_alt, r_h, color='C0', label=r'$R^2$')
         ax01.set_title(r'$R^2$', fontsize=17)
+        ax01.set_xlabel(r'$R^2$', fontsize=13)
         ax01.grid(True)
         # ax1.legend()
         ax01.set_xlim(xmin=-0.1, xmax=1.1)
@@ -181,34 +135,8 @@ class RadarPlotter:
         ax10.tick_params(labelbottom=False)
         
         
-        
-        # # Plot in ax11
-        # ax11.axis('on')  # Turn the axis back on
-        # ax11.scatter(dot_x, dot_y, color='red', s=100, label='Best Model Indicator')
-        # ax11.set_xlim(0, 1)
-        # ax11.set_ylim(0, 1)
-        # ax11.axhline(0.5, color='gray', linestyle='--', linewidth=1)
-        # ax11.axvline(0.5, color='gray', linestyle='--', linewidth=1)
-        
-        # # # Add labels for corners
-        # # ax11.text(0.05, 0.05, 'Artist (Alt+Mea)', fontsize=10, ha='left', va='bottom')
-        # # ax11.text(0.95, 0.05, 'KIAN (Mea)', fontsize=10, ha='right', va='bottom')
-        # # ax11.text(0.05, 0.95, 'KIAN (Alt)', fontsize=10, ha='left', va='top')
-        # # ax11.text(0.95, 0.95, 'Equal (Alt+Mea)', fontsize=10, ha='right', va='top')
-        
-        # Title and legend
-        # ax11.set_title('Best Model Indicator', fontsize=12)
-        # ax11.legend()
-        # Plot the dot
-        # ax11.plot(kian_corner[0], kian_corner[1], 'o', color='red', markersize=15)
-        # ax11.plot(kian_art_corner[0], kian_art_corner[1], 'o', color='C1', markersize=15)
-        # ax11.plot(art_kian_corner[0], art_kian_corner[1], 'o', color='C2', markersize=15)
-        # ax11.plot(art_corner[0], art_corner[1], 'o', color='C0', markersize=15)
-        ax11.plot(dot_position[0], dot_position[1], 'o', color='red', markersize=15)
-        ax11.text(dot_position[0], dot_position[1], 'Best', color='red', fontsize=12, ha='center', va='center')
-        ax11.set_xlim(-0.1, 1.1)
-        ax11.set_ylim(-0.1, 1.1)
-        ax11.invert_xaxis()
+        # Plot in ax11
+        ax11.axis('off')  # Turn the axis back on
         
         
         # Artist 4.5 r2-scores measurements
@@ -324,12 +252,12 @@ class RadarPlotter:
     
     
     
-    def chi_squared(self, X_eis, X_kian):
-        chi_2 = ((X_kian - X_eis)**2)/X_eis
+    def chi_squared(self, X_eis, X_eis_err, X_kian):
+        chi_2 =((X_eis - X_kian)**2)/(X_eis_err**2) 
         return chi_2
     
-    def error_sigma(self, X_eis, X_eis_err, X_kian):
-        err = np.abs(X_eis - X_kian)/X_eis_err
+    def error_sigma(self, X_eis, X_kian):
+        err =  ((X_kian - X_eis)**2)/X_eis
         return err
     
     
@@ -341,8 +269,8 @@ class RadarPlotter:
         ne_eis_err = np.log10(self.X_EISCAT["r_error"])
         ne_kian = self.X_HNN["r_param"]
         
-        ne_chi_2 = self.chi_squared(ne_eis, ne_kian)
-        ne_err = self.error_sigma(ne_eis, ne_eis_err, ne_kian)
+        ne_chi_2 = self.chi_squared(ne_eis, ne_eis_err, ne_kian)
+        ne_err = self.error_sigma(ne_eis, ne_kian)
         
         
         date_str = r_time[0].strftime('%Y-%m-%d')
@@ -387,10 +315,45 @@ class RadarPlotter:
         plt.show()
     
     
+    def plot_chi_squared(self):
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        r_h = self.X_EISCAT["r_h"].flatten()
+        
+        ne_eis = np.log10(self.X_EISCAT["r_param"])
+        ne_eis_err = np.log10(self.X_EISCAT["r_error"])
+        ne_kian = self.X_HNN["r_param"]
+        
+        # ne_chi_2 = self.chi_squared(ne_eis, ne_kian)
+        ne_err = self.chi_squared(ne_eis, ne_eis_err, ne_kian)
+        
+        
+        date_str = r_time[0].strftime('%Y-%m-%d')
+
+        
+        # Creating the plots
+        fig, ax = plt.subplots(1, 1, figsize=(8, 7))
+        fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.02)
+        fig.tight_layout()
+
+        # Plotting original data
+        plot_err = ax.pcolormesh(r_time, r_h, ne_err, shading='auto', cmap='jet', vmin=0.00001, vmax=0.005)
+        ax.set_title(r'$\chi^2$-error', fontsize=17)
+        ax.set_xlabel('Time [hours]', fontsize=13)
+        ax.set_ylabel('Altitude [km]', fontsize=15)
+        ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
+            
+        
+        # Add colorbar for the predicted data
+        cbar_chi = fig.colorbar(plot_err, ax=ax, orientation='vertical', fraction=0.048, pad=0.04)
+        cbar_chi.set_label(r'$\chi^2$', fontsize=17, labelpad=15)
+        
+        plt.show()
     
     
-    
-    def plot_compare_all(self):
+    def plot_compare_all(self, selected_measurements=False):
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         art_time = from_array_to_datetime(self.X_Artist["r_time"])
         r_h = self.X_EISCAT["r_h"].flatten()
@@ -402,7 +365,7 @@ class RadarPlotter:
         date_str = r_time[0].strftime('%Y-%m-%d')
         
         # Create a grid layout
-        fig = plt.figure(figsize=(16, 7))
+        fig = plt.figure(figsize=(16, 6))
         gs = GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.1)
         
         # Shared y-axis setup
@@ -412,24 +375,42 @@ class RadarPlotter:
         cax = fig.add_subplot(gs[3])
         
         fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.03)
+        nl=""
+        if selected_measurements:
+            nl = "\n"
+            # Highlight selected measurements
+            for idx, line_num in zip(self.selected_indices, range(1, len(self.selected_indices) + 1)):
+                for ax in [ax0, ax1, ax2]:
+                    ax.axvline(r_time[idx], color='red', linestyle=':', linewidth=4)
+                    # Add line numbers at the top of the plot
+                    ax.text(
+                        r_time[idx],
+                        r_h[-1] + 15,  # Position above the plot
+                        str(line_num),
+                        color='red',
+                        fontsize=15,
+                        ha='center',
+                        va='bottom',
+                    )       
+        
         
         # Plotting EISCAT
         ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax0.set_title('EISCAT UHF\n', fontsize=17)
+        ax0.set_title('EISCAT UHF'+nl, fontsize=17)
         ax0.set_xlabel('Time [hours]', fontsize=13)
         ax0.set_ylabel('Altitude [km]', fontsize=15)
         ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         
         # Plotting DL model
         ax1.pcolormesh(r_time, r_h, ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax1.set_title('KIAN-Net\n', fontsize=17)
+        ax1.set_title('KIAN-Net'+nl, fontsize=17)
         ax1.set_xlabel('Time [hours]', fontsize=13)
         ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax1.tick_params(labelleft=False)
         
         # Plotting Artist 4.5
         ax2.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax2.set_title('Artist 4.5\n', fontsize=17)
+        ax2.set_title('Artist 4.5'+nl, fontsize=17)
         ax2.set_xlabel('Time [hours]', fontsize=13)
         ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax2.tick_params(labelleft=False)
@@ -438,20 +419,7 @@ class RadarPlotter:
         for ax in [ax0, ax1, ax2]:
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
         
-        # # Highlight selected measurements
-        # for idx, line_num in zip(self.selected_indices, range(1, len(self.selected_indices) + 1)):
-        #     for ax in [ax0, ax1, ax2]:
-        #         ax.axvline(r_time[idx], color='red', linestyle=':', linewidth=4)
-        #         # Add line numbers at the top of the plot
-        #         ax.text(
-        #             r_time[idx],
-        #             r_h[-1] + 15,  # Position above the plot
-        #             str(line_num),
-        #             color='red',
-        #             fontsize=15,
-        #             ha='center',
-        #             va='bottom',
-        #         )       
+        
         
         # Add colorbar
         cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
@@ -476,8 +444,8 @@ class RadarPlotter:
         # print(art_r2_scores)
         
         # Create a grid layout
-        fig = plt.figure(figsize=(18, 7))
-        gs = GridSpec(1, 6, width_ratios=[1, 0.3, 1, 0.3, 1, 0.05], wspace=0.1)
+        fig = plt.figure(figsize=(15, 5))
+        gs = GridSpec(1, 6, width_ratios=[1, 0.25, 1, 0.25, 1, 0.05], wspace=0.1)
         
         # Shared y-axis setup
         ax0 = fig.add_subplot(gs[0])
@@ -493,7 +461,7 @@ class RadarPlotter:
         # Plotting Kian-net
         ax0.pcolormesh(r_time, r_h, ne_kian, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax0.set_title('KIAN-Net', fontsize=17)
-        ax0.set_xlabel('Time [hours]', fontsize=13)
+        ax0.set_xlabel('Time [hh:mm]', fontsize=13)
         ax0.set_ylabel('Altitude [km]', fontsize=15)
         ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         # ax0.tick_params(labelleft=False)
@@ -501,27 +469,30 @@ class RadarPlotter:
         
         # KIAN-Net r2-scores
         ax1.plot(kian_r2_scores, r_h, color='C0', label=r'$R^2$')
-        ax1.set_title(r'$R^2$', fontsize=17)
-        # ax1.set_xlabel(r'$R^2$', fontsize=13)
+        ax1.set_title(r'$R^2$-score', fontsize=17)
+        ax1.set_xlabel(r'$R^2$', fontsize=13)
         ax1.grid(True)
-        # ax1.legend()
+        ax1.set_xticks([0, 0.5, 1])
+        ax1.xaxis.set_major_formatter(formatter) 
         ax1.set_xlim(xmin=-0.1, xmax=1.1)
         ax1.tick_params(labelleft=False)
+        
         
         # Plotting EISCAT
         ne_EISCAT = ax2.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax2.set_title('EISCAT UHF', fontsize=17)
-        ax2.set_xlabel('Time [hours]', fontsize=13)
+        ax2.set_xlabel('Time [hh:mm]', fontsize=13)
         ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax2.tick_params(labelleft=False)
         
         
         # Artist 4.5 r2-scores
-        ax3.plot(art_r2_scores, r_h, color='C0', label=r'$R^2$')
-        ax3.set_title(r'$R^2$', fontsize=17)
-        # ax3.set_xlabel(r'$R^2$', fontsize=13)
+        ax3.plot(art_r2_scores, r_h, color='C1', label=r'$R^2$')
+        ax3.set_title(r'$R^2$-score', fontsize=17)
+        ax3.set_xlabel(r'$R^2$', fontsize=13)
         ax3.grid(True)
-        # ax3.legend()
+        ax3.set_xticks([0, 0.5, 1])
+        ax3.xaxis.set_major_formatter(formatter) 
         ax3.set_xlim(xmin=-0.1, xmax=1.1)
         ax3.tick_params(labelleft=False)
         
@@ -529,7 +500,7 @@ class RadarPlotter:
         # Plotting Artist 4.5
         ax4.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax4.set_title('Artist 4.5', fontsize=17)
-        ax4.set_xlabel('Time [hours]', fontsize=13)
+        ax4.set_xlabel('Time [hh:mm]', fontsize=13)
         ax4.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax4.tick_params(labelleft=False)
         
@@ -540,7 +511,7 @@ class RadarPlotter:
         
         # Add colorbar
         cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
-        cbar.set_label(r'$log_{10}(n_e)$ [n/m$^3$]', fontsize=17)
+        cbar.set_label(r'$log_{10}(n_e)$ [$n\,m^{-3}$]', fontsize=17)
         
         plt.show()
     
@@ -1077,8 +1048,8 @@ class RadarPlotter:
     #                             (Start)
     
     
-    def plot_all_peaks(self):
-        
+    def plot_peaks_all_measurements(self):
+        sns.set(style="dark", context=None, palette=None)
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         
         r_h = self.X_EISCAT["r_h"].flatten()
@@ -1106,23 +1077,24 @@ class RadarPlotter:
             fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
             
             ax.plot(ne_eis[:, m], r_h, color="C0")
-            ax.plot(ne_hnn[:, m], r_h, color="C1")
-            ax.plot(ne_art[:, m], r_h, color="C2")
+            # ax.plot(ne_hnn[:, m], r_h, color="C1")
+            # ax.plot(ne_art[:, m], r_h, color="C2")
             ax.scatter(eis_param_peak[0, m], eis_h_peak[0, m], color="C0", marker="o")
             ax.scatter(eis_param_peak[1, m], eis_h_peak[1, m], color="C0", marker="o")
-            ax.scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1", marker="X")
-            ax.scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="C1", marker="X")
-            ax.scatter(art_param_peak[0, m], art_h_peak[0, m], color="C2", marker="s")
-            ax.scatter(art_param_peak[1, m], art_h_peak[1, m], color="C2", marker="s")
+            # ax.scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1", marker="X")
+            # ax.scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="C1", marker="X")
+            # ax.scatter(art_param_peak[0, m], art_h_peak[0, m], color="C2", marker="s")
+            # ax.scatter(art_param_peak[1, m], art_h_peak[1, m], color="C2", marker="s")
             ax.set_xlim(xmin=9.5, xmax=12.1)
             ax.set_ylim(ymin=88, ymax=402)
             # ax[1].plot(ne_hnn[:, m], r_h, color="C0")
             # ax[1].scatter(hnn_param_peak[0, m], hnn_h_peak[0, m], color="C1")
             # ax[1].scatter(hnn_param_peak[1, m], hnn_h_peak[1, m], color="red")
-            
+            ax.grid()
             plt.show()
             
-    def plot_compare_all_peaks(self):
+    def plot_compare_all_peak_heights(self):
+        sns.set(style="dark", context=None, palette=None)
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         # art_time = from_array_to_datetime(self.X_Artist["r_time"])
         
@@ -1140,7 +1112,7 @@ class RadarPlotter:
         date_str = r_time[0].strftime('%Y-%m-%d')
         
         # Create a grid layout
-        fig = plt.figure(figsize=(16, 8))
+        fig = plt.figure(figsize=(14, 6))
         gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
         
         # Shared y-axis setup
@@ -1150,90 +1122,187 @@ class RadarPlotter:
         
         fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
         
-        Min, Max = 9.5, 12.1 
+        # Min, Max = 9.5, 12.1 
         
         
-        ax0.scatter(r_time, eis_param_peak[0,:], color="C0", label="EISCAT UHF")
-        ax0.scatter(r_time, hnn_param_peak[0,:], color="C1", label="KIAN-Net")
-        ax0.scatter(r_time, art_param_peak[0,:], color="C2", label="Artist 4.5")
+        ax0.scatter(r_time, eis_h_peak[0,:], color="C0", label="EISCAT UHF")
+        ax0.scatter(r_time, hnn_h_peak[0,:], color="C1", label="KIAN-Net")
+        ax0.scatter(r_time, art_h_peak[0,:], color="C2", label="Artist 4.5")
         ax0.set_title('E-region Peaks', fontsize=17)
-        ax0.set_xlabel('Time', fontsize=15)
-        ax0.set_ylabel(r'Ne [$n/m^3$]', fontsize=15)
-        ax0.set_ylim(ymin=Min, ymax=Max)
+        ax0.set_xlabel('Time [hh:mm]', fontsize=15)
+        ax0.set_ylabel(r'$log_{10}(ne)$ [$n\,m^{-3}$]', fontsize=15)
+        # ax0.set_ylim(ymin=Min, ymax=Max)
         ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        ax0.legend()
+        ax0.legend(fontsize=12)
         ax0.grid(True)
         
         
         # Plotting E-peaks
-        ax1.scatter(r_time, eis_param_peak[1,:], color="C0", label="EISCAT UHF")
-        ax1.scatter(r_time, hnn_param_peak[1,:], color="C1", label="KIAN-Nnet")
-        ax1.scatter(r_time, art_param_peak[1,:], color="C2", label="Artist 4.5")
+        ax1.scatter(r_time, eis_h_peak[1,:], color="C0", label="EISCAT UHF")
+        ax1.scatter(r_time, hnn_h_peak[1,:], color="C1", label="KIAN-Nnet")
+        ax1.scatter(r_time, art_h_peak[1,:], color="C2", label="Artist 4.5")
         ax1.set_title('F-region Peaks', fontsize=17)
         ax1.set_xlabel('Time', fontsize=15)
-        ax1.set_ylim(ymin=Min, ymax=Max)
+        # ax1.set_ylim(ymin=Min, ymax=Max)
         ax1.tick_params(labelleft=False)
-        ax1.legend()
+        ax1.legend(fontsize=12)
         ax1.grid(True)
         ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         
         for ax in [ax0, ax1]:
-            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+            plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
         
         
         plt.show()
         
-        
+    # Function to compute R^2 score
+    def compute_r2_score(self, true_vals, pred_vals):
+        return r2_score(true_vals, pred_vals)
+    
     def plot_compare_all_peak_regions(self):
+        sns.set(style="dark", context=None, palette=None)
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         art_time = from_array_to_datetime(self.X_Artist["r_time"])
         
         
         
         eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-        hnn_param_peak = self.X_HNN["r_param_peak"]
+        kian_param_peak = self.X_HNN["r_param_peak"]
         art_param_peak = np.log10(self.X_Artist["r_param_peak"])
         
         eis_h_peak = self.X_EISCAT["r_h_peak"]
-        hnn_h_peak = self.X_HNN["r_h_peak"]
+        kian_h_peak = self.X_HNN["r_h_peak"]
         art_h_peak = self.X_Artist["r_h_peak"]
         
         
         date_str = r_time[0].strftime('%Y-%m-%d')
         
+        
+        
+        
+        
         # Create a grid layout
-        fig = plt.figure(figsize=(16, 8))
-        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.05)
+        fig = plt.figure(figsize=(14, 7))
+        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.1)
         
         # Shared y-axis setup
         ax0 = fig.add_subplot(gs[0])
-        ax1 = fig.add_subplot(gs[1], sharey=ax0)
+        ax1 = fig.add_subplot(gs[1])
         
         
         fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
         
-        Min, Max = 9.9, 12.1 
+        Min, Max = 9, 12
+        # Plotting E-peaks
+        ax0.plot([Min, Max], [Min, Max], color="C0", label="EISCAT vs EISCAT", linewidth=3, zorder=1)
+        ax0.scatter(kian_param_peak[0,:], eis_param_peak[0,:], s=50, color="C1", label="KIAN-Net vs EISCAT", edgecolors="black")
+        ax0.scatter(art_param_peak[0,:], eis_param_peak[0,:], s=50, color="C2", label="Artist 4.5 vs EISCAT", edgecolors="black")
         
         
-        ax0.scatter(hnn_param_peak[0,:], eis_param_peak[0,:], color="C0")
-        ax0.scatter(art_param_peak[0,:], eis_param_peak[0,:], color="C1")
+        
+        # Mask NaN values for KIAN
+        valid_kian = ~np.isnan(kian_param_peak[0, :]) & ~np.isnan(eis_param_peak[0, :])
+        if valid_kian.any():
+            slope, intercept, _, _, _ = linregress(kian_param_peak[0, valid_kian], eis_param_peak[0, valid_kian])
+            
+            if np.isnan(slope) or np.isnan(intercept):
+                ax0.plot(np.nan, np.nan, color="grey", label="Failed KIAN-Net Regression", linestyle="--")
+                ax0.text(Max - 1, Min + 0.2, f'KIAN-Net  $R^2=$ NaN', fontsize=12)
+            else:
+                kian_pred = slope * kian_param_peak[0, valid_kian] + intercept
+                
+                eiscat_actual = eis_param_peak[0, valid_kian]  # True values are EISCAT peaks
+                kian_r2 = self.compute_r2_score(eiscat_actual, kian_pred)
+                print(f"KIAN-Net R^2 (E-region): {kian_r2}")
+                
+                ax0.plot([Min, Max], [slope * Min + intercept, slope * Max + intercept], 
+                         color="C1", linestyle="--", linewidth=2, label="KIAN-Net Reg", zorder=2)
+                
+                ax0.text(Max - 1, Min + 0.2, f'KIAN-Net  $R^2=${kian_r2:.2f}', fontsize=12)
+                
+                
+    
+        # Mask NaN values for Artist
+        valid_artist = ~np.isnan(art_param_peak[0, :]) & ~np.isnan(eis_param_peak[0, :])
+        if valid_artist.any():
+            slope, intercept, _, _, _ = linregress(art_param_peak[0, valid_artist], eis_param_peak[0, valid_artist])
+            
+            if np.isnan(slope) or np.isnan(intercept):
+                ax0.plot(np.nan, np.nan, color="grey", label="Failed Artist Regression", linestyle="--")
+                ax0.text(Max - 1, Min + 0.1, f'Artist 4.5   $R^2=$ NaN', fontsize=12)
+            else:
+                artist_pred = slope * art_param_peak[0, valid_artist] + intercept
+                
+                eiscat_actual = eis_param_peak[0, valid_artist]  # True values are EISCAT peaks
+                artist_r2 = self.compute_r2_score(eiscat_actual, artist_pred)
+                print(f"Artist R^2 (E-region): {artist_r2}")
+                
+                ax0.plot([Min, Max], [slope * Min + intercept, slope * Max + intercept], 
+                         color="C2", linestyle="--", linewidth=2, label="Artist Regression", zorder=2)
+                
+                ax0.text(Max - 1, Min + 0.1, f'Artist 4.5   $R^2=${artist_r2:.2f}', fontsize=12)
+                
+                
+                
         ax0.set_title('E-region Peaks', fontsize=17)
-        ax0.set_xlabel('KIAN-Net', fontsize=15)
-        ax0.set_ylabel('EISCAT', fontsize=15)
+        ax0.set_xlabel('MODEL  $log_{10}\,(ne)$', fontsize=15)
+        ax0.set_ylabel('EISCAT  $log_{10}\,(ne)$', fontsize=15)
         ax0.set_xlim(xmin=Min, xmax=Max)
         ax0.set_ylim(ymin=Min, ymax=Max)
+        ax0.legend(fontsize=12)
         ax0.grid(True)
         
         
-        # Plotting E-peaks
-        ax1.scatter(hnn_param_peak[1,:], eis_param_peak[1,:], color="C0")
-        ax1.scatter(art_param_peak[1,:], eis_param_peak[1,:], color="C1")
+        
+        Min, Max = 10, 12
+        # Plotting F-peaks
+        ax1.plot([Min, Max], [Min, Max], color="C0", label="EISCAT vs EISCAT", linewidth=3, zorder=1)
+        ax1.scatter(kian_param_peak[1,:], eis_param_peak[1,:], s=50, color="C1", label="KIAN-Net vs EISCAT", edgecolors="black")
+        ax1.scatter(art_param_peak[1,:], eis_param_peak[1,:], s=50, color="C2", label="Artist 4.5 vs EISCAT", edgecolors="black")
+        
+        # Mask NaN values for KIAN
+        valid_kian = ~np.isnan(kian_param_peak[1, :]) & ~np.isnan(eis_param_peak[1, :])
+        if valid_kian.any():
+            slope, intercept, _, _, _ = linregress(kian_param_peak[1, valid_kian], eis_param_peak[1, valid_kian])
+            
+            if np.isnan(slope) or np.isnan(intercept):
+                ax1.plot(np.nan, np.nan, color="grey", label="Failed KIAN-Net Regression", linestyle="--")
+                ax1.text(Max - 0.7, Min + 0.14, f'KIAN-Net  $R^2=$ NaN', fontsize=12)
+            else:
+                kian_pred = slope * kian_param_peak[1, valid_kian] + intercept
+                eiscat_actual = eis_param_peak[1, valid_kian]  # True values are EISCAT peaks
+                kian_r2 = self.compute_r2_score(eiscat_actual, kian_pred)
+                print(f"KIAN-Net R^2 (F-region): {kian_r2}")
+                
+                ax1.plot([Min, Max], [slope * Min + intercept, slope * Max + intercept], 
+                         color="C1", linestyle="--", linewidth=2, label="KIAN-Net Regression", zorder=2)
+                ax1.text(Max - 0.7, Min + 0.14, f'KIAN-Net   $R^2=${kian_r2:.2f}', fontsize=12)
+        
+        # Mask NaN values for Artist
+        valid_artist = ~np.isnan(art_param_peak[1, :]) & ~np.isnan(eis_param_peak[1, :])
+        if valid_artist.any():
+            slope, intercept, _, _, _ = linregress(art_param_peak[1, valid_artist], eis_param_peak[1, valid_artist])
+            
+            if np.isnan(slope) or np.isnan(intercept):
+                ax1.plot(np.nan, np.nan, color="grey", label="Failed Artist Regression", linestyle="--")
+                ax1.text(Max - 0.7, Min + 0.07, f'Artist 4.5    $R^2=$ NaN', fontsize=12)
+            else:
+                artist_pred = slope * art_param_peak[1, valid_artist] + intercept
+                eiscat_actual = eis_param_peak[1, valid_artist]  # True values are EISCAT peaks
+                artist_r2 = self.compute_r2_score(eiscat_actual, artist_pred)
+                print(f"Artist R^2 (F-region): {artist_r2}")
+                
+                ax1.plot([Min, Max], [slope * Min + intercept, slope * Max + intercept], 
+                     color="C2", linestyle="--", linewidth=2, label="Artist Regression", zorder=2)
+                ax1.text(Max - 0.7, Min + 0.07, f'Artist 4.5    $R^2=${artist_r2:.2f}', fontsize=12)
+        
+        
         ax1.set_title('F-region Peaks', fontsize=17)
-        ax1.set_xlabel('KIAN-Net', fontsize=15)
-        # ax1.set_ylabel('EISCAT', fontsize=15)
+        ax1.set_xlabel('MODEL  $log_{10}\,(ne)$', fontsize=15)
+        # ax1.set_ylabel('EISCAT  $log_{10}\,(ne)$', fontsize=15)
         ax1.set_xlim(xmin=Min, xmax=Max)
         ax1.set_ylim(ymin=Min, ymax=Max)
-        ax1.tick_params(labelleft=False)
+        ax1.legend(fontsize=12)
         ax1.grid(True)
         
         plt.show()
