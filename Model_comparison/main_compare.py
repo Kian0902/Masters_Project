@@ -22,43 +22,85 @@ X_ion = load_dict("X_ion.pkl")
 
 
 
+# prominence_values = np.arange(0.001, 0.1, 0.001)
+
+# peak_finder = IonosphericPeakFinder(X_kian)
+# best_p, best_s = peak_finder.grid_search(prominence_values, reference_data=X_eis)
+
+# print(best_p, best_s)
 
 
-# eis_peak_finder = IonosphericPeakFinder(X_eis)
-# X_eis = eis_peak_finder.get_peaks()
-
-# kian_peak_finder = IonosphericPeakFinder(X_kian)
-# X_kian = kian_peak_finder.get_peaks()
-
-# art_peak_finder = IonosphericPeakFinder(X_art)
-# X_art = art_peak_finder.get_peaks()
-
-
-
+f_prom = 0.01
+e_prom = 0.01
 
 
 
+eis_peak_finder = IonosphericPeakFinder(X_eis)
+X_eis = eis_peak_finder.get_peaks(e_prom, f_prom)
 
-# # # Times must be in the format yyyymmdd_hhmm
-selected_dates_and_times = ["20190105_1045", "20190105_1200", "20190105_1400", "20190105_1800", "20190105_2030",
-                            "20191215_2030", "20191215_2115", "20191215_2145", "20191215_2215", "20191215_2245",
-                            "20200227_0145", "20200227_0900", "20200227_1100", "20200227_1200", "20200227_1615"]
+kian_peak_finder = IonosphericPeakFinder(X_kian)
+X_kian = kian_peak_finder.get_peaks(e_prom, f_prom)
+
+art_peak_finder = IonosphericPeakFinder(X_art)
+X_art = art_peak_finder.get_peaks(e_prom, f_prom)
 
 
-# selected_dates_and_times = ["20190105_2015"]
 
-# selected_dates_and_times = ["20190105_1045", "20190105_1800", "20190105_2030"]
-selected_datetimes = from_strings_to_datetime(selected_dates_and_times)
+
+
+
+
+# # # # Times must be in the format yyyymmdd_hhmm
+# selected_dates_and_times = ["20190105_1045", "20190105_1200", "20190105_1400", "20190105_1800", "20190105_2030",
+#                             "20191215_2030", "20191215_2115", "20191215_2145", "20191215_2215", "20191215_2245",
+#                             "20200227_0145", "20200227_0900", "20200227_1100", "20200227_1200", "20200227_1615"]
+
+
+# # selected_dates_and_times = ["20190105_2015"]
+
+# # selected_dates_and_times = ["20190105_1045", "20190105_1800", "20190105_2030"]
+# selected_datetimes = from_strings_to_datetime(selected_dates_and_times)
+
+
+
+# # day = '2019-1-5'
+# day = '2019-12-15'
+# # day = '2020-2-27'
+# radar_plotter = RadarPlotter(X_eis[day], X_kian[day], X_art[day], X_ion[day])
+# # radar_plotter.select_measurements_by_datetime(selected_datetimes)
+# # radar_plotter.plot_compare_all_interactive()
+# # radar_plotter.plot_compare_r2()
+# # radar_plotter.plot_compare_all()
+# # radar_plotter.plot_compare_all_r2()
+# # radar_plotter.plot_compare_all_r2_window()
+# # radar_plotter.plot_chi_squared()
+
+# # radar_plotter.plot_compare_all_r2()
+
+# # radar_plotter.plot_compare_closest()
+# # radar_plotter.plot_selected_measurements()
+# # radar_plotter.plot_selected_measurements_std()
+# # radar_plotter.plot_error_profiles()
+# # radar_plotter.plot_ionogram_measurements_and_errors()
+
+# # radar_plotter.plot_peaks_all_measurements()
+# # radar_plotter.plot_compare_all_peak_heights()
+# radar_plotter.plot_compare_all_peak_regions()
+
+
 
 
 
 for day in X_kian:
     radar_plotter = RadarPlotter(X_eis[day], X_kian[day], X_art[day], X_ion[day])
+    # radar_plotter.select_measurements_by_datetime(selected_datetimes)
     # radar_plotter.plot_compare_all_interactive()
     # radar_plotter.plot_compare_r2()
-    radar_plotter.plot_compare_all_r2_window()
-    # radar_plotter.plot_error_and_chi2()
-    # radar_plotter.select_measurements_by_datetime(selected_datetimes)
+    # radar_plotter.plot_compare_all()
+    # radar_plotter.plot_compare_all_r2()
+    # radar_plotter.plot_compare_all_r2_window()
+    # radar_plotter.plot_chi_squared()
+    
     # radar_plotter.plot_compare_all_r2()
     
     # radar_plotter.plot_compare_closest()
@@ -67,9 +109,9 @@ for day in X_kian:
     # radar_plotter.plot_error_profiles()
     # radar_plotter.plot_ionogram_measurements_and_errors()
     
-    # radar_plotter.plot_all_peaks()
-    # radar_plotter.plot_compare_all_peaks()
-    # radar_plotter.plot_compare_all_peak_regions()
+    # radar_plotter.plot_peaks_all_measurements()
+    # radar_plotter.plot_compare_all_peak_heights()
+    radar_plotter.plot_compare_all_peak_regions()
     # break
 
 
