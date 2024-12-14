@@ -63,56 +63,56 @@ X_art = art_peak_finder.get_peaks(e_prom, f_prom)
 
 
 
-# # day = '2019-1-5'
+day = '2019-1-5'
 # day = '2019-12-15'
-# # day = '2020-2-27'
-# radar_plotter = RadarPlotter(X_eis[day], X_kian[day], X_art[day], X_ion[day])
-# # radar_plotter.select_measurements_by_datetime(selected_datetimes)
-# # radar_plotter.plot_compare_all_interactive()
-# # radar_plotter.plot_compare_r2()
-# # radar_plotter.plot_compare_all()
-# # radar_plotter.plot_compare_all_r2()
-# # radar_plotter.plot_compare_all_r2_window()
-# # radar_plotter.plot_chi_squared()
+# day = '2020-2-27'
+radar_plotter = RadarPlotter(X_eis[day], X_kian[day], X_art[day], X_ion[day])
+# radar_plotter.select_measurements_by_datetime(selected_datetimes)
+# radar_plotter.plot_compare_all_interactive()
+# radar_plotter.plot_compare_r2()
+# radar_plotter.plot_compare_all()
+# radar_plotter.plot_compare_all_r2()
+# radar_plotter.plot_compare_all_r2_window()
+# radar_plotter.plot_chi_squared()
 
-# # radar_plotter.plot_compare_all_r2()
+# radar_plotter.plot_compare_all_r2()
 
-# # radar_plotter.plot_compare_closest()
-# # radar_plotter.plot_selected_measurements()
-# # radar_plotter.plot_selected_measurements_std()
-# # radar_plotter.plot_error_profiles()
-# # radar_plotter.plot_ionogram_measurements_and_errors()
+radar_plotter.plot_compare_closest()
+# radar_plotter.plot_selected_measurements()
+# radar_plotter.plot_selected_measurements_std()
+# radar_plotter.plot_error_profiles()
+# radar_plotter.plot_ionogram_measurements_and_errors()
 
-# # radar_plotter.plot_peaks_all_measurements()
-# # radar_plotter.plot_compare_all_peak_heights()
-# radar_plotter.plot_compare_all_peak_regions()
-
-
-
+# radar_plotter.plot_peaks_all_measurements()
+# radar_plotter.plot_compare_all_peak_heights()
+# radar_plotter.plot_compare_all_peak_densities()
+# radar_plotter.plot_compare_all_peak_altitudes()
 
 
-for day in X_kian:
-    radar_plotter = RadarPlotter(X_eis[day], X_kian[day], X_art[day], X_ion[day])
-    # radar_plotter.select_measurements_by_datetime(selected_datetimes)
-    # radar_plotter.plot_compare_all_interactive()
-    # radar_plotter.plot_compare_r2()
-    # radar_plotter.plot_compare_all()
-    # radar_plotter.plot_compare_all_r2()
-    # radar_plotter.plot_compare_all_r2_window()
-    # radar_plotter.plot_chi_squared()
+
+
+# for day in X_kian:
+#     radar_plotter = RadarPlotter(X_eis[day], X_kian[day], X_art[day], X_ion[day])
+#     # radar_plotter.select_measurements_by_datetime(selected_datetimes)
+#     radar_plotter.plot_compare_all_interactive()
+#     # radar_plotter.plot_compare_r2()
+#     # radar_plotter.plot_compare_all()
+#     # radar_plotter.plot_compare_all_r2()
+#     # radar_plotter.plot_compare_all_r2_window()
+#     # radar_plotter.plot_chi_squared()
     
-    # radar_plotter.plot_compare_all_r2()
+#     # radar_plotter.plot_compare_all_r2()
     
-    # radar_plotter.plot_compare_closest()
-    # radar_plotter.plot_selected_measurements()
-    # radar_plotter.plot_selected_measurements_std()
-    # radar_plotter.plot_error_profiles()
-    # radar_plotter.plot_ionogram_measurements_and_errors()
+#     # radar_plotter.plot_compare_closest()
+#     # radar_plotter.plot_selected_measurements()
+#     # radar_plotter.plot_selected_measurements_std()
+#     # radar_plotter.plot_error_profiles()
+#     # radar_plotter.plot_ionogram_measurements_and_errors()
     
-    # radar_plotter.plot_peaks_all_measurements()
-    # radar_plotter.plot_compare_all_peak_heights()
-    radar_plotter.plot_compare_all_peak_regions()
-    # break
+#     # radar_plotter.plot_peaks_all_measurements()
+#     radar_plotter.plot_compare_all_peak_heights()
+#     # radar_plotter.plot_compare_all_peak_densities()
+#     # break
 
 
 
