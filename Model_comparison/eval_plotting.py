@@ -397,21 +397,21 @@ class RadarPlotter:
         # Plotting EISCAT
         ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax0.set_title('EISCAT UHF'+nl, fontsize=17)
-        ax0.set_xlabel('Time [hours]', fontsize=13)
+        ax0.set_xlabel('Time [hh:mm]', fontsize=13)
         ax0.set_ylabel('Altitude [km]', fontsize=15)
         ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         
         # Plotting DL model
         ax1.pcolormesh(r_time, r_h, ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax1.set_title('KIAN-Net'+nl, fontsize=17)
-        ax1.set_xlabel('Time [hours]', fontsize=13)
+        ax1.set_xlabel('Time [hh:mm]', fontsize=13)
         ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax1.tick_params(labelleft=False)
         
         # Plotting Artist 4.5
         ax2.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax2.set_title('Artist 4.5'+nl, fontsize=17)
-        ax2.set_xlabel('Time [hours]', fontsize=13)
+        ax2.set_xlabel('Time [hh:mm]', fontsize=13)
         ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax2.tick_params(labelleft=False)
         
@@ -423,7 +423,7 @@ class RadarPlotter:
         
         # Add colorbar
         cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
-        cbar.set_label(r'$log_{10}(n_e)$ [n/m$^3$]', fontsize=17)
+        cbar.set_label(r'$log_{10}(n_e)$ $[n\,m^{-3}]$', fontsize=17)
         
         plt.show()
     
@@ -651,10 +651,10 @@ class RadarPlotter:
         fig.suptitle(f'EISCAT vs HNN vs Artist for {n} Chosen Times\nDate: {date_str}', fontsize=20)
         plt.tight_layout()
         plt.show()
-    
-    
-    
-    
+        
+        
+        
+        
     def plot_selected_measurements_std(self):
         """
         Plot the selected measurements from all three radars in a 1xn grid of subplots.
@@ -683,12 +683,12 @@ class RadarPlotter:
             ne_art = self.X_Artist["r_param"][:, idx]
             
             
-            ax.plot(ne_eis, r_h, label='EISCAT', linestyle='-')
+            ax.plot(np.log10(ne_eis), r_h, label='EISCAT', linestyle='-')
             # ax.plot(10**ne_kian, r_h, label='KIAN-Net', linestyle='-')
             # ax.plot(ne_art, r_h, label='Artist 4.5', linestyle='-')
             
-            print(ne_eis)
-            print(ne_eis_err)
+            # print(ne_eis)
+            # print(ne_eis_err)
             
             # err = ne_eis - ne_eis_err
             
@@ -696,7 +696,10 @@ class RadarPlotter:
             # print(ne_eis + ne_eis_err)
             # ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
             
-            ax.fill_betweenx(r_h, ne_eis - ne_eis_err, ne_eis + ne_eis_err, alpha=0.3)
+            low = np.log10(ne_eis - ne_eis_err)
+            high = np.log10(ne_eis + ne_eis_err)
+            
+            ax.fill_betweenx(r_h, low, high, alpha=0.3)
             # ax.set_xscale("log")
             
             
@@ -813,8 +816,8 @@ class RadarPlotter:
         
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         n = len(self.selected_indices)
-        
-        fig, axes = plt.subplots(n, 3, figsize=(13, 4*n))
+        with sns.axes_style("dark"):
+            fig, axes = plt.subplots(n, 3, figsize=(12, 4*n))
         
         if n == 1:
             axes = [axes]  # Ensure axes is iterable if there's only one subplot
@@ -825,10 +828,19 @@ class RadarPlotter:
             ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
             ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
             
-                
+            num=str(i+1)
+            
             axes[i][0].imshow(ionogram_img)
-            axes[i][0].set_title(f'Ionogram - {r_time[idx].strftime("%H:%M")}', fontsize=21)
+            axes[i][0].set_title(f'     Ionogram - {r_time[idx].strftime("%H:%M")}', fontsize=21)
             axes[i][0].axis('off')
+            
+            # Get the position of the title
+            title_pos = axes[i][0].title.get_position()  # (x, y) in axis coordinates
+            title_x, title_y = title_pos
+            
+            # Add the red string next to the title
+            axes[i][0].text(title_x - 0.4, title_y + 0.03, num, color='red', weight='bold', fontsize=21, transform=axes[i][0].transAxes, ha='right')
+            
             
             # Plot selected measurements using existing method
             self.plot_single_measurement(axes[i][1], idx)
@@ -841,7 +853,7 @@ class RadarPlotter:
         fig.suptitle(f'Date: {date_str}', fontsize=25, y=1.01)
         plt.tight_layout()
         plt.show()
-    
+        
     def plot_single_measurement(self, ax, idx):
         """
         Plot a single selected measurement on a given axis.
@@ -849,18 +861,25 @@ class RadarPlotter:
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         r_h = self.X_EISCAT["r_h"].flatten()
         
-        ax.plot(np.log10(self.X_EISCAT["r_param"][:, idx]), r_h, label='EISCAT', linestyle='-')
-        ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
+        ne_eis = self.X_EISCAT["r_param"][:, idx]
+        ne_eis_err = self.X_EISCAT["r_error"][:, idx]
+        
+        
+        ax.plot(np.log10(ne_eis), r_h, label='EISCAT', linestyle='-')
+        # ax.fill_betweenx(r_h, np.log10(ne_eis - ne_eis_err), np.log10(ne_eis + ne_eis_err), alpha=0.3)
+        
+        ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='KIAN-Net', linestyle='-')
         if self.X_Artist is not None:
             ax.plot(np.log10(self.X_Artist["r_param"][:, idx]), r_h, label='Artist 4.5', linestyle='-')
-        
+            
         time_str = r_time[idx].strftime('%H:%M')
-        ax.set_xlabel(r'$log_{10}(n_e)$ [$n/m^3$]', fontsize=13)
+        ax.set_xlabel(r'$log_{10}(n_e)$ $[n\,m^{-3}]$', fontsize=13)
+        ax.set_ylabel(r'Altitude $[km]$', fontsize=13)
         ax.set_title(f'Measurements - {time_str}', fontsize=20)
-        ax.set_xlim(xmin=9, xmax=12)
+        # ax.set_xlim(xmin=9, xmax=12)
         ax.grid(True)
         ax.legend()
-
+        
     def plot_single_error(self, ax, idx):
         """
         Plot a single error profile on a given axis.
@@ -869,15 +888,10 @@ class RadarPlotter:
         r_h = self.X_EISCAT["r_h"].flatten()
         error_hnn, error_artist, valid_artist_mask = self.calculate_errors(idx)
         
-        # ax.plot(error_hnn, r_h, label='Error: EISCAT vs DL Model', linestyle='-', color='C1')
-        # if np.any(valid_artist_mask):
-        #     ax.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
-        # else:
-        #     ax.plot(error_artist, r_h, 'r-', linewidth=2, label='No Artist Data')
-        # Plot errors
-        ax.plot(error_hnn, r_h, label='Error: EISCAT vs DL Model', linestyle='-', color='C1')
+        ax.tick_params(labelleft=False)
+        ax.plot(error_hnn, r_h, label='KIAN-Net', linestyle='-', color='C1')
         if np.any(valid_artist_mask):
-            ax.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
+            ax.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Artist 4.5', linestyle='-', color='green')
             # Plot red line for NaN indices from the last valid value or first valid value
             nan_indices = np.where(~valid_artist_mask)[0]
             last_valid_index = np.max(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
@@ -894,18 +908,18 @@ class RadarPlotter:
         
         # Set x-axis limits based on valid error data
         if np.any(valid_artist_mask):
-            ax.set_xlim(left=0, right=max(np.max(error_hnn), np.max(error_artist[valid_artist_mask])) * 1.1)
+            ax.set_xlim(left=-0.01, right=max(np.max(error_hnn), np.max(error_artist[valid_artist_mask])) * 1.1)
         else:
-           ax.set_xlim(left=0, right=np.max(error_hnn) * 1.1)
+           ax.set_xlim(left=-0.01, right=np.max(error_hnn) * 1.1)
         
         
         time_str = r_time[idx].strftime('%H:%M')
-        ax.set_xlabel('Error', fontsize=13)
+        ax.set_xlabel(r"Error $[n\,m^{-3}]$", fontsize=13)
         ax.set_title(f'Error Profiles - {time_str}', fontsize=20)
         ax.grid(True)
         ax.legend()
-
-    
+        
+        
     # =============================================================================
     #                        Interactive Plot
     #                             (Start)
