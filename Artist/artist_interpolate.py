@@ -7,7 +7,7 @@ Created on Tue Dec  3 17:12:22 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
-from artist_utils import save_data_dict, load_data_dict, plot_data, plot_eiscat_vs_artist
+from artist_utils import save_data_dict, load_data_dict
 from scipy.interpolate import interp1d
  
 
