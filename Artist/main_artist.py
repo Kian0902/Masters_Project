@@ -10,7 +10,8 @@ import pickle
 import pandas as pd
 
 from artist_sorting import ArtistSorter
-from artist_utils import save_data_dict, load_data_dict, merge_files, plot_data, plot_eiscat_vs_artist
+from artist_utils import save_data_dict, load_data_dict, merge_files
+from artist_plotting import ArtistPlotting
 from artist_interpolate import filter_range, interpolate_data
 
 
@@ -57,29 +58,57 @@ if __name__ == "__main__":
     
     
     
-    
-    X_artist = load_data_dict("artist_test_days.pkl")
+    # --- Uncomment for interpolating and saving the data ---
+    # X_artist = load_data_dict("artist_test_days.pkl")
     X_EISCAT = load_data_dict(file_name="X_avg_test_data")
 
 
-    artist_processed = {}
+    # artist_processed = {}
 
-    for day in X_artist:
-        X_uhf = X_EISCAT[day]
-        X_art = X_artist[day]
-        # plot_data(X)
-        r_uhf = X_uhf['r_h']
-        # plot_eiscat_vs_artist(X_uhf, X_art)
+    # for day in X_artist:
+    #     X_uhf = X_EISCAT[day]
+    #     X_art = X_artist[day]
+    #     # plot_data(X)
+    #     r_uhf = X_uhf['r_h']
+    #     # plot_eiscat_vs_artist(X_uhf, X_art)
         
-        X_filt = filter_range(X_art, 'r_h', 90, 400)
-        # plot_eiscat_vs_artist(X_uhf, X_filt)
+    #     X_filt = filter_range(X_art, 'r_h', 90, 400)
+    #     # plot_eiscat_vs_artist(X_uhf, X_filt)
         
         
-        X_inter = interpolate_data(X_filt, r_uhf)
-        plot_eiscat_vs_artist(X_uhf, X_inter)
-        artist_processed[day] = X_inter
+    #     X_inter = interpolate_data(X_filt, r_uhf)
+    #     plot_eiscat_vs_artist(X_uhf, X_inter)
+    #     artist_processed[day] = X_inter
     
-    save_data_dict(artist_processed, file_name="processed_artist_test_days.pkl")
+    # save_data_dict(artist_processed, file_name="processed_artist_test_days.pkl")
+    # ------------------------------------------------------
     
     
     
+    X_Artist = load_data_dict("processed_artist_test_days.pkl")
+    
+    day = "2019-1-5"
+    X_art = X_Artist[day]
+    X_eis = X_EISCAT[day]
+    
+    
+    plotting = ArtistPlotting(X_eis, X_art)
+    
+    plotting.plot_profiles()
+    plotting.plot_eiscat_vs_artist()
+    
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
