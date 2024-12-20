@@ -253,11 +253,11 @@ class RadarPlotter:
     
     
     def chi_squared(self, X_eis, X_eis_err, X_kian):
-        chi_2 =((X_eis - X_kian)**2)/(X_eis_err**2) 
+        chi_2 =((10**X_eis - 10**X_kian)**2)/((10**X_eis_err)**2) 
         return chi_2
     
     def error_sigma(self, X_eis, X_kian):
-        err =  ((X_kian - X_eis)**2)/X_eis
+        err =  ((X_kian - X_eis)**2)/(X_eis)**2
         return err
     
     
@@ -271,6 +271,7 @@ class RadarPlotter:
         
         ne_chi_2 = self.chi_squared(ne_eis, ne_eis_err, ne_kian)
         ne_err = self.error_sigma(ne_eis, ne_kian)
+        
         
         
         date_str = r_time[0].strftime('%Y-%m-%d')
@@ -314,43 +315,106 @@ class RadarPlotter:
         
         plt.show()
     
-    
     def plot_chi_squared(self):
-        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        r_h = self.X_EISCAT["r_h"].flatten()
-        
+        """
+        Plot chi-squared values as a color plot and compute summary metrics.
+        """
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])  # Convert time array to datetime
+        r_h = self.X_EISCAT["r_h"].flatten()  # Altitudes
+    
+        # Log-transform observed and error data
         ne_eis = np.log10(self.X_EISCAT["r_param"])
         ne_eis_err = np.log10(self.X_EISCAT["r_error"])
-        ne_kian = self.X_HNN["r_param"]
+        ne_kian = self.X_HNN["r_param"]  # Predicted data
+    
+        # Compute chi-squared values for all points
+        ne_chi_2 = np.log10(self.chi_squared(ne_eis, ne_eis_err, ne_kian))
         
-        # ne_chi_2 = self.chi_squared(ne_eis, ne_kian)
-        ne_err = self.chi_squared(ne_eis, ne_eis_err, ne_kian)
         
         
+        # Compute chi-squared per altitude (mean over time for each altitude)
+        chi_2_per_altitude = np.mean(ne_chi_2, axis=1)  # Average over columns (time)
+    
+        # Compute chi-squared per measurement (mean over altitude for each time)
+        chi_2_per_measurement = np.mean(ne_chi_2, axis=0)  # Average over rows (altitude)
+    
         date_str = r_time[0].strftime('%Y-%m-%d')
-
-        
-        # Creating the plots
+    
+        # Creating the color plot for chi-squared per altitude and time
         fig, ax = plt.subplots(1, 1, figsize=(8, 7))
         fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.02)
         fig.tight_layout()
-
-        # Plotting original data
-        plot_err = ax.pcolormesh(r_time, r_h, ne_err, shading='auto', cmap='jet', vmin=0.00001, vmax=0.005)
+    
+        # Plot the full chi-squared color map
+        plot_err = ax.pcolormesh(r_time, r_h, ne_chi_2, shading='auto', cmap='jet', vmin=0, vmax=2)
         ax.set_title(r'$\chi^2$-error', fontsize=17)
         ax.set_xlabel('Time [hours]', fontsize=13)
         ax.set_ylabel('Altitude [km]', fontsize=15)
         ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        
-        
+    
         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-            
-        
-        # Add colorbar for the predicted data
+    
+        # Add colorbar
         cbar_chi = fig.colorbar(plot_err, ax=ax, orientation='vertical', fraction=0.048, pad=0.04)
         cbar_chi.set_label(r'$\chi^2$', fontsize=17, labelpad=15)
-        
+    
         plt.show()
+    
+        # Plot chi-squared per altitude
+        plt.figure(figsize=(8, 5))
+        plt.plot(chi_2_per_altitude, r_h, marker='o')
+        plt.title(r'$\chi^2$ per Altitude', fontsize=17)
+        plt.xlabel('Altitude [km]', fontsize=13)
+        plt.ylabel(r'$\chi^2$', fontsize=15)
+        plt.grid()
+        plt.show()
+    
+        # Plot chi-squared per measurement
+        plt.figure(figsize=(8, 5))
+        plt.plot(r_time, chi_2_per_measurement, marker='o')
+        plt.title(r'$\chi^2$ per Measurement', fontsize=17)
+        plt.xlabel('Time [hours]', fontsize=13)
+        plt.ylabel(r'$\chi^2$', fontsize=15)
+        plt.gca().xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        plt.grid()
+        plt.show()
+        
+    # def plot_chi_squared(self):
+    #     r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+    #     r_h = self.X_EISCAT["r_h"].flatten()
+        
+    #     ne_eis = np.log10(self.X_EISCAT["r_param"])
+    #     ne_eis_err = np.log10(self.X_EISCAT["r_error"])
+    #     ne_kian = self.X_HNN["r_param"]
+        
+    #     # ne_chi_2 = self.chi_squared(ne_eis, ne_kian)
+    #     ne_err = self.chi_squared(ne_eis, ne_eis_err, ne_kian)
+        
+        
+    #     date_str = r_time[0].strftime('%Y-%m-%d')
+
+        
+    #     # Creating the plots
+    #     fig, ax = plt.subplots(1, 1, figsize=(8, 7))
+    #     fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.02)
+    #     fig.tight_layout()
+
+    #     # Plotting original data
+    #     plot_err = ax.pcolormesh(r_time, r_h, ne_err, shading='auto', cmap='jet', vmin=0.00001, vmax=0.005)
+    #     ax.set_title(r'$\chi^2$-error', fontsize=17)
+    #     ax.set_xlabel('Time [hours]', fontsize=13)
+    #     ax.set_ylabel('Altitude [km]', fontsize=15)
+    #     ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        
+    #     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
+            
+        
+    #     # Add colorbar for the predicted data
+    #     cbar_chi = fig.colorbar(plot_err, ax=ax, orientation='vertical', fraction=0.048, pad=0.04)
+    #     cbar_chi.set_label(r'$\chi^2$', fontsize=17, labelpad=15)
+        
+    #     plt.show()
     
     
     def plot_compare_all(self, selected_measurements=False):
@@ -960,21 +1024,21 @@ class RadarPlotter:
         # Plot EISCAT data
         ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax0.set_title('EISCAT UHF')
-        ax0.set_xlabel('Time [hours]')
+        ax0.set_xlabel('Time [hh:mm]')
         ax0.set_ylabel('Altitude [km]')
         ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         
         # Plot HNN data
         ax1.pcolormesh(r_time, r_h, ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax1.set_title('DL Model (HNN)')
-        ax1.set_xlabel('Time [hours]')
+        ax1.set_title('KIAN-Net')
+        ax1.set_xlabel('Time [hh:mm]')
         ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax1.tick_params(labelleft=False)
         
         # Plot Artist data
         ax2.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax2.set_title('Artist 4.5')
-        ax2.set_xlabel('Time [hours]')
+        ax2.set_xlabel('Time [hh:mm]')
         ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax2.tick_params(labelleft=False)
         
@@ -1004,7 +1068,7 @@ class RadarPlotter:
             ax_detail.plot(ne_hnn[:, time_idx], r_h, label="HNN", color='C1')
             ax_detail.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2')
             ax_detail.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-            ax_detail.set_xlabel("Electron Density")
+            ax_detail.set_xlabel(r'$log_{10}(n_e)$ [n/m$^3$]')
             ax_detail.set_ylabel("Altitude [km]")
             ax_detail.legend()
             ax_detail.grid()
