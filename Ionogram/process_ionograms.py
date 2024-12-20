@@ -16,6 +16,7 @@ import os
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+from matplotlib.patches import Patch
 from scipy.interpolate import RegularGridInterpolator
 from datetime import datetime
 
@@ -143,10 +144,43 @@ class IonogramProcessing:
                 # print(f"  - Saved ionogram image to {save_filename}")
             
             if plot:
-                fig, ax = plt.subplots(frameon=False)
+                fig, ax = plt.subplots(1, 2, width_ratios=[1, 0.6], figsize=(12, 5))
                 
-                ax.imshow(iono_image)
+                # Original ionogram
+                ax[0].imshow(iono_org, extent=[freq_org[0], freq_org[-1], rang_org[0], rang_org[-1]],
+                                    aspect='auto')
+                ax[0].set_title("Original Ionogram", fontsize=20)
+                ax[0].set_xlabel("Frequency (MHz)", fontsize=15)
+                ax[0].set_ylabel("Virtual Altitude (km)", fontsize=15)
+                
+                
+                # Resampled ionogram
+                ax[1].imshow(iono_resampled, extent=[Frange[0], Frange[1], Zrange[0], Zrange[1]],
+                                    aspect='auto')
+                ax[1].set_title("Resampled Ionogram", fontsize=20)
+                ax[1].set_xlabel("Frequency (MHz)", fontsize=15)
+                ax[1].set_ylabel("Virtual Altitude (km)", fontsize=15)
+                
+                
+                # Custom labels with filled squares
+                green_patch = Patch(color='green', label='X-mode')
+                red_patch = Patch(color='red', label='O-mode')
+                
+                # Add legends
+                for axis in ax:
+                    axis.legend(handles=[red_patch, green_patch], loc='upper right', title="Modes", frameon=True)
+                
+                
+                plt.tight_layout()
                 plt.show()
+            
+            
+            # if plot:
+            #     fig, ax = plt.subplots(1, 2, width_ratios=[1, 0.5], frameon=False)
+                
+            #     ax[0].imshow(iono_org)
+            #     ax[1].imshow(iono_image)
+            #     plt.show()
     
         print("Processing complete.")
 
