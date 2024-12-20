@@ -36,10 +36,11 @@ for file in os.listdir(datapath_folder):
     
     B = IonogramProcessing()
     print("-Making Ionogram images...")
-    B.process_ionogram(data, times, plot=False, result_path="Ionogram_Images")
+    # B.process_ionogram(data, times, plot=False, result_path="Ionogram_Images")
+    B.process_ionogram(data, times, plot=True)
     print("-Making Ionograms Complete!\n")
     print("==========================================================")
-
+    break
 
 
 
