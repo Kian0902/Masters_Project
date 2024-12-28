@@ -933,19 +933,12 @@ class RadarPlotter:
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         n = len(self.selected_indices)
         with sns.axes_style("dark"):
-            fig, axes = plt.subplots(n, 3, figsize=(12, 4*n))
-            spec = GridSpec(n, 3, figure=fig, wspace=0.5)  # Increase wspace for first column only
-    
-        axes = []  # To store axes for easy access
-            
+            fig, axes = plt.subplots(n, 3, figsize=(12, 4*n), width_ratios=[1, 1, 1])
+   
         if n == 1:
             axes = [axes]  # Ensure axes is iterable if there's only one subplot
         
-        for i, idx in enumerate(self.selected_indices):
-            # First column: Ionogram
-            ax1 = fig.add_subplot(spec[i, 0])  # First column
-            axes.append(ax1)    
-            
+        for i, idx in enumerate(self.selected_indices):  
             # Plot ionogram image
             ionogram_img = self.X_Ionogram["r_param"][idx]
             ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
@@ -974,9 +967,10 @@ class RadarPlotter:
             
         date_str = r_time[self.selected_indices[0]].strftime('%Y-%m-%d')
         fig.suptitle(f'Date: {date_str}', fontsize=25, y=1.01)
-        fig.subplots_adjust(wspace=-0.8, hspace=0.2)
+        fig.subplots_adjust(wspace=1, hspace=1)
         plt.tight_layout()
         plt.show()
+        
         
     def plot_single_measurement(self, ax, idx):
         """
