@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, Normalize
 from matplotlib.dates import DateFormatter
+from matplotlib.patches import Patch
 import matplotlib.dates as mdates
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Cursor
@@ -956,6 +957,15 @@ class RadarPlotter:
             
             # Add the red string next to the title
             axes[i][0].text(title_x - 0.4, title_y + 0.03, num, color='red', weight='bold', fontsize=21, transform=axes[i][0].transAxes, ha='right')
+            
+            
+            # Custom labels with filled squares
+            green_patch = Patch(color='green', label='X-mode')
+            red_patch = Patch(color='red', label='O-mode')
+
+            axes[i][0].legend(handles=[red_patch, green_patch], loc='upper right', title="Modes", frameon=True)
+
+            
             
             
             # Plot selected measurements using existing method
