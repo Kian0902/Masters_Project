@@ -52,7 +52,7 @@ X_ion = load_dict("X_ion.pkl")
 
 # Times must be in the format yyyymmdd_hhmm
 selected_dates_and_times = ["20190105_0945", "20190105_1245", "20190105_1830", "20190105_2030",
-                            "20191215_2030", "20191215_2115", "20191215_2145", "20191215_2215", "20191215_2245",
+                            "20191215_2000", "20191215_2030", "20191215_2115", "20191215_2215",
                             "20200227_0145", "20200227_0900", "20200227_1100", "20200227_1200", "20200227_1615"]
 
 
@@ -63,8 +63,8 @@ selected_datetimes = from_strings_to_datetime(selected_dates_and_times)
 
 
 
-day = '2019-1-5'
-# day = '2019-12-15'
+# day = '2019-1-5'
+day = '2019-12-15'
 # day = '2020-2-27'
 radar_plotter = RadarPlotter(X_eis[day], X_kian[day], X_art[day], X_ion[day])
 radar_plotter.select_measurements_by_datetime(selected_datetimes)
