@@ -72,34 +72,34 @@ def model_predict(stored_dataset, DL_model, model_weights):
 
 
 if __name__ == "__main__":
-
+    
     # Test data folder names
-    test_ionogram_folder = "testing_data/test_ionogram_folder_E"
-    test_radar_folder = "testing_data/test_eiscat_folder_E"        # These are the true data
-    test_sp19_folder = "testing_data/test_geophys_folder_E"
-
-
+    test_ionogram_folder = "testing_data/test_ionogram_folder_F"
+    test_radar_folder = "testing_data/test_eiscat_folder_F"        # These are the true data
+    test_sp19_folder = "testing_data/test_geophys_folder_F"
+    
+    
     # Initializing class for matching pairs
     Pairs = Matching3Pairs(test_ionogram_folder, test_radar_folder, test_sp19_folder)
-
-
+    
+    
     # Returning matching sample pairs
     rad, ion, sp, radar_times = Pairs.find_pairs(return_date=True)
     r_t = from_strings_to_datetime(radar_times)
     r_times = from_strings_to_array(radar_times)
-
+    
     rad = np.abs(rad)
     rad[rad < 1e5] = 1e6
-
-
+    
+    
     # Storing the sample pairs
     A = Store3Dataset(ion, sp, np.log10(rad), transforms.Compose([transforms.ToTensor()]))
-
+    
     # Path to trained weights
     # weights_path = 'Model_3333.pth'
     weights_path = 'HNN_v1_best_weights.pth'
-
-
+    
+    
     X_pred = model_predict(A, CombinedNetwork(), weights_path)
     # X_kian = convert_pred_to_dict(r_t, r_times, X_pred)
     
@@ -127,8 +127,8 @@ if __name__ == "__main__":
     # X_art = add_key_from_dict_to_dict(Eiscat_support, X_art, key="r_h")
     # X_ion = convert_ionograms_to_dict(ion, X_eis)
     
-
-
+    
+    
     # save_dict(X_eis, "X_eis.pkl")
     # save_dict(X_kian, "X_kian.pkl")
     # save_dict(X_art, "X_art.pkl")
