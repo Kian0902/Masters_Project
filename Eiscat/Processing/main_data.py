@@ -19,7 +19,7 @@ from data_filtering import EISCATDataFilter
 from data_plotting import EISCATPlotter
 from data_outlier_detection import EISCATOutlierDetection
 from matplotlib.dates import DateFormatter
-from data_utils import from_array_to_datetime, inspect_dict, get_day, get_day_data, MatchingFiles
+from data_utils import from_array_to_datetime, inspect_dict, get_day, get_day_data, MatchingFiles, from_strings_to_datetime
 from scipy.interpolate import interp1d
 import numpy as np
 
@@ -54,25 +54,10 @@ X_Eiscat = Eiscat.return_data()  # returning dict data
 
 
 
-radar_plotter = EISCATPlotter(get_day_data(X_Eiscat, 2))
-radar_plotter.plot_day_temp()
-
-
 # Clipping range and Filtering data for nan
 filt = EISCATDataFilter(X_Eiscat, filt_range=True, filt_nan=True) 
 filt.batch_filtering()
 X_filt = filt.return_data()
-
-
-radar_plotter = EISCATPlotter(get_day_data(filt.return_data(), 2))
-radar_plotter.plot_day_temp()
-
-
-
-# X = X_filt["2019-3-19"]
-
-# radar_plotter = EISCATPlotter(X)
-# radar_plotter.plot_day_temp()
 
 
 # Detecting outliers
@@ -81,14 +66,11 @@ Outlier.batch_detection(method_name="IQR", save_plot=False)
 X_outliers = Outlier.return_outliers()
 
 
-
 # Filtering outliers
 outlier_filter = EISCATDataFilter(X_filt, filt_outlier=True)
 outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
 X_outliers_filtered = outlier_filter.return_data()
 
-radar_plotter = EISCATPlotter(get_day_data(outlier_filter.return_data(), 2))
-radar_plotter.plot_day_temp()
 
 
 # Assuming X_avg contains your nested dictionary after filtering and averaging
@@ -135,6 +117,8 @@ for date, data in X_outliers_filtered.items():
 # X_interp now contains the data with all days having 27 altitude levels
 
 
+
+
 # Averaging data
 AVG = EISCATAverager(X_interp)
 AVG.batch_averaging(save_plot=False, weighted=False)
@@ -146,14 +130,14 @@ X_avg = AVG.return_data()
 
 
 
-inspect_dict(X_filt["2022-9-2"])
-radar_plotter = EISCATPlotter(X_filt["2022-9-2"])
-radar_plotter.plot_day()
+# inspect_dict(X_filt["2022-9-2"])
+# radar_plotter = EISCATPlotter(X_filt["2022-9-2"])
+# radar_plotter.plot_day()
 
 
-inspect_dict(X_avg["2022-9-2"])
-radar_plotter = EISCATPlotter(X_avg["2022-9-2"])
-radar_plotter.plot_day()
+# inspect_dict(X_avg["2022-9-2"])
+# radar_plotter = EISCATPlotter(X_avg["2022-9-2"])
+# radar_plotter.plot_day()
 
 
 
