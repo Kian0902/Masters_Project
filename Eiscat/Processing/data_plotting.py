@@ -17,7 +17,7 @@ from matplotlib.gridspec import GridSpec
 from datetime import datetime
 
 from data_utils import from_array_to_datetime, inspect_dict
-# import random
+import random
 
 # import seaborn as sns
 # sns.set(style="dark", context=None, palette=None)
@@ -28,73 +28,119 @@ class EISCATPlotter:
     def __init__(self, X_EISCAT):
         self.X_EISCAT = X_EISCAT
         self.selected_indices = []
-        
-        
-        
-        
-    # def plot_eis(self, ax=None):
-    #     r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-    #     r_h = self.X_EISCAT["r_h"].flatten()
-    #     ne_eis = np.log10(self.X_EISCAT["r_param"])
-    
-    #     if ax is None:
-    #         fig, ax = plt.subplots()
-    #     else:
-    #         fig = None  # we only have ax, no new figure
-    
-    #     # Perform the plotting on the given ax
-    #     p = ax.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
-    #     ax.set_title('EISCAT UHF', fontsize=17)
-    #     ax.set_xlabel('Time [hours]', fontsize=13)
-    #     ax.set_ylabel('Altitude [km]', fontsize=15)
-    #     ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        
-    #     if fig is not None:
-    #         # Add colorbar and other features if we created a new figure
-    #         fig.colorbar(p, ax=ax)
-    #         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-    #         return fig, ax
-    #     else:
-    #         return ax
     
     
-    # def plot_err(self, ax=None):
-    #     r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-    #     r_h = self.X_EISCAT["r_h"].flatten()
-    #     ne_err = np.log10(self.X_EISCAT["r_error"])
-    
-    #     if ax is None:
-    #         fig, ax = plt.subplots()
-    #     else:
-    #         fig = None
-    
-    #     # Perform the plotting on the given ax
-    #     p = ax.pcolormesh(r_time, r_h, ne_err, shading='auto', cmap='bwr', vmin=8, vmax=11)
-    #     ax.set_title('Error', fontsize=17)
-    #     ax.set_xlabel('Time [hours]', fontsize=13)
-    #     ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    
-    #     if fig is not None:
-    #         fig.colorbar(p, ax=ax)
-    #         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-    #         return fig, ax
-    #     else:
-    #         return ax
-    
-    
-    # def plot_day(self):
-    #     fig, axs = plt.subplots(1, 2, figsize=(16, 8), sharey=True)
-        
-    #     # Now both subplots will be drawn onto existing axes
-    #     self.plot_eis(ax=axs[0])
-    #     self.plot_err(ax=axs[1])
-        
-    #     # plt.tight_layout()
-    #     plt.show()
+    def plot_all_interval(self, interval: list):
+        """
+        Plot all measurements within the given time interval.
 
+        Parameters:
+        interval (list): A list of two strings representing the start and end of the time interval,
+                         e.g., ["20190105_1045", "20190105_1200"].
+        """
+        if not interval or len(interval) != 2:
+            print("Interval must contain two elements: [start_time, end_time].")
+            return
+
+        # Convert interval strings to datetime objects
+        start_time = datetime.strptime(interval[0], "%Y%m%d_%H%M")
+        end_time = datetime.strptime(interval[1], "%Y%m%d_%H%M")
+
+        # Extract data
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])  # Array of datetime objects
+        r_h = self.X_EISCAT["r_h"].flatten()  # Altitude points
+        r_param = self.X_EISCAT["r_param"]  # Electron density data
+        r_error = self.X_EISCAT["r_error"]  # Electron density data
+        
+        # Find indices within the specified time interval
+        selected_indices = [i for i, t in enumerate(r_time) if start_time <= t <= end_time]
+
+        if not selected_indices:
+            print("No measurements found within the specified interval.")
+            return
+
+        # Plot each measurement
+        plt.figure(figsize=(5, 7))
+        for idx in selected_indices:
+            plt.plot(r_param[:, idx], r_h, label=f"{r_time[idx].strftime('%H:%M:%S')}")
+            plt.fill_betweenx(r_h, r_param[:, idx] - r_error[:, idx], r_param[:, idx] + r_error[:, idx], alpha=0.3)
+        
+        # Customize plot
+        # plt.xscale("log")
+        plt.xlim(xmin=0, xmax=1.3e11)
+        plt.ylim(ymin=90, ymax=400)
+        plt.xlabel("Electron Density (m^-3)", fontsize=14)
+        plt.ylabel("Altitude (km)", fontsize=14)
+        plt.title(f"EISCAT Measurements from {start_time.strftime('%Y-%m-%d %H:%M')} \
+                  to {end_time.strftime('%Y-%m-%d %H:%M')}", fontsize=16)
+        plt.legend(title="Measurement Time", loc="best", fontsize=10)
+        plt.grid(True)
+        plt.tight_layout()
+        plt.show()
+    
+    
+    
+    
+    
+    def select_measurements(self, n):
+        """
+        Randomly select n measurements and store their indices.
+        """
+        M = self.X_EISCAT["r_time"].shape[0]
+        self.selected_indices = random.sample(range(M), n)
+    
+    
+    def select_measurements_by_datetime(self, datetimes):
+        """
+        Select measurements by providing a list of datetime objects.
+        """
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        
+        self.selected_indices = [i for i, t in enumerate(r_time) if t in datetimes]
+    
+    
+    
+    def plot_selected_measurements(self):
+        """
+        Plot the selected measurements from all three radars in a 1xn grid of subplots.
+        """
+        if not self.selected_indices:
+            print("No measurements selected. Please run select_measurements(n) or select_measurements_by_datetime(datetimes) first.")
+            return
         
         
         
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        r_h = self.X_EISCAT["r_h"].flatten()
+        n = len(self.selected_indices)
+        
+        fig, axes = plt.subplots(1, n, figsize=(5*n, 7), sharey=True)
+        
+        if n == 1:
+            axes = [axes]  # Ensure axes is iterable if there's only one subplot
+        
+        for ax, idx in zip(axes, self.selected_indices):
+            ax.plot(self.X_EISCAT["r_param"][:, idx], r_h, label='EISCAT', linestyle='-')
+            
+            time_str = r_time[idx].strftime('%H:%M')
+            ax.set_xlabel(r'$n_e$ [$n/cm^3$]', fontsize=13)
+            ax.set_title(f'Time: {time_str}', fontsize=15)
+            ax.grid(True)
+            ax.legend()
+        
+        axes[0].set_ylabel('Altitude [km]', fontsize=13)
+        
+        date_str = r_time[idx].strftime('%Y-%m-%d')
+        fig.suptitle(f'EISCAT {n} Chosen Times\nDate: {date_str}', fontsize=20)
+        plt.tight_layout()
+        plt.show()
+    
+    
+    
+
+    
+    
+    
     def plot_day(self):
         
         
