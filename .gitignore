@@ -27,3 +27,4 @@ Ionogram/misc
 *.npy
 *.png
 *.pth
+*.pickle
