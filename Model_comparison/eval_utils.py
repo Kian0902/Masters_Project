@@ -390,6 +390,37 @@ def convert_ionograms_to_dict(ionograms, eiscat_dict):
 
 
 
+def convert_geophys_to_dict(geophys, eiscat_dict):
+    # Initialize an empty dictionary for X_ion
+    X_geo = {}
+
+    # Iterate over the radar dictionary and construct the X_ion dictionary
+    for date_key, radar_data in eiscat_dict.items():
+        r_time = radar_data['r_time']  # This should be the array with shape (M, 6)
+        num_measurements = r_time.shape[0]  # This gives us M, the number of measurements
+        
+        # Get the ionograms corresponding to the current date
+        # Assuming `ion` is a list of ionograms measured in the same order as `r_times`
+        geophys_list = []
+        for idx in range(num_measurements):
+            geophys_list.append(geophys.pop(0))  # Pop the next ionogram corresponding to this measurement
+        
+        # Add the data to X_ion
+        X_geo[date_key] = {
+            'r_time': r_time,
+            'r_param': np.array(geophys_list).T  # r_param is an array of shape (M,) containing ionograms
+        }
+
+    return X_geo
+
+
+
+
+
+
+
+
+
 def inspect_dict(d, indent=0):
     """
     Recursively print all keys in a nested dictionary with the shape of their values.

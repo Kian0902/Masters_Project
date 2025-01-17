@@ -36,6 +36,10 @@ formatter = FuncFormatter(format_ticks)
 
 
 
+
+
+
+
 class RadarPlotter:
     def __init__(self, X_EISCAT, X_HNN, X_Artist, X_Ionogram):
         self.X_EISCAT = X_EISCAT
@@ -45,20 +49,101 @@ class RadarPlotter:
         self.selected_indices = []
     
     
-    def plot_compare_all_r2_window(self):
+    def get_general_r2(self, scores):
+        mean_r2 = np.nanmean(scores)
+        std_r2 = np.nanstd(scores)
+        return mean_r2, std_r2
+        
+    def get_altitude_indices(self, r_h, alt_min, alt_max):
+        """
+        Get indices of altitudes within the specified range.
+
+        Parameters:
+            r_h (numpy.ndarray): Array of altitude values.
+            alt_min (float): Minimum altitude value.
+            alt_max (float): Maximum altitude value.
+
+        Returns:
+            numpy.ndarray: Boolean mask of the same length as r_h, where True indicates inclusion in the range.
+        """
+        
+        return (r_h >= alt_min) & (r_h <= alt_max)
+
+    def get_time_indices(self, r_time, time_min, time_max):
+        """
+        Get indices of times within the specified range.
+
+        Parameters:
+            r_time (numpy.ndarray): Array of datetime values.
+            time_min (str): Minimum time in format 'yyyymmdd_HHMM'.
+            time_max (str): Maximum time in format 'yyyymmdd_HHMM'.
+
+        Returns:
+            numpy.ndarray: Boolean mask of the same length as r_time, where True indicates inclusion in the range.
+        """
+        time_min = datetime.strptime(time_min, '%Y%m%d_%H%M') if isinstance(time_min, str) else time_min
+        time_max = datetime.strptime(time_max, '%Y%m%d_%H%M') if isinstance(time_max, str) else time_max
+        return (r_time >= time_min) & (r_time <= time_max)
+    
+    
+    def plot_compare_all_r2_window(self, alt_range=None, time_range=None):
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         art_time = from_array_to_datetime(self.X_Artist["r_time"])
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
         ne_kian = self.X_HNN["r_param"]
-        ne_art  = np.log10(self.X_Artist["r_param"])
+        ne_art = np.log10(self.X_Artist["r_param"])
+        
+        alt_min, alt_max = alt_range
+        time_min, time_max = time_range
+        
+        # Get intervals
+        if alt_min is not None and alt_max is not None:
+            chosen_alt_range = self.get_altitude_indices(r_h, alt_min, alt_max)
+            
+        if time_min is not None and time_max is not None:
+            chosen_time_range = self.get_time_indices(r_time, time_min, time_max)
+        
+        
+            
         
         kian_r2_scores_alt = get_altitude_r2_score(ne_eis, ne_kian)
-        kian_r2_scores_mea = get_measurements_r2_score(ne_eis, ne_kian)
+        kian_r2_scores_mea = get_measurements_r2_score_nans(ne_eis, ne_kian)
         
         art_r2_scores_alt = get_altitude_r2_score_nans(ne_eis, ne_art)
         art_r2_scores_mea = get_measurements_r2_score_nans(ne_eis, ne_art)
+        
+        
+        
+        if alt_min is not None and alt_max is not None:
+            kian_r2_gen_alt = self.get_general_r2(kian_r2_scores_alt[chosen_alt_range])
+            art_r2_gen_alt = self.get_general_r2(art_r2_scores_alt[chosen_alt_range])
+            
+        if time_min is not None and time_max is not None:
+            kian_r2_gen_mea = self.get_general_r2(kian_r2_scores_mea[chosen_time_range])
+            art_r2_gen_mea = self.get_general_r2(art_r2_scores_mea[chosen_time_range])
+        
+        if alt_min is not None and alt_max is not None and time_min is not None and time_max is not None:
+            kian_r2_scores_alt_new = get_altitude_r2_score(ne_eis[chosen_alt_range, :][:, chosen_time_range], ne_kian[chosen_alt_range, :][:, chosen_time_range])
+            kian_r2_scores_mea_new = get_measurements_r2_score_nans(ne_eis[chosen_alt_range, :][:, chosen_time_range], ne_kian[chosen_alt_range, :][:, chosen_time_range])
+            
+            art_r2_scores_alt_new = get_altitude_r2_score_nans(ne_eis[chosen_alt_range, :][:, chosen_time_range], ne_art[chosen_alt_range, :][:, chosen_time_range])
+            art_r2_scores_mea_new = get_measurements_r2_score_nans(ne_eis[chosen_alt_range, :][:, chosen_time_range], ne_art[chosen_alt_range, :][:, chosen_time_range])
+            
+            
+            kian_r2_gen_alt = self.get_general_r2(kian_r2_scores_alt_new)
+            art_r2_gen_alt = self.get_general_r2(art_r2_scores_alt_new)
+            
+            kian_r2_gen_mea = self.get_general_r2(kian_r2_scores_mea_new)
+            art_r2_gen_mea = self.get_general_r2(art_r2_scores_mea_new)
+            
+            
+        # print(kian_r2_gen_alt)
+        # print(kian_r2_gen_mea)
+        
+        # print(art_r2_gen_alt)
+        # print(art_r2_gen_mea)
         
         date_str = r_time[0].strftime('%Y-%m-%d')
 
@@ -91,6 +176,21 @@ class RadarPlotter:
         
         
         
+        # Plotting logic (same as before, omitted here for brevity)
+        # Add red lines to indicate the intervals
+        for ax in [ax00, ax02, ax20, ax22]:
+            if alt_min is not None and alt_max is not None:
+                ax.axhline(alt_min, color='red', linestyle='--', linewidth=2)
+                ax.axhline(alt_max, color='red', linestyle='--', linewidth=2)
+            if time_min is not None and time_max is not None:
+                ax.axvline(datetime.strptime(time_min, '%Y%m%d_%H%M'), color='red', linestyle='--', linewidth=2)
+                ax.axvline(datetime.strptime(time_max, '%Y%m%d_%H%M'), color='red', linestyle='--', linewidth=2)
+            
+        
+        
+        
+        
+        
         # =============================================================================
         #         1st Row
         
@@ -104,7 +204,16 @@ class RadarPlotter:
         
         
         # KIAN-Net r2-scores altitude
-        ax01.plot(kian_r2_scores_alt, r_h, color='C0', label=r'$R^2$')
+        ax01.plot(kian_r2_scores_alt, r_h, color='C0', label=r'$R^2$', zorder=1)
+        if alt_min is not None and alt_max is not None and time_min is not None and time_max is not None:
+            kian_r2_scores_alt_new = get_altitude_r2_score(ne_eis[chosen_alt_range, :][:, chosen_time_range], ne_kian[chosen_alt_range, :][:, chosen_time_range])
+            ax01.plot(kian_r2_scores_alt_new, r_h[chosen_alt_range], color='red', zorder=2)
+            
+        elif alt_min is not None and alt_max is not None:
+            ax01.plot(kian_r2_scores_alt[chosen_alt_range], r_h[chosen_alt_range], color='red', zorder=2)
+        
+            
+            
         ax01.set_title(r'$R^2$', fontsize=17)
         ax01.set_xlabel(r'$R^2$', fontsize=13)
         ax01.grid(True)
@@ -127,8 +236,14 @@ class RadarPlotter:
         
         
         # KIAN-Net r2-scores measurements
-        ax10.plot(r_time, kian_r2_scores_mea, color='C0', label=r'$R^2$')
-        # ax10.set_title(r'$R^2$', fontsize=17)
+        ax10.plot(r_time, kian_r2_scores_mea, color='C0', label=r'$R^2$', zorder=1)
+        if alt_min is not None and alt_max is not None and time_min is not None and time_max is not None:
+            kian_r2_scores_mea_new = get_measurements_r2_score_nans(ne_eis[chosen_alt_range, :][:, chosen_time_range], ne_kian[chosen_alt_range, :][:, chosen_time_range])
+            ax10.plot(r_time[chosen_time_range], kian_r2_scores_mea_new, color='red', zorder=2)
+            
+        elif time_min is not None and time_max is not None:
+            ax10.plot(r_time[chosen_time_range], kian_r2_scores_mea[chosen_time_range], color='red', zorder=2)
+            
         ax10.set_ylabel(r'$R^2$', fontsize=13)
         ax10.grid(True)
         ax10.xaxis.set_major_formatter(DateFormatter('%H:%M'))
@@ -141,7 +256,12 @@ class RadarPlotter:
         
         
         # Artist 4.5 r2-scores measurements
-        ax12.plot(art_time, art_r2_scores_mea, color='C1', label=r'$R^2$')
+        ax12.plot(art_time, art_r2_scores_mea, color='C1', label=r'$R^2$', zorder=1)
+        if alt_min is not None and alt_max is not None and time_min is not None and time_max is not None:
+            art_r2_scores_mea_new = get_measurements_r2_score_nans(ne_eis[chosen_alt_range, :][:, chosen_time_range], ne_art[chosen_alt_range, :][:, chosen_time_range])
+            ax12.plot(art_time[chosen_time_range], art_r2_scores_mea_new, color='red', zorder=2)
+        elif time_min is not None and time_max is not None:
+            ax12.plot(art_time[chosen_time_range], art_r2_scores_mea[chosen_time_range], color='red', zorder=2)
         ax12.grid(True)
         ax12.set_ylim(ymin=-0.1, ymax=1.1)
         ax12.tick_params(labelbottom=False)
@@ -165,8 +285,17 @@ class RadarPlotter:
         ax20.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         
         
+        # print(art_r2_scores_alt[chosen_alt_range])
+        # print(art_r2_scores_alt[chosen_alt_range])
+        
+        
         # Artist 4.5 r2-scores altitude
-        ax21.plot(art_r2_scores_alt, r_h, color='C1', label=r'$R^2$')
+        ax21.plot(art_r2_scores_alt, r_h, color='C1', label=r'$R^2$', zorder=1)
+        if alt_min is not None and alt_max is not None and time_min is not None and time_max is not None:
+            art_r2_scores_alt_new = get_altitude_r2_score_nans(ne_eis[chosen_alt_range, :][:, chosen_time_range], ne_art[chosen_alt_range, :][:, chosen_time_range])
+            ax21.plot(art_r2_scores_alt_new, r_h[chosen_alt_range], color='red', zorder=2)
+        elif alt_min is not None and alt_max is not None:
+            ax21.plot(art_r2_scores_alt[chosen_alt_range], r_h[chosen_alt_range], color='red', zorder=2)
         ax21.set_title(r'$R^2$', fontsize=17)
         ax21.set_xlabel(r'$R^2$', fontsize=13)
         ax21.grid(True)
@@ -981,41 +1110,102 @@ class RadarPlotter:
         plt.tight_layout()
         plt.show()
         
-        
     def plot_single_measurement(self, ax, idx):
         """
-        Plot a single selected measurement on a given axis.
+        Plot a single selected measurement on a given axis and calculate R²-scores
+        for HNN and Artist 4.5 predictions compared to EISCAT measurements.
         """
+        # Convert time array to datetime
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         r_h = self.X_EISCAT["r_h"].flatten()
         
-        ne_eis = self.X_EISCAT["r_param"][:, idx]
-        ne_eis_err = self.X_EISCAT["r_error"][:, idx]
+        # Extract electron density values for the given index
+        ne_eis = self.X_EISCAT["r_param"][:, idx]  # True measurements
+        ne_hnn = self.X_HNN["r_param"][:, idx]  # HNN predictions
+        ne_artist = self.X_Artist["r_param"][:, idx] if self.X_Artist is not None else None  # Artist 4.5 predictions
         
         
+        # Plot EISCAT UHF measurements
         ax.plot(np.log10(ne_eis), r_h, label='EISCAT', linestyle='-')
-        # ax.fill_betweenx(r_h, np.log10(ne_eis - ne_eis_err), np.log10(ne_eis + ne_eis_err), alpha=0.3)
         
-        ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='KIAN-Net', linestyle='-')
-        if self.X_Artist is not None:
-            ax.plot(np.log10(self.X_Artist["r_param"][:, idx]), r_h, label='Artist 4.5', linestyle='-')
-            
+        # Plot HNN predictions
+        ax.plot(ne_hnn, r_h, label='KIAN-Net', linestyle='-')
+        
+        
+        # Plot Artist 4.5 predictions if available
+        if ne_artist is not None:
+            ax.plot(np.log10(ne_artist), r_h, label='Artist 4.5', linestyle='-')
+        
+        # Calculate R² scores
+        r2_hnn = r2_score(np.log10(ne_eis), ne_hnn)
+        
+        if ne_artist is not None:
+            valid_artist = ~np.isnan(ne_eis) & ~np.isnan(ne_artist)
+            r2_artist = (r2_score(ne_eis[valid_artist], ne_artist[valid_artist])
+                         if np.any(valid_artist) else None)
+        else:
+            r2_artist = None
+        
+        # Add R² scores to the plot as text annotations
         time_str = r_time[idx].strftime('%H:%M')
+        # annotation_text = f"K R²: {r2_hnn:.3f}\n"
         
-        # print(idx)
+        # Add R² scores to the plot as text annotations with color coding
+        annotation_texts = []
+        if r2_hnn is not None:
+            annotation_texts.append((f"R²= {r2_hnn:.3f}", "C1"))  # Orange for HNN
+        if r2_artist is not None:
+            annotation_texts.append((f"R²= {r2_artist:.3f}", "C2"))  # Green for Artist 4.5
         
+        
+        # Choose the best location for the annotations
+        for i, (text, color) in enumerate(annotation_texts):
+            ax.text(0.05, 0.9 - i * 0.1, text, transform=ax.transAxes,
+                    fontsize=15, color=color, weight='bold',
+                    bbox=None)
+        
+        
+        
+        # Set axis labels and title
         if idx == self.selected_indices[0]:
             ax.set_title('Measurements', fontsize=20)
-        
         if idx == self.selected_indices[-1]:
             ax.set_xlabel(r'$log_{10}(n_e)$ $[n\,m^{-3}]$', fontsize=15)
-        
-        # ax.set_xlabel(r'$log_{10}(n_e)$ $[n\,m^{-3}]$', fontsize=13)
         ax.set_ylabel(r'Altitude $[km]$', fontsize=13)
-        # ax.set_title(f'Measurements - {time_str}', fontsize=20)
-        # ax.set_xlim(xmin=9, xmax=12)
         ax.grid(True)
-        ax.legend()
+        ax.legend(loc="best")
+
+    # def plot_single_measurement(self, ax, idx):
+    #     """
+    #     Plot a single selected measurement on a given axis.
+    #     """
+    #     r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+    #     r_h = self.X_EISCAT["r_h"].flatten()
+        
+    #     ne_eis = self.X_EISCAT["r_param"][:, idx]
+    #     ne_eis_err = self.X_EISCAT["r_error"][:, idx]
+        
+        
+        
+        
+    #     ax.plot(np.log10(ne_eis), r_h, label='EISCAT', linestyle='-')
+    #     ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='KIAN-Net', linestyle='-')
+    #     if self.X_Artist is not None:
+    #         ax.plot(np.log10(self.X_Artist["r_param"][:, idx]), r_h, label='Artist 4.5', linestyle='-')
+        
+    #     time_str = r_time[idx].strftime('%H:%M')
+        
+        
+        
+    #     if idx == self.selected_indices[0]:
+    #         ax.set_title('Measurements', fontsize=20)
+        
+    #     if idx == self.selected_indices[-1]:
+    #         ax.set_xlabel(r'$log_{10}(n_e)$ $[n\,m^{-3}]$', fontsize=15)
+        
+    #     ax.set_ylabel(r'Altitude $[km]$', fontsize=13)
+    #     ax.grid(True)
+    #     ax.legend()
         
         
         
@@ -1347,26 +1537,47 @@ class RadarPlotter:
         
         
     #     plt.show()
-
+    
+    def calculate_r2(self, true, predicted):
+        mask = ~np.isnan(true) & ~np.isnan(predicted)
+        if np.any(mask):
+            ss_res = np.sum((true[mask] - predicted[mask]) ** 2)
+            ss_tot = np.sum((true[mask] - np.mean(true[mask])) ** 2)
+            r2 = 1 - (ss_res / ss_tot)
+        else:
+            r2 = np.nan
+        return r2
+    
+    def calculate_rmse(self, true, predicted):
+        mask = ~np.isnan(true) & ~np.isnan(predicted)
+        if np.any(mask):
+            rmse = np.sqrt(np.mean((true[mask] - predicted[mask]) ** 2))
+        else:
+            rmse = np.nan
+        return rmse
     
     def plot_compare_all_peak_heights(self):
-        # sns.set(style="dark", context=None, palette=None)
-        # r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-        # art_time = from_array_to_datetime(self.X_Artist["r_time"])
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
-        # ne_kian = self.X_HNN["r_param"]
-        
-        
-        # eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-        # hnn_param_peak = self.X_HNN["r_param_peak"]
-        # art_param_peak = np.log10(self.X_Artist["r_param_peak"])
         
         eis_h_peak = self.X_EISCAT["r_h_peak"]
         hnn_h_peak = self.X_HNN["r_h_peak"]
         art_h_peak = self.X_Artist["r_h_peak"]
+        
+        
+        # print(eis_h_peak.shape)
+        
+        # Calculate RMSE
+        kian_rmse_E = self.calculate_rmse(eis_h_peak[0, :], hnn_h_peak[0, :])
+        kian_rmse_F = self.calculate_rmse(eis_h_peak[1, :], hnn_h_peak[1, :])
+        
+        art_rmse_E = self.calculate_rmse(eis_h_peak[0, :], art_h_peak[0, :])
+        art_rmse_F = self.calculate_rmse(eis_h_peak[1, :], art_h_peak[1, :])
+        
+        print(kian_rmse_F, art_rmse_F)
+        print(kian_rmse_E, art_rmse_E)
         
         
         date_str = r_time[0].strftime('%Y-%m-%d')
@@ -1402,6 +1613,7 @@ class RadarPlotter:
         ax1.scatter(r_time, hnn_h_peak[0,:], color="C1", s=60, zorder=2)
         ax1.scatter(r_time, art_h_peak[0,:], color="C2", s=60, zorder=2)
         
+        # Plotting F-peaks
         ax1.plot(r_time, eis_h_peak[1,:], color="C0", linestyle='-', linewidth=10, zorder=3)
         ax1.plot(r_time, hnn_h_peak[1,:], color="C1", linestyle='-', linewidth=6, zorder=3)
         ax1.plot(r_time, art_h_peak[1,:], color="C2", linestyle='-', linewidth=6, zorder=3)
