@@ -7,10 +7,12 @@ Created on Thu Dec  5 14:31:51 2024
 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, LinearSegmentedColormap
 from matplotlib.dates import DateFormatter
 import matplotlib.dates as mdates
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Cursor
+from matplotlib.patches import Patch
 from datetime import datetime
 
 from eval_utils import from_array_to_datetime, get_altitude_r2_score, get_measurements_r2_score, get_altitude_r2_score_nans, get_measurements_r2_score_nans
@@ -50,6 +52,25 @@ class RadarInteractive:
     
     
     
+
+    def custom_camp(self, color1, color2, name='custom_cmap'):
+        """
+        Create a diverging colormap with four specified colors diverging from white.
+
+        Parameters:
+            color1: str or tuple
+                The first color (e.g., 'blue' or (0.1, 0.2, 0.8)).
+            color2: str or tuple
+                The second color (e.g., 'cyan' or (0.1, 0.8, 0.8)).
+            name: str
+                Name for the custom colormap.
+
+        Returns:
+            matplotlib.colors.LinearSegmentedColormap: Custom colormap.
+        """
+        colors = [color1, 'white', color2]
+        cmap = LinearSegmentedColormap.from_list(name, colors)
+        return cmap
     
     
     # =============================================================================
@@ -86,6 +107,83 @@ class RadarInteractive:
     #                        Interactive Plot
     #                             (Start)
     
+    
+    def plot_proximity(self):
+        r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+        r_h = self.X_EISCAT["r_h"].flatten()
+
+        # Logarithmic scaling for electron density
+        ne_eis = np.log10(self.X_EISCAT["r_param"])
+        ne_kian = self.X_KIAN["r_param"]
+        ne_art = np.log10(self.X_Artist["r_param"])
+        ne_iri = np.log10(self.X_IRI["r_param"])
+        
+        ne_art = np.nan_to_num(ne_art, nan=0)
+        
+        
+        # # Calculate absolute differences
+        diff_kian = self.error_function(ne_eis, ne_kian)
+        diff_art = self.error_function(ne_eis, ne_art)
+        diff_iri = self.error_function(ne_eis, ne_iri)
+        
+        diff_magnitude = diff_iri - diff_kian
+        
+        # Identify the closest model at each point
+        closest_model = np.argmin(np.stack([diff_art, diff_kian, diff_iri], axis=0), axis=0)
+        
+        print(closest_model)
+        
+        # Define colors for the models
+        model_colors = ['C0', 'C1', 'C2']  # art, kian, iri
+        
+        # Create a figure
+        plt.figure(figsize=(14, 8))
+        
+        # Heatmap to show the closest model
+        # plt.imshow(closest_model, aspect='auto', origin="lower", cmap=ListedColormap(model_colors))
+        plt.pcolormesh(r_time, r_h, diff_magnitude, cmap="bwr", vmin=-0.11, vmax=0.11)
+        plt.colorbar(label='Closest Model')
+        plt.title('Closest Prediction Model to Ground Truth (ne_eis)')
+        plt.xlabel('Time (day)')
+        plt.ylabel('Altitude (km)')
+        
+        
+        
+        # date_str = r_time[0].strftime('%Y-%m-%d')
+        
+        # # Create a grid layout
+        # fig = plt.figure(figsize=(12, 10))
+        # gs = GridSpec(1, 2, width_ratios=[1, 0.05], wspace=0.1)
+        
+        # # Shared y-axis setup
+        # ax0 = fig.add_subplot(gs[0])
+        # cax = fig.add_subplot(gs[1])
+        
+        # fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.03)
+        
+        # # Plot the comparison with RGB proximity gradient
+        # mesh = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap=cmap)
+        # ax0.set_title(f'Model Proximity to EISCAT', fontsize=17)
+        # ax0.set_xlabel('Time [hours]', fontsize=13)
+        # ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        # ax0.tick_params(labelleft=False)
+        
+        # # Rotate x-axis labels
+        # for ax in [ax0]:
+        #     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        
+        # # Add colorbar legend
+        # legend_elements = [
+        #     Patch(facecolor='red', edgecolor='black', label='KIAN-Net'),
+        #     Patch(facecolor='blue', edgecolor='black', label='Artist 4.5'),
+        #     Patch(facecolor='green', edgecolor='black', label='IRI')
+        # ]
+        # cax.legend(handles=legend_elements, loc='center', title='Closest Model', fontsize=13)
+        # cax.axis('off')
+        
+        plt.show()
+    
+    
 
     def plot_interactive(self):
         """
@@ -108,17 +206,25 @@ class RadarInteractive:
         date_str = r_time[0].strftime('%Y-%m-%d')
 
         # Create the figure and layout
-        fig = plt.figure(figsize=(18, 10))
-        gs = GridSpec(2, 4, width_ratios=[1, 1, 0.05, 1], wspace=0.3)
-        # gs = GridSpec(2, 2, height_ratios=[1, 1], width_ratios=[1, 1, 0.05], hspace=0.5, wspace=0.2)
+        fig = plt.figure(figsize=(24, 12))
+        gs = GridSpec(2, 7, width_ratios=[1.5, 1.5, 0.05, 0.5, 2, 0.5, 2], wspace=0.1)
         
+        # First row
         ax0 = fig.add_subplot(gs[0, 0])
         ax1 = fig.add_subplot(gs[0, 1], sharey=ax0)
         cax0 = fig.add_subplot(gs[0, 2])
+        ax_space0 = fig.add_subplot(gs[0, 3])
         
+        # Second row
         ax2 = fig.add_subplot(gs[1, 0])
         ax3 = fig.add_subplot(gs[1, 1], sharey=ax2)
         cax1 = fig.add_subplot(gs[1, 2])
+        ax_space1 = fig.add_subplot(gs[1, 3])
+        
+        
+        # All rows
+        ax_space2 = fig.add_subplot(gs[:, 5])
+        
         
         
 
@@ -156,7 +262,8 @@ class RadarInteractive:
         for ax in [ax0, ax1, ax2, ax3]:
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
         
-        
+        for ax in [ax_space0, ax_space1, ax_space2]:
+            ax.set_axis_off()
         
         
         # Add colorbar
@@ -168,26 +275,26 @@ class RadarInteractive:
         
         # Detail plot axes
         with sns.axes_style("dark"):
-            ax_iono = fig.add_subplot(gs[0, 3])
-            ax_geo  = fig.add_subplot(gs[1, 3])
-                
+            ax_iono = fig.add_subplot(gs[0, 4])
+            ax_geo  = fig.add_subplot(gs[1, 4])
             
-            # ax_detail = fig.add_subplot(gs[1, 1])
-            # ax_error = fig.add_subplot(gs[1, 2])
+            
+            ax_profile = fig.add_subplot(gs[:, 6])
+           
             
         
-        # # Function to update the detailed plot
-        # def update_detail_plot(time_idx):
-        #     ax_detail.clear()
-        #     ax_detail.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0')
-        #     ax_detail.plot(ne_hnn[:, time_idx], r_h, label="HNN", color='C1')
-        #     ax_detail.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2')
-        #     ax_detail.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-        #     ax_detail.set_xlabel(r'$log_{10}(n_e)$ [n/m$^3$]')
-        #     ax_detail.set_ylabel("Altitude [km]")
-        #     ax_detail.legend()
-        #     ax_detail.grid()
-        #     fig.canvas.draw_idle()
+        # Function to update the single Ne profiles plot
+        def update_profile(time_idx):
+            ax_profile.clear()
+            ax_profile.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0')
+            ax_profile.plot(ne_kian[:, time_idx], r_h, label="KIAN-Net", color='C1')
+            ax_profile.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2')
+            ax_profile.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
+            ax_profile.set_xlabel(r'$log_{10}(n_e)$ [n/m$^3$]')
+            ax_profile.set_ylabel("Altitude [km]")
+            ax_profile.grid(True, color='white')
+            ax_profile.legend()
+            fig.canvas.draw_idle()
         
         
         def update_geophys(time_idx):
@@ -196,13 +303,12 @@ class RadarInteractive:
                 'DoY/366', 'ToD/1440', 'SZ/44', 'Kp', 'R', 'Dst', 'ap', 'AE', 'AL', 'AU', 
                 'PC_pot', 'F10_7', 'Ly_alp', 'Bx', 'By', 'Bz', 'dBx', 'dBy', 'dBz'
             ]
-            with sns.axes_style("dark"):
-                ax_geo.clear()
-                ax_geo.bar(feature_labels, X_geo[:, time_idx], edgecolor='black')
-                ax_geo.set_ylim(-1.05, 1.05)
-                ax_geo.grid(True)
-                plt.setp(ax_geo.xaxis.get_majorticklabels(), rotation=45, ha='center')
-                fig.canvas.draw_idle()
+            ax_geo.clear()
+            ax_geo.bar(feature_labels, X_geo[:, time_idx], edgecolor='black')
+            ax_geo.set_ylim(-1.05, 1.05)
+            ax_geo.grid(True, color='white')
+            plt.setp(ax_geo.xaxis.get_majorticklabels(), rotation=45, ha='center')
+            fig.canvas.draw_idle()
         
         
         def update_ionogram(time_idx):
@@ -210,8 +316,25 @@ class RadarInteractive:
             ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
             ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
             
+            n=9
+            Frange = np.linspace(1, 9, 81)
+            Zrange = np.linspace(80, 480, 81)
+            
             ax_iono.clear()
-            ax_iono.imshow(ionogram_img)
+            ax_iono.imshow(ionogram_img, origin='upper')
+            x_ticks = np.linspace(0, ionogram_img.shape[1] - 1, n)
+            y_ticks = np.linspace(0, ionogram_img.shape[0] - 1, n)
+            
+            x_tick_labels = np.linspace(Frange.min(), Frange.max(), n)
+            y_tick_labels = np.linspace(Zrange.max(), Zrange.min(), n)
+            
+            ax_iono.set_xticks(x_ticks)
+            ax_iono.set_xticklabels([f"{x:.1f}" for x in x_tick_labels])
+            ax_iono.set_yticks(y_ticks)
+            ax_iono.set_yticklabels([f"{y:.0f}" for y in y_tick_labels])
+            
+            ax_iono.set_xlabel("Freq [MHz]")
+            ax_iono.set_ylabel("Virtual Altitude [km]")
             ax_iono.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
             fig.canvas.draw_idle()
             
@@ -262,7 +385,7 @@ class RadarInteractive:
                 time_idx = np.argmin([abs((t - click_time).total_seconds()) for t in r_time])
                 update_geophys(time_idx)
                 update_ionogram(time_idx)
-                # update_detail_plot(time_idx)
+                update_profile(time_idx)
                 # update_error(time_idx)
                 
                 
