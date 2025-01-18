@@ -84,8 +84,10 @@ class RadarInteractive:
     
     def calculate_errors(self, idx):
         eiscat_param = np.log10(self.X_EISCAT["r_param"][:, idx])
-        hnn_param = self.X_KIAN["r_param"][:, idx]
+        kian_param = self.X_KIAN["r_param"][:, idx]
         artist_param = np.log10(self.X_Artist["r_param"][:, idx])
+        iri_param = np.log10(self.X_IRI["r_param"][:, idx])
+        
         
         # Check if all values are NaN
         if np.all(np.isnan(artist_param)):
@@ -95,10 +97,15 @@ class RadarInteractive:
             valid_artist_mask = ~np.isnan(artist_param)
             artist_param = np.nan_to_num(artist_param, nan=0)
         
-        error_hnn = self.error_function(eiscat_param, hnn_param)
+        error_kian = self.error_function(eiscat_param, kian_param)
         error_artist = self.error_function(eiscat_param, artist_param)
+        error_iri = self.error_function(eiscat_param, iri_param)
         
-        return error_hnn, error_artist, valid_artist_mask
+        return error_kian, error_artist, error_iri, valid_artist_mask
+        
+    
+    
+    
     
 
 
@@ -206,20 +213,20 @@ class RadarInteractive:
         date_str = r_time[0].strftime('%Y-%m-%d')
 
         # Create the figure and layout
-        fig = plt.figure(figsize=(24, 12))
-        gs = GridSpec(2, 7, width_ratios=[1.5, 1.5, 0.05, 0.5, 2, 0.5, 2], wspace=0.1)
+        fig = plt.figure(figsize=(18, 10))
+        gs = GridSpec(2, 8, width_ratios=[1.5, 1.5, 0.05, 0.75, 2, 0.5, 2, 1], wspace=0.1)
         
         # First row
         ax0 = fig.add_subplot(gs[0, 0])
         ax1 = fig.add_subplot(gs[0, 1], sharey=ax0)
         cax0 = fig.add_subplot(gs[0, 2])
-        ax_space0 = fig.add_subplot(gs[0, 3])
+        # ax_space0 = fig.add_subplot(gs[0, 3])
         
         # Second row
         ax2 = fig.add_subplot(gs[1, 0])
         ax3 = fig.add_subplot(gs[1, 1], sharey=ax2)
         cax1 = fig.add_subplot(gs[1, 2])
-        ax_space1 = fig.add_subplot(gs[1, 3])
+        ax_space1 = fig.add_subplot(gs[:, 3])
         
         
         # All rows
@@ -262,7 +269,7 @@ class RadarInteractive:
         for ax in [ax0, ax1, ax2, ax3]:
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
         
-        for ax in [ax_space0, ax_space1, ax_space2]:
+        for ax in [ax_space1, ax_space2]:
             ax.set_axis_off()
         
         
@@ -275,12 +282,11 @@ class RadarInteractive:
         
         # Detail plot axes
         with sns.axes_style("dark"):
-            ax_iono = fig.add_subplot(gs[0, 4])
-            ax_geo  = fig.add_subplot(gs[1, 4])
+            ax_iono = fig.add_subplot(gs[1, 7])
+            # ax_geo  = fig.add_subplot(gs[1, 4])
+            ax_profile = fig.add_subplot(gs[:, 4])
+            ax_error = fig.add_subplot(gs[:, 6])
             
-            
-            ax_profile = fig.add_subplot(gs[:, 6])
-           
             
         
         # Function to update the single Ne profiles plot
@@ -289,6 +295,7 @@ class RadarInteractive:
             ax_profile.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0')
             ax_profile.plot(ne_kian[:, time_idx], r_h, label="KIAN-Net", color='C1')
             ax_profile.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2')
+            ax_profile.plot(ne_iri[:, time_idx], r_h, label="IRI", color='C3')
             ax_profile.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
             ax_profile.set_xlabel(r'$log_{10}(n_e)$ [n/m$^3$]')
             ax_profile.set_ylabel("Altitude [km]")
@@ -297,18 +304,18 @@ class RadarInteractive:
             fig.canvas.draw_idle()
         
         
-        def update_geophys(time_idx):
-            X_geo = self.X_GEO["r_param"]
-            feature_labels=[
-                'DoY/366', 'ToD/1440', 'SZ/44', 'Kp', 'R', 'Dst', 'ap', 'AE', 'AL', 'AU', 
-                'PC_pot', 'F10_7', 'Ly_alp', 'Bx', 'By', 'Bz', 'dBx', 'dBy', 'dBz'
-            ]
-            ax_geo.clear()
-            ax_geo.bar(feature_labels, X_geo[:, time_idx], edgecolor='black')
-            ax_geo.set_ylim(-1.05, 1.05)
-            ax_geo.grid(True, color='white')
-            plt.setp(ax_geo.xaxis.get_majorticklabels(), rotation=45, ha='center')
-            fig.canvas.draw_idle()
+        # def update_geophys(time_idx):
+        #     X_geo = self.X_GEO["r_param"]
+        #     feature_labels=[
+        #         'DoY/366', 'ToD/1440', 'SZ/44', 'Kp', 'R', 'Dst', 'ap', 'AE', 'AL', 'AU', 
+        #         'PC_pot', 'F10_7', 'Ly_alp', 'Bx', 'By', 'Bz', 'dBx', 'dBy', 'dBz'
+        #     ]
+        #     ax_geo.clear()
+        #     ax_geo.bar(feature_labels, X_geo[:, time_idx], edgecolor='black')
+        #     ax_geo.set_ylim(-1.05, 1.05)
+        #     ax_geo.grid(True, color='white')
+        #     plt.setp(ax_geo.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        #     fig.canvas.draw_idle()
         
         
         def update_ionogram(time_idx):
@@ -341,40 +348,41 @@ class RadarInteractive:
             
             
         
-        # def update_error(time_idx):
+        def update_error(time_idx):
             
-        #     error_hnn, error_artist, valid_artist_mask = self.calculate_errors(time_idx)
+            error_kian, error_artist, error_iri, valid_artist_mask = self.calculate_errors(time_idx)
             
-        #     ax_error.clear()
-        #     ax_error.plot(error_hnn, r_h, label='Error: EISCAT vs KIAN-Net', linestyle='-', color='C1')
-        #     if np.any(valid_artist_mask):
-        #         ax_error.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
-        #         # Plot red line for NaN indices from the last valid value or first valid value
-        #         nan_indices = np.where(~valid_artist_mask)[0]
-        #         last_valid_index = np.max(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
-        #         first_valid_index = np.min(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
-        #         for nan_idx in nan_indices:
-        #             if nan_idx < first_valid_index or nan_idx > last_valid_index:
-        #                 # Draw a line from the closest valid value to the NaN index
-        #                 closest_valid_index = first_valid_index if nan_idx < first_valid_index else last_valid_index
-        #                 ax_error.plot([error_artist[closest_valid_index], error_artist[nan_idx]], [r_h[closest_valid_index], r_h[nan_idx]], 'r--', linewidth=2, label='Missing values' if nan_idx == nan_indices[0] else "")
-        #     else:
-        #         # Plot all error values if all are NaN
-        #         ax_error.plot(error_artist, r_h,  'r-', linewidth=2, label='No Artist Data')
+            ax_error.clear()
+            ax_error.plot(error_kian, r_h, label='Error: KIAN-Net', linestyle='-', color='C1')
+            ax_error.plot(error_iri, r_h, label='Error: IRI', linestyle='-', color='C3')
+            if np.any(valid_artist_mask):
+                ax_error.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: Artist 4.5', linestyle='-', color='green')
+                # Plot red line for NaN indices from the last valid value or first valid value
+                # nan_indices = np.where(~valid_artist_mask)[0]
+                # last_valid_index = np.max(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
+                # first_valid_index = np.min(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
+                # for nan_idx in nan_indices:
+                #     if nan_idx < first_valid_index or nan_idx > last_valid_index:
+                #         # Draw a line from the closest valid value to the NaN index
+                #         closest_valid_index = first_valid_index if nan_idx < first_valid_index else last_valid_index
+                #         ax_error.plot([error_artist[closest_valid_index], error_artist[nan_idx]], [r_h[closest_valid_index], r_h[nan_idx]], 'r--', linewidth=2, label='Missing values' if nan_idx == nan_indices[0] else "")
+            # else:
+            #     # Plot all error values if all are NaN
+            #     ax_error.plot(error_artist, r_h,  'r-', linewidth=2, label='No Artist Data')
+                
             
+            # # Set x-axis limits based on valid error data
+            # if np.any(valid_artist_mask):
+            #     ax_error.set_xlim(left=0, right=max(np.max(error_kian), np.max(error_artist[valid_artist_mask])) * 1.1)
+            # else:
+            #    ax_error.set_xlim(left=0, right=np.max(error_kian) * 1.1)
             
-        #     # Set x-axis limits based on valid error data
-        #     if np.any(valid_artist_mask):
-        #         ax_error.set_xlim(left=0, right=max(np.max(error_hnn), np.max(error_artist[valid_artist_mask])) * 1.1)
-        #     else:
-        #        ax_error.set_xlim(left=0, right=np.max(error_hnn) * 1.1)
-            
-        #     ax_error.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-        #     ax_error.set_xlabel("Error")
-        #     ax_error.set_ylabel("Altitude [km]")
-        #     ax_error.legend()
-        #     ax_error.grid()
-        #     fig.canvas.draw_idle()
+            ax_error.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
+            ax_error.set_xlabel("Relative Error")
+            ax_error.set_ylabel("Altitude [km]")
+            ax_error.legend()
+            ax_error.grid(True, color='white')
+            fig.canvas.draw_idle()
     
         
         # Handle click events
@@ -383,10 +391,10 @@ class RadarInteractive:
                 # Convert xdata to datetime for comparison
                 click_time = mdates.num2date(event.xdata).replace(tzinfo=None)
                 time_idx = np.argmin([abs((t - click_time).total_seconds()) for t in r_time])
-                update_geophys(time_idx)
+                # update_geophys(time_idx)
                 update_ionogram(time_idx)
                 update_profile(time_idx)
-                # update_error(time_idx)
+                update_error(time_idx)
                 
                 
                 # Clear any existing vertical lines
