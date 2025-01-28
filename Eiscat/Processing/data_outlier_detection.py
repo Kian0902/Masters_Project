@@ -9,7 +9,7 @@ import numpy as np
 from scipy.stats import zscore
 from datetime import datetime
 import matplotlib.pyplot as plt
-from sklearn.manifold import TSNE
+from sklearn.manifold import MDS, SpectralEmbedding, TSNE
 from sklearn.decomposition import PCA
 
 class EISCATOutlierDetection:
@@ -25,7 +25,7 @@ class EISCATOutlierDetection:
         dataset (dict)    | Dictionary containing the filtered EISCAT data
         """
         self.dataset = dataset
-        self.detection_methods = {'z-score': self.z_score_method,
+        self.detection_methods = {'Z-score': self.z_score_method,
                                   'IQR': self.iqr_method}
 
         self.dataset_outliers = {}
@@ -34,7 +34,6 @@ class EISCATOutlierDetection:
     def batch_detection(self, method_name: str, save_plot=False):
         
         for key in list(self.dataset.keys()):
-            # print(key)
             self.dataset_outliers[key] = self.detect_outliers(self.dataset[key], method_name=method_name, save_plot=save_plot)
             
     
@@ -86,8 +85,97 @@ class EISCATOutlierDetection:
         
         detect_outliers = (data < lower_fence.reshape(-1, 1)) | (data > upper_fence.reshape(-1, 1))
         return detect_outliers
-       
-
+    
+    
+    
+    def flatten_data(self):
+        """
+        Flattens the nested dictionary by extracting electron density profiles ('r_param')
+        and maintaining metadata for reconstruction.
+        
+        Args:
+            nested_dict (dict): The input nested dictionary.
+    
+        Returns:
+            profiles (np.ndarray): Flattened electron density profiles (shape (total_profiles, N)).
+            metadata (list): List of tuples containing (day, index).
+        """
+        profiles = []
+        metadata = []
+    
+        for day, data in self.dataset.items():
+            r_param = data['r_param']  # Shape (N, M)
+            profiles.append(r_param.T)  # Transpose to (M, N)
+            
+            # Append metadata: (day, index)
+            metadata.extend([(day, i) for i in range(r_param.shape[1])])
+    
+        # Stack all profiles into one array
+        profiles = np.vstack(profiles)  # Shape (total_profiles, N)
+        return profiles, metadata
+    
+    
+    
+    def reconstruct_data(self):
+        """
+        Reconstructs the nested dictionary with transformed profiles.
+        
+        Args:
+            profiles (np.ndarray): Transformed electron density profiles (shape (total_profiles, new_dim)).
+            metadata (list): List of tuples containing (day, index).
+            nested_dict (dict): Original nested dictionary structure for reference.
+    
+        Returns:
+            reconstructed_dict (dict): Reconstructed nested dictionary.
+        """
+        
+        profiles, metadata = self.flatten_data()
+        
+        reconstructed_dict = {day: {'r_time': data['r_time'], 'r_h': data['r_h'], 'r_param': [], 'r_error': data['r_error']}
+                              for day, data in self.dataset.items()}
+    
+        # Populate the new 'r_param' values
+        for (day, index), profile in zip(metadata, profiles):
+            reconstructed_dict[day]['r_param'].append(profile)
+    
+        # Convert lists to numpy arrays and match original structure
+        for day in reconstructed_dict:
+            r_param = np.array(reconstructed_dict[day]['r_param'])  # Shape (M, new_dim)
+            reconstructed_dict[day]['r_param'] = r_param.T  # Transpose back to (new_dim, M)
+    
+        return reconstructed_dict
+        
+    
+    def pca_all(self, reduce_to_dim: int=2):
+        
+        data_all, metadata = self.flatten_data()
+        
+        print(data_all.shape, len(metadata))
+        
+        PCA_model = PCA(n_components = reduce_to_dim)
+        pca_data = PCA_model.fit_transform(data_all)
+        
+        
+        SE_model = SpectralEmbedding(n_components = reduce_to_dim)
+        se_data = SE_model.fit_transform(data_all)
+        
+        
+        TSNE_model = TSNE(n_components = reduce_to_dim)
+        tsne_data = TSNE_model.fit_transform(data_all)
+        
+        fig, ax = plt.subplots(1, 3)
+        
+        ax[0].scatter(pca_data[:, 0], pca_data[:, 1])
+        
+        ax[1].scatter(se_data[:, 0], se_data[:, 1])
+        
+        ax[2].scatter(tsne_data[:, 0], tsne_data[:, 1])
+        
+        plt.show()
+        # print(pca_data.shape)
+        
+        # return pca_data.T
+    
     
     
     def pca(self, data: np.ndarray, reduce_to_dim: int=2):
