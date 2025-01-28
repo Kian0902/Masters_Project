@@ -9,11 +9,9 @@ Created on Thu Aug 22 10:26:02 2024
 
 import os
 import pickle
+import warnings
 import numpy as np
 from scipy.io import loadmat
-import matplotlib.pyplot as plt
-import warnings
-from data_averaging import EISCATAverager
 
 
 
