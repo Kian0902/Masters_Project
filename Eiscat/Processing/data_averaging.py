@@ -117,14 +117,12 @@ class EISCATAverager:
         r_h     = data['r_h']
         r_param = data['r_param']
         r_error = data['r_error']
-        r_systemp = data['r_systemp']
         
         # Making new dict for storing averaged data
         avg_data = {'r_time': [],
             'r_h': r_h,
             'r_param': [],
-            'r_error': [],
-            'r_systemp': []}
+            'r_error': []}
         
         
         # Finding indices where minute = 00, 15, 30 and 45
@@ -149,11 +147,9 @@ class EISCATAverager:
                 r_param_avg = np.nanmean(r_param[:, ind_s:ind_f], axis=1)
             
             r_error_avg = np.nanmean(r_error[:, ind_s:ind_f], axis=1)
-            r_systemp_avg = np.nanmean(r_systemp[:, ind_s:ind_f], axis=1)
             
             avg_data['r_param'].append(r_param_avg)
             avg_data['r_error'].append(r_error_avg)
-            avg_data['r_systemp'].append(r_systemp_avg)
             avg_data['r_time'].append(r_time[ind_f])
         
         for i in range(0, len(time15_ind) - 1):
@@ -167,11 +163,9 @@ class EISCATAverager:
                 r_param_avg = np.nanmean(r_param[:, ind_s:ind_f], axis=1)
             
             r_error_avg = np.nanmean(r_error[:, ind_s:ind_f], axis=1)
-            r_systemp_avg = np.nanmean(r_systemp[:, ind_s:ind_f], axis=1)
             
             avg_data['r_param'].append(r_param_avg)
             avg_data['r_error'].append(r_error_avg)
-            avg_data['r_systemp'].append(r_systemp_avg)
             avg_data['r_time'].append(r_time[ind_f])
         
         if time15_ind[-1] < len(r_time) - 1:
@@ -185,16 +179,13 @@ class EISCATAverager:
                 r_param_avg = np.nanmean(r_param[:, ind_s:ind_f], axis=1)
             
             r_error_avg = np.nanmean(r_error[:, ind_s:ind_f], axis=1)
-            r_systemp_avg = np.nanmean(r_systemp[:, ind_s:ind_f], axis=1)
             
             avg_data['r_param'].append(r_param_avg)
             avg_data['r_error'].append(r_error_avg)
-            avg_data['r_systemp'].append(r_systemp_avg)
             avg_data['r_time'].append(r_time[-1])
         
         avg_data['r_param'] = np.array(avg_data['r_param']).T
         avg_data['r_error'] = np.array(avg_data['r_error']).T
-        avg_data['r_systemp'] = np.array(avg_data['r_systemp']).T
         avg_data['r_time'] = np.array(avg_data['r_time'])
         
         print(f'Num of 15min:  {avg_data["r_time"].shape}   Num of 1min {r_time.shape} ')
