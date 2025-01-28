@@ -50,13 +50,13 @@ class EISCATDataProcessor:
         """
         self.datapath   = os.path.abspath(os.path.join(os.getcwd(), folder_name_in))
         self.resultpath = os.path.abspath(os.path.join(os.getcwd(), folder_name_out))
-        self.datafiles = self._find_data_files()
+        self.datafiles = self._get_MAD_files()
         self.num_datafiles = len(self.datafiles)
         
     
     
     
-    def _find_data_files(self):
+    def _get_MAD_files(self):
         """
         Finds and returns a list of all hdf5 files in the input directory.
         
@@ -70,13 +70,9 @@ class EISCATDataProcessor:
     
     
     def interpolate_nan(self, data):
-        
         data = pd.DataFrame(data)
-        
         data_interp = data.interpolate(method="linear", axis=0).interpolate(method="linear", axis=1)
-        
         data_out = data_interp.to_numpy()
-        
         return data_out
         
         
@@ -101,7 +97,7 @@ class EISCATDataProcessor:
             raise ValueError("File index out of range")
         
         file = self.datafiles[file_index]
-        print(f'Processing file {file_index + 1}/{self.num_datafiles}: {file}\n')
+        # print(f'Processing file {file_index + 1}/{self.num_datafiles}: {file}\n')
 
 
 
@@ -112,6 +108,7 @@ class EISCATDataProcessor:
             # Basic info
             # print("Dataset dtype:", data.dtype)
             
+            # Extract date
             year = int(file[8:12])
             month = int(file[13:15])
             day = int(file[16:18])
@@ -121,18 +118,13 @@ class EISCATDataProcessor:
             t = [datetime(year, month, day, int(h), int(m), int(s))
                   for h, m, s in zip(data['hour'], data['min'], data['sec'])]
             
-            
+            # Radar range 
             range_data = data['range'][:]
-            
             
             
             # Find indices where range data shows significant drops (indicating a new time step)
             ind = np.concatenate(([0], np.where(np.diff(range_data) < -500)[0] + 1))
             t_i = np.array(t)[ind]
-            
-            
-            te = data['tr'][:] * data['ti'][:]  # combining electron and ion temperatures
-            
             nT = len(ind)  # number of time-steps
             
             
@@ -145,110 +137,91 @@ class EISCATDataProcessor:
             
             
                 
-            
+            # Interpolate data that has different shape
             shape = (nT, nZ)
             if shape[0]*shape[1] != range_data.size:
                 
                 # Generate a mask for valid entries
                 offsets = np.arange(nZ)
                 valid_mask = offsets < measure_lengths[:, None]
-                
-                # print(valid_mask.shape)
-                
                 data_indices = ind[:, None] + offsets
                 
                 # Mask out indices that are beyond the actual data length
                 valid_data_indices = data_indices[valid_mask]
                 
-                # print(valid_data_indices.shape)
                 
                 # Initialize matrices to store interpolated data
                 Ne_i = np.full((nT, nZ), np.nan)     # Electron density
                 DNe_i = np.full((nT, nZ), np.nan)    # Electron density error
                 range_i = np.full((nT, nZ), np.nan)  # Range values
-                Te_i = np.full((nT, nZ), np.nan)     # Electron temperature
-                Ti_i = np.full((nT, nZ), np.nan)     # Ion temperature
                 Vi_i = np.full((nT, nZ), np.nan)     # Ion velocity
                 El_i = np.full((nT, nZ), np.nan)     # Elevation angle
-                SysTmp_i = np.full((nT, nZ), np.nan) # System temperature
                 
                 
                 # Store data for this time step, truncating if necessary
                 Ne_i[valid_mask] = data['ne'][valid_data_indices]
                 DNe_i[valid_mask] = data['dne'][valid_data_indices]
                 Vi_i[valid_mask] = data['vo'][valid_data_indices]
-                Te_i[valid_mask] = te[valid_data_indices]
-                Ti_i[valid_mask] = data['ti'][valid_data_indices]
                 range_i[valid_mask] = range_data[valid_data_indices]
-                SysTmp_i[valid_mask] = data['systmp'][valid_data_indices]
                 
                 # Store data for this time step, truncating if necessary
                 Ne_i  = self.interpolate_nan(Ne_i)
                 DNe_i = self.interpolate_nan(DNe_i)
                 Vi_i  = self.interpolate_nan(Vi_i)
-                Te_i  = self.interpolate_nan(Te_i)
-                Ti_i  = self.interpolate_nan(Ti_i)
                 range_i = self.interpolate_nan(range_i)
-                SysTmp_i = self.interpolate_nan(SysTmp_i)
                 
-                
-                # self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, SysTmp_i, year, month, day)
+                # Save data
+                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
                 
             
+            # If valid shapes
             else:
-                
                 El_it = data['elm'].reshape(shape)
                 elevation_mask = np.abs(np.mean(El_it, axis=1) - 90) < 20
                 
                 Ne_i = np.where(elevation_mask[:, None], data['ne'].reshape(shape), 0)
                 DNe_i = np.where(elevation_mask[:, None], data['dne'].reshape(shape), 0)
                 Vi_i = np.where(elevation_mask[:, None], data['vo'].reshape(shape), 0)
-                Te_i = np.where(elevation_mask[:, None], te.reshape(shape), 0)
-                Ti_i = np.where(elevation_mask[:, None], data['ti'].reshape(shape), 0)
                 range_i = np.where(elevation_mask[:, None], range_data.reshape(shape), 0)
-                SysTmp_i = np.where(elevation_mask[:, None], data['systmp'].reshape(shape), 0)
                 
-                
-                # self.plot_and_save_results(t_i, range_i, Ne_i, Te_i, Ti_i, Vi_i, year, month, day)
-                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, SysTmp_i, year, month, day)
+                # Save data
+                self.save_mat_file(t_i, range_i, Ne_i, DNe_i, year, month, day)
             
 
     
     
-    def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, SysTmp_i, year, month, day):
+    def save_mat_file(self, t_i, range_i, Ne_i, DNe_i, year, month, day):
         datetime_matrix = np.array([[dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second] for dt in t_i])
         r_time = datetime_matrix
         r_h = np.nanmean(range_i, axis=0)
         r_param = Ne_i
         r_error = DNe_i
-        r_systemp = SysTmp_i
         
         name = f"{year}-{month}-{day}.mat"
-        sio.savemat(os.path.join(self.resultpath, name), {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error, 'r_systemp': r_systemp})
+        sio.savemat(os.path.join(self.resultpath, name), {'r_time': r_time, 'r_h': r_h, 'r_param': r_param, 'r_error': r_error})
     
     
     def process_all_files(self):
-        for idx in range(self.num_datafiles):
+        for idx in tqdm(range(self.num_datafiles)):
             self.process_file(idx)
             
-        print(f"Processing complete. Processed {self.num_datafiles} data files.")
+        # print(f"Processing complete. Processed {self.num_datafiles} data files.")
 
 
 
 
-if __name__ == "__main__":
-    print("...")
-    # # Usage example:
-    # datapath = "EISCAT_Madrigal/UHF_All"
-    # resultpath = "EISCAT_MAT/Temp"
+# if __name__ == "__main__":
+#     print("...")
+#     # # Usage example:
+#     datapath = "EISCAT_Madrigal/UHF_All"
+#     resultpath = "EISCAT_MAT/Temp"
     
-    # processor = EISCATDataProcessor(datapath, resultpath)
+#     processor = EISCATDataProcessor(datapath, resultpath)
     
-    # # processor.process_file(17)
+#     processor.process_file(1)
     
     # processor.process_all_files()
-    # # break
+    # break
 
 
 
