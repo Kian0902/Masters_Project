@@ -18,7 +18,7 @@ class EISCATDataFilter:
     """
     Class for clipping and filtering dict data.
     """
-    def __init__(self, dataset: dict, filt_range: bool=False, filt_nan: bool=False, filt_outlier: bool=False):
+    def __init__(self, dataset: dict, filt_range: bool=False, filt_nan: bool=False, filt_interpolate: bool=False, filt_outlier: bool=False):
         """
         Attributes (type)  | DESCRIPTION
         ------------------------------------------------
@@ -32,11 +32,59 @@ class EISCATDataFilter:
         self.dataset = dataset
         self.apply_range_filter = filt_range
         self.apply_nan_filter = filt_nan
+        self.apply_interpolate_filter = filt_interpolate
         self.apply_outlier_filter = filt_outlier
         
         
+    def _get_reference_alt(self, ref_alt: int):
+        reference_altitudes = None
+        for date, data in self.dataset.items():
+            if len(data["r_h"]) == ref_alt:
+                reference_altitudes = data["r_h"].flatten()
+                break
+        
+        if reference_altitudes is None:
+            raise ValueError("No day with 27 altitude measurements found")
+        else:
+            return reference_altitudes
     
-    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, filter_size=3, plot_after_each_day=False):
+    
+    def filter_interpolate(self, data: dict, reference_alt: int=27):
+        
+        reference_altitudes = self._get_reference_alt(reference_alt)
+        
+        # Create a new dictionary to store interpolated values
+        # X_interp = {}
+
+        # Iterate over each day in X_avg
+        for date, data in self.dataset.items():
+            r_h = data["r_h"].flatten()  # Original altitudes (shape: (N,))
+            r_param = data["r_param"]     # Electron density measurements (shape: (N, M))
+            r_error = data["r_error"]     # Error values (shape: (N, M))
+            # r_systemp = data["r_systemp"]
+            
+            # Interpolating electron density (r_param) to reference_altitudes
+            interpolated_r_param = np.zeros((len(reference_altitudes), r_param.shape[1]))
+            interpolated_r_error = np.zeros((len(reference_altitudes), r_error.shape[1]))
+            # interpolated_r_systemp = np.zeros((len(reference_altitudes), r_systemp.shape[1]))
+            
+            for i in range(r_param.shape[1]):
+                # Interpolating each column of r_param and r_error
+                interpolated_r_param[:, i] = np.interp(reference_altitudes, r_h, r_param[:, i])
+                interpolated_r_error[:, i] = np.interp(reference_altitudes, r_h, r_error[:, i])
+                # interpolated_r_systemp[:, i] = np.interp(reference_altitudes, r_h, r_systemp[:, i])
+                
+            # Storing the interpolated values in the new dictionary
+            self.dataset[date] = {
+                "r_time": data["r_time"],  # Keep the original time data
+                "r_h": reference_altitudes.reshape(-1, 1),  # Use the reference altitudes (shape: (27, 1))
+                "r_param": interpolated_r_param,            # Interpolated electron densities (shape: (27, M))
+                "r_error": interpolated_r_error,             # Interpolated errors (shape: (27, M))
+            }
+        
+    
+    
+    def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, num_of_ref_alt=None, filter_size=3, plot_after_each_day=False):
         """
         Function for applying the filtering to the entire dataset by looping
         through the global keys (days).
@@ -58,8 +106,8 @@ class EISCATDataFilter:
             # Filter nans
             if self.apply_nan_filter:
                 self.dataset[key] = self.filter_nan(self.dataset[key])
-        
-        
+            
+            
             # Filter outliers
             if self.apply_outlier_filter and dataset_outliers is not None:
                 self.dataset[key] = self.filter_outlier(self.dataset[key], dataset_outliers[key], filter_size)
@@ -69,7 +117,11 @@ class EISCATDataFilter:
             if plot_after_each_day:
                 # self.plot_data(key, self.dataset[key], dataset_outliers[key])
                 self.plot_data(original_data, self.dataset[key], dataset_outliers[key], key)
-    
+        
+        if self.apply_interpolate_filter:
+            self.filter_interpolate(num_of_ref_alt)
+        
+        
     
     def filter_range(self, data: dict, key: str, min_val: float, max_val: float):
         """
@@ -140,6 +192,7 @@ class EISCATDataFilter:
                     data[key] = X
        
         return data
+    
     
     
     
