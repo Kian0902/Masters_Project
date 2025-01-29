@@ -87,19 +87,9 @@ class EISCATDataSorter:
                 continue
             
             self.dataset[file_name] = data           # assign data to date of measurement
-        
     
     
     
-    def save_dataset(self, output_filename):
-        """
-        Saves dataset locally as a .pkl file.
-        """
-        with open(output_filename, 'wb') as file:
-            pickle.dump(self.dataset, file)
-
-
-
     def return_data(self):
         """
         Returns the sorted dataset.
