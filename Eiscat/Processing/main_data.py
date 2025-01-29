@@ -19,6 +19,7 @@ from data_filtering import EISCATDataFilter
 from data_plotting import EISCATPlotter
 from data_outlier_detection import EISCATOutlierDetection
 from matplotlib.dates import DateFormatter
+import matplotlib.colors as colors
 from data_utils import from_array_to_datetime, inspect_dict, get_day, get_day_data, MatchingFiles, from_strings_to_datetime, save_dict
 from scipy.interpolate import interp1d
 import numpy as np
@@ -34,7 +35,7 @@ def plot_day(data):
     
     fig, ax = plt.subplots()
     
-    ne=ax.pcolormesh(r_time, r_h, r_param, shading="auto", cmap="turbo", vmin=1e10, vmax=1e11)
+    ne=ax.pcolormesh(r_time, r_h, r_param, shading="auto", cmap="turbo", norm=colors.LogNorm(vmin=1e10, vmax=1e11))
     ax.set_xlabel("Time (UT)")
     ax.set_ylabel("Altitudes (km)")
     ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
@@ -75,7 +76,7 @@ def plot_sample(data, j):
 # VHF_folder = "EISCAT_MAT/VHF_All"
 # both_folder = "EISCAT_MAT/EISCAT_test_data"
 
-both_folder = "EISCAT_MAT/Example_UHF_out"
+both_folder = "EISCAT_MAT/UHF_All"
 
 
 # Match = MatchingFiles(VHF_folder, UHF_folder)
@@ -84,8 +85,8 @@ both_folder = "EISCAT_MAT/Example_UHF_out"
 
 # __________ Sorting data __________ 
 Eiscat = EISCATDataSorter(both_folder)
-Eiscat.sort_data()               # sort data
-X_Eiscat = Eiscat.return_data()  # returning dict data
+Eiscat.sort_data()
+X_Eiscat = Eiscat.return_data()
 
 
 
@@ -99,73 +100,23 @@ X_filt = filt.return_data()
 # __________ Detecting outliers __________ 
 Outlier = EISCATOutlierDetection(X_filt)
 Outlier.batch_detection(method_name="Z-score", save_plot=False)
-Outlier.pca_all(reduce_to_dim=2)
-# X_outliers = Outlier.return_outliers()
+# Outlier.pca_all(reduce_to_dim=2)
+X_outliers = Outlier.return_outliers()
 
 
-# # __________ Filtering outliers __________ 
-# outlier_filter = EISCATDataFilter(X_filt, filt_outlier=True)
-# outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=True)
-# X_outliers_filtered = outlier_filter.return_data()
+# __________ Filtering outliers __________ 
+outlier_filter = EISCATDataFilter(X_filt, filt_outlier=True)
+outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
+X_outliers_filtered = outlier_filter.return_data()
 
 
 
-# # Assuming X_avg contains your nested dictionary after filtering and averaging
-# # Extract the reference altitude array with length 27
-# reference_altitudes = None
-# for date, data in X_outliers_filtered.items():
-#     if len(data["r_h"]) == 27:
-#         reference_altitudes = data["r_h"].flatten()
-#         break
-
-# if reference_altitudes is None:
-#     raise ValueError("No day with 27 altitude measurements found")
-
-# # Create a new dictionary to store interpolated values
-# X_interp = {}
-
-# # Iterate over each day in X_avg
-# for date, data in X_outliers_filtered.items():
-#     r_h = data["r_h"].flatten()  # Original altitudes (shape: (N,))
-#     r_param = data["r_param"]     # Electron density measurements (shape: (N, M))
-#     r_error = data["r_error"]     # Error values (shape: (N, M))
-#     # r_systemp = data["r_systemp"]
-    
-#     # Interpolating electron density (r_param) to reference_altitudes
-#     interpolated_r_param = np.zeros((len(reference_altitudes), r_param.shape[1]))
-#     interpolated_r_error = np.zeros((len(reference_altitudes), r_error.shape[1]))
-#     # interpolated_r_systemp = np.zeros((len(reference_altitudes), r_systemp.shape[1]))
-    
-#     for i in range(r_param.shape[1]):
-#         # Interpolating each column of r_param and r_error
-#         interpolated_r_param[:, i] = np.interp(reference_altitudes, r_h, r_param[:, i])
-#         interpolated_r_error[:, i] = np.interp(reference_altitudes, r_h, r_error[:, i])
-#         # interpolated_r_systemp[:, i] = np.interp(reference_altitudes, r_h, r_systemp[:, i])
-        
-#     # Storing the interpolated values in the new dictionary
-#     X_interp[date] = {
-#         "r_time": data["r_time"],  # Keep the original time data
-#         "r_h": reference_altitudes.reshape(-1, 1),  # Use the reference altitudes (shape: (27, 1))
-#         "r_param": interpolated_r_param,            # Interpolated electron densities (shape: (27, M))
-#         "r_error": interpolated_r_error,             # Interpolated errors (shape: (27, M))
-#         # "r_systemp": interpolated_r_systemp
-#     }
-
-# # # X_interp now contains the data with all days having 27 altitude levels
-
-# plot_day(X_outliers_filtered['2019-1-10'])
-# plot_sample(X_outliers_filtered['2019-1-10'], 0)
+# __________  Averaging data __________ 
+AVG = EISCATAverager(X_outliers_filtered, plot_result=True)
+AVG.average_15min()
+X_avg = AVG.return_data()
 
 
-# # Averaging data
-# AVG = EISCATAverager(X_interp)
-# AVG.batch_averaging(save_plot=False, weighted=False)
-# X_avg = AVG.return_data()
-
-
-# inspect_dict(X_filt["2022-9-2"])
-# radar_plotter = EISCATPlotter(X_filt["2022-9-2"])
-# radar_plotter.plot_day()
 
 
 # save_dict(X_avg, file_name="X_avg_test_new_errors")
