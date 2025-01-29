@@ -52,27 +52,21 @@ class EISCATDataFilter:
     def filter_interpolate(self, data: dict, reference_alt: int=27):
         
         reference_altitudes = self._get_reference_alt(reference_alt)
-        
-        # Create a new dictionary to store interpolated values
-        # X_interp = {}
 
         # Iterate over each day in X_avg
         for date, data in self.dataset.items():
             r_h = data["r_h"].flatten()  # Original altitudes (shape: (N,))
             r_param = data["r_param"]     # Electron density measurements (shape: (N, M))
             r_error = data["r_error"]     # Error values (shape: (N, M))
-            # r_systemp = data["r_systemp"]
             
             # Interpolating electron density (r_param) to reference_altitudes
             interpolated_r_param = np.zeros((len(reference_altitudes), r_param.shape[1]))
             interpolated_r_error = np.zeros((len(reference_altitudes), r_error.shape[1]))
-            # interpolated_r_systemp = np.zeros((len(reference_altitudes), r_systemp.shape[1]))
             
             for i in range(r_param.shape[1]):
                 # Interpolating each column of r_param and r_error
                 interpolated_r_param[:, i] = np.interp(reference_altitudes, r_h, r_param[:, i])
                 interpolated_r_error[:, i] = np.interp(reference_altitudes, r_h, r_error[:, i])
-                # interpolated_r_systemp[:, i] = np.interp(reference_altitudes, r_h, r_systemp[:, i])
                 
             # Storing the interpolated values in the new dictionary
             self.dataset[date] = {
