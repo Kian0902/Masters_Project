@@ -76,8 +76,8 @@ def plot_sample(data, j):
 # VHF_folder = "EISCAT_MAT/VHF_All"
 # both_folder = "EISCAT_MAT/EISCAT_test_data"
 
-both_folder = "EISCAT_MAT/UHF_All"
-
+# both_folder = "EISCAT_MAT/UHF_All"
+both_folder = "EISCAT_MAT/Example_UHF_out"
 
 # Match = MatchingFiles(VHF_folder, UHF_folder)
 # Match.remove_matching_vhf_files()
@@ -97,29 +97,29 @@ X_filt = filt.return_data()
 
 
 
-# __________ Detecting outliers __________ 
-Outlier = EISCATOutlierDetection(X_filt)
-Outlier.batch_detection(method_name="Z-score", save_plot=False)
-# Outlier.pca_all(reduce_to_dim=2)
-X_outliers = Outlier.return_outliers()
+# # __________ Detecting outliers __________ 
+# Outlier = EISCATOutlierDetection(X_filt)
+# Outlier.batch_detection(method_name="Z-score", save_plot=False)
+# # Outlier.pca_all(reduce_to_dim=2)
+# X_outliers = Outlier.return_outliers()
 
 
-# __________ Filtering outliers __________ 
-outlier_filter = EISCATDataFilter(X_filt, filt_outlier=True)
-outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
-X_outliers_filtered = outlier_filter.return_data()
-
-
-
-# __________  Averaging data __________ 
-AVG = EISCATAverager(X_outliers_filtered, plot_result=True)
-AVG.average_15min()
-X_avg = AVG.return_data()
+# # __________ Filtering outliers __________ 
+# outlier_filter = EISCATDataFilter(X_filt, filt_outlier=True)
+# outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
+# X_outliers_filtered = outlier_filter.return_data()
 
 
 
+# # __________  Averaging data __________ 
+# AVG = EISCATAverager(X_outliers_filtered, plot_result=True)
+# AVG.average_15min()
+# X_avg = AVG.return_data()
 
-# save_dict(X_avg, file_name="X_avg_test_new_errors")
+
+
+
+save_dict(X_filt, file_name="X_filt_few")
 
 
 
