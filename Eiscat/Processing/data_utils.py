@@ -23,6 +23,23 @@ def save_dict(dataset: dict, file_name: str):
 
 
 
+# def plot_day(data):
+#     r_time = from_array_to_datetime(data['r_time'])
+#     r_h = data['r_h'].flatten()
+#     r_param = data['r_param']
+#     r_error = data['r_error'] 
+    
+    
+#     fig, ax = plt.subplots()
+    
+#     ne=ax.pcolormesh(r_time, r_h, r_param, shading="auto", cmap="turbo", norm=colors.LogNorm(vmin=1e10, vmax=1e11))
+#     ax.set_xlabel("Time (UT)")
+#     ax.set_ylabel("Altitudes (km)")
+#     ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+#     fig.colorbar(ne, ax=ax, orientation='vertical')
+#     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
+#     plt.show()
+
 
 
 def get_day_data(dataset, day_idx):

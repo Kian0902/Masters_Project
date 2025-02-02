@@ -56,15 +56,22 @@ class EISCATAverager:
             if r_time.size == 0:
                 continue  # Skip if no data
             times = [datetime(*map(int, t)) for t in r_time]
-
+            
+            
+            # print(date_str)
+            
             # Generate all 15-minute bins for the current day
             start_of_day = datetime(year, month, day, 0, 0, 0)
             bins = []
             current = start_of_day
             while current.date() == start_of_day.date():
                 bins.append(current)
+                
+                if date_str=='2022-6-20':
+                    print(current)
                 current += timedelta(minutes=15)
-
+            
+            
             # Prepare lists to hold averaged data for the current day
             averaged_r_time = []
             averaged_r_param = []
