@@ -86,6 +86,12 @@ class EISCATDataSorter:
                 warnings.warn(f"Data for {file_name} is corrupted (contains only zeros) and will be removed.")
                 continue
             
+            # Check if any of the arrays have length 0
+            if 'r_param' in data and len(data['r_param']) == 0:
+                warnings.warn(f"Data for {file_name} is empty (contains arrays with length 0) and will be removed.")
+                continue
+            
+            
             self.dataset[file_name] = data           # assign data to date of measurement
     
     
