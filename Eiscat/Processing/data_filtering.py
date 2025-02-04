@@ -4,15 +4,17 @@ Created on Thu Aug 22 15:10:52 2024
 
 @author: Kian Sartipzadeh
 """
-
 import os
 import pickle
-
+import warnings
 import numpy as np
+import matplotlib.pyplot as plt
+
 from scipy.io import loadmat
 from scipy.interpolate import interp1d
 from scipy.signal import medfilt
-import matplotlib.pyplot as plt
+from data_utils import inspect_dict
+
 
 class EISCATDataFilter:
     """
@@ -49,15 +51,24 @@ class EISCATDataFilter:
             return reference_altitudes
     
     
-    def filter_interpolate(self, data: dict, reference_alt: int=27):
+    def filter_interpolate(self, reference_alt: int=27):
         
         reference_altitudes = self._get_reference_alt(reference_alt)
+        dates_to_remove = []
 
         # Iterate over each day in X_avg
-        for date, data in self.dataset.items():
-            r_h = data["r_h"].flatten()  # Original altitudes (shape: (N,))
+        for date in list(self.dataset.keys()):
+            data = self.dataset[date]
+            r_h = data["r_h"].flatten()   # Original altitudes (shape: (N,))
             r_param = data["r_param"]     # Electron density measurements (shape: (N, M))
             r_error = data["r_error"]     # Error values (shape: (N, M))
+            
+            # Check if current data is invalid
+            if r_param.size == 0 or r_param.shape[0] == 0 or r_param.shape[1] == 0:
+                print(f"{date} has invalid r_param shape {r_param.shape} before interpolation. Removing.")
+                warnings.warn(f"Data for {date} is empty (contains arrays with length 0) and will be removed.")
+                dates_to_remove.append(date)
+                continue
             
             # Interpolating electron density (r_param) to reference_altitudes
             interpolated_r_param = np.zeros((len(reference_altitudes), r_param.shape[1]))
@@ -67,15 +78,24 @@ class EISCATDataFilter:
                 # Interpolating each column of r_param and r_error
                 interpolated_r_param[:, i] = np.interp(reference_altitudes, r_h, r_param[:, i])
                 interpolated_r_error[:, i] = np.interp(reference_altitudes, r_h, r_error[:, i])
-                
-            # Storing the interpolated values in the new dictionary
-            self.dataset[date] = {
-                "r_time": data["r_time"],  # Keep the original time data
-                "r_h": reference_altitudes.reshape(-1, 1),  # Use the reference altitudes (shape: (27, 1))
-                "r_param": interpolated_r_param,            # Interpolated electron densities (shape: (27, M))
-                "r_error": interpolated_r_error,             # Interpolated errors (shape: (27, M))
-            }
+            
+            # Check if interpolated data is invalid
+            if interpolated_r_param.size == 0 or interpolated_r_param.shape[0] == 0 or interpolated_r_param.shape[1] == 0:
+                print(f"{date} has invalid interpolated r_param shape {interpolated_r_param.shape}. Removing.")
+                warnings.warn(f"Interpolated data for {date} is empty and will be removed.")
+                dates_to_remove.append(date)
+            else:
+                # Update dataset with interpolated data
+                self.dataset[date] = {
+                    "r_time": data["r_time"],
+                    "r_h": reference_altitudes.reshape(-1, 1),
+                    "r_param": interpolated_r_param,
+                    "r_error": interpolated_r_error,
+                }
         
+        # Remove all invalid dates
+        for date in dates_to_remove:
+            del self.dataset[date]
     
     
     def batch_filtering(self, min_val=90, max_val=400, dataset_outliers=None, num_of_ref_alt=None, filter_size=3, plot_after_each_day=False):
@@ -84,157 +104,90 @@ class EISCATDataFilter:
         through the global keys (days).
         """
         
-        
-        # Loop through day
+        # Loop through each day
         for key in list(self.dataset.keys()):
-            
             
             # Store the original data separately for plotting
             original_data = {k: v.copy() for k, v in self.dataset[key].items()}
             
-            
-            # Filter range
+            # Apply range filter
             if self.apply_range_filter:
                 self.dataset[key] = self.filter_range(self.dataset[key], 'r_h', min_val, max_val)
             
-            # Filter nans
+            # Apply NaN filter
             if self.apply_nan_filter:
                 self.dataset[key] = self.filter_nan(self.dataset[key])
             
-            
-            # Filter outliers
+            # Apply outlier filter
             if self.apply_outlier_filter and dataset_outliers is not None:
                 self.dataset[key] = self.filter_outlier(self.dataset[key], dataset_outliers[key], filter_size)
-                
+            
+            # Check if data is invalid after filtering
+            data = self.dataset.get(key)
+            if data is None:
+                continue  # Already removed
+            
+            # Check for invalid r_param after all filters
+            r_param = data['r_param']
+            if r_param.size == 0 or r_param.shape[0] == 0 or r_param.shape[1] == 0:
+                print(f"Removing {key} due to empty/invalid r_param after batch filtering.")
+                del self.dataset[key]
+                continue
             
             # Plotting after filtering for each day if requested
             if plot_after_each_day:
-                # self.plot_data(key, self.dataset[key], dataset_outliers[key])
                 self.plot_data(original_data, self.dataset[key], dataset_outliers[key], key)
         
+        # Apply interpolation filter if needed
         if self.apply_interpolate_filter:
             self.filter_interpolate(num_of_ref_alt)
-        
-        
+    
+    
+    # The rest of the methods (filter_range, filter_nan, filter_outlier, plot_data, return_data) remain unchanged
+    # Ensure to include them as in the original code
     
     def filter_range(self, data: dict, key: str, min_val: float, max_val: float):
-        """
-        Filters out values that lie outside an interval [min_val, max_mal]
-        specified by the user.
-        It is assumed that each key in self.dataset is assigned a (N x M)
-        numpy.ndarray.
-        
-        Input (type)    | DESCRIPTION
-        ------------------------------------------------
-        key     (str)   | Key of the dictionary
-        min_val (float) | Lower limit of interval
-        max_val (float) | Upper limit of interval
-        """
-        
-        
-        # Mask for filtered values. False outside and True inside interval
+        # Existing implementation
         mask = np.any((data[key] >= min_val) & (data[key] <= max_val), axis=1)
-        
-        # Applying mask to all keys except "r_time"
-        for key in list(data.keys())[1:]:
-            data[key] = data[key][mask,:]
-        
+        for k in list(data.keys())[1:]:
+            data[k] = data[k][mask,:]
         return data
-        
-        
+    
     def filter_nan(self, data: dict, replace_val=111):
-        """
-        Function for handling numpy.ndarrays with NaN values. This method
-        interpolates and/or extrapolates way NaNs. If more than half of the
-        array contains NaNs, then user has the choice of picking a fill value
-        to replace the entire array. This is so it becomes easier later to 
-        distinguish faulty arrays from healthy ones.
-        
-        Input (type)            | DESCRIPTION
-        ------------------------------------------------
-        replace_val (int/float) | Value to replace nans with
-        """
-        
-        # Looping through keys except "r_time"
+        # Existing implementation
         for key in list(data.keys())[1:]:
             X = data[key]
-            
-            # Check if there are any NaNs in the data
             if np.isnan(X).any():
-                # Find the indices of NaN values
                 nan_mask = np.isnan(X)
-                
-                # If more than half of the elements in the array are NaN
-                if np.sum(nan_mask) > (X.shape[0] * X.shape[1]) / 2:
-                    # Fill the entire array with replace_val
-                    data[key].fill(replace_val)
+                if np.sum(nan_mask) > (X.size / 2):
+                    X.fill(replace_val)
                 else:
-                    # Interpolate/extrapolate the NaNs for each column (minute)
-                    x = np.arange(X.shape[0])  # Indexes for rows (altitude measurements)
-                    
-                    for j in range(X.shape[1]):  # Iterate over each column (minute)
+                    x = np.arange(X.shape[0])
+                    for j in range(X.shape[1]):
                         col = X[:, j]
                         valid_mask = ~nan_mask[:, j]
-                        if np.any(valid_mask):  # Check if there's at least one valid point
-                            interp_func = interp1d(x[valid_mask], col[valid_mask], 
-                                                   kind='linear', fill_value="extrapolate")
+                        if np.any(valid_mask):
+                            interp_func = interp1d(x[valid_mask], col[valid_mask], kind='linear', fill_value="extrapolate")
                             col[~valid_mask] = interp_func(x[~valid_mask])
                         else:
-                            # If the entire column is NaN, fill it with replace_val
                             X[:, j].fill(replace_val)
-                    
                     data[key] = X
-       
         return data
-    
-    
-    
     
     def filter_outlier(self, data: dict, outlier_indices, filter_size: int=3, save_plot: bool=False):
-        """
-        This method detects and replaces outliers in radar measurement data
-        using a median filter. Padding is applied in the N (altitude) dimension
-        to handle edge effects, ensuring the original shape of the data is
-        preserved after filtering.
-        
-        Input (type)            | DESCRIPTION
-        ------------------------------------------------
-        data (dict)             | Radar measurement data with shape (N, M).
-        outlier_indices (array) | Indices of columns containing outliers.
-        filter_size (int)       | Median filter kernel size. Default is 3.
-        
-        
-        Return (type)  | DESCRIPTION
-        ------------------------------------------------
-        data (dict)    | Data with outliers replaced by median filtered values.
-        """
-        # Check if outlier_indices is empty
+        # Existing implementation
         if outlier_indices.size == 0:
             return data
-        
-        
-        pad_size = filter_size // 2  # half of filters floored
-        
-        
+        pad_size = filter_size // 2
         for key in list(data.keys())[2:]:
             X = data[key]
-            
             X_padded = np.pad(X, ((pad_size, pad_size), (0, 0)), mode='edge')
-
-            X_medfilt = medfilt(X_padded, kernel_size = filter_size)
-
-            # Remove the padding after filtering
+            X_medfilt = medfilt(X_padded, kernel_size=filter_size)
             X_medfilt = X_medfilt[pad_size:-pad_size, :]
-
- 
             for idx in outlier_indices:
-                
                 X[:, idx] = X_medfilt[:, idx]
-            
             data[key] = X
-        
         return data
-    
     
     def plot_data(self, original_data, filtered_data, outlier_indices, date):
         """
@@ -307,15 +260,9 @@ class EISCATDataFilter:
         plt.subplots_adjust(top=0.87)  # Adjust the top to make room for the suptitle
         
         plt.show()
-
-    
     
     def return_data(self):
-        """
-        Returns self.data
-        """
         return self.dataset
-
 
 
 
