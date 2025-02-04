@@ -123,14 +123,14 @@ class EISCATAverager:
             
             
             if self.plot_result:
-                self.plot_compare(self.dataset[date_str], averaged_data)
+                self.plot_compare(self.dataset[date_str], averaged_data, date_str)
             
             self.dataset[date_str] = averaged_data 
     
     
     
     
-    def plot_compare(self, org_data, avg_data):
+    def plot_compare(self, org_data, avg_data, date_str):
         
         # Original Data
         org_time  = from_array_to_datetime(org_data['r_time'])
@@ -149,6 +149,7 @@ class EISCATAverager:
         
         
         fig = plt.figure(figsize=(12, 6))
+        fig.suptitle(date_str)
         gs = GridSpec(1, 3, width_ratios=[1, 1, 0.05], wspace=0.1)
         
         
