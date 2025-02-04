@@ -63,9 +63,9 @@ def plot_sample(data, j):
     
     
     
-# Use the local folder name containing data
-# folder_name_in  = "EISCAT_Madrigal/Example_UHF"
-# folder_name_out = "EISCAT_MAT/Example_UHF_out"
+# # Use the local folder name containing data
+# folder_name_in  = "EISCAT_Madrigal/2015"
+# folder_name_out = "EISCAT_MAT/2015"
 
 # # Extract info from hdf5 files
 # madrigal_processor = EISCATDataProcessor(folder_name_in, folder_name_out)
@@ -76,8 +76,8 @@ def plot_sample(data, j):
 # VHF_folder = "EISCAT_MAT/VHF_All"
 # both_folder = "EISCAT_MAT/EISCAT_test_data"
 
-both_folder = "EISCAT_MAT/UHF_All"
-# both_folder = "EISCAT_MAT/Example_UHF_out"
+# both_folder = "EISCAT_MAT/UHF_All"
+both_folder = "EISCAT_MAT/2015"
 
 # Match = MatchingFiles(VHF_folder, UHF_folder)
 # Match.remove_matching_vhf_files()
@@ -86,19 +86,16 @@ both_folder = "EISCAT_MAT/UHF_All"
 # __________ Sorting data __________ 
 Eiscat = EISCATDataSorter(both_folder)
 Eiscat.sort_data()
-X_Eiscat = Eiscat.return_data()
-
-plot_day(X_Eiscat['2022-6-20'])
+X_eis = Eiscat.return_data()
 
 
-# print(X_Eiscat['2022-6-20']['r_time'])
 
 # __________ Clipping range and Filtering data for nan __________ 
-filt = EISCATDataFilter(X_Eiscat, filt_range=True, filt_nan=True, filt_interpolate=True) 
-filt.batch_filtering(plot_after_each_day=False, num_of_ref_alt=27)
+filt = EISCATDataFilter(X_eis, filt_range=True, filt_nan=True, filt_interpolate=True) 
+filt.batch_filtering(num_of_ref_alt=27)
 X_filt = filt.return_data()
 
-plot_day(X_filt['2022-6-20'])
+
 
 # __________ Detecting outliers __________ 
 Outlier = EISCATOutlierDetection(X_filt)
@@ -110,23 +107,25 @@ X_outliers = Outlier.return_outliers()
 
 # __________ Filtering outliers __________ 
 outlier_filter = EISCATDataFilter(X_filt, filt_outlier=True)
-outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=5, plot_after_each_day=False)
+outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
 X_outliers_filtered = outlier_filter.return_data()
 
 
 
 # __________  Averaging data __________ 
-AVG = EISCATAverager(X_outliers_filtered, plot_result=False)
+AVG = EISCATAverager(X_outliers_filtered, plot_result=True)
 AVG.average_15min()
 X_avg = AVG.return_data()
 
-# print(X_avg['2022-6-20']['r_time'])
-
-# save_dict(X_filt, file_name="X_avg_all")
 
 
+# # print(X_avg['2022-6-20']['r_time'])
 
-plot_day(X_avg['2022-6-20'])
+# # save_dict(X_filt, file_name="X_avg_all")
+
+
+
+# plot_day(X_avg['2022-6-20'])
 
 
 
