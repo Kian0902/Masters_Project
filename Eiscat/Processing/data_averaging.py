@@ -67,8 +67,8 @@ class EISCATAverager:
             while current.date() == start_of_day.date():
                 bins.append(current)
                 
-                if date_str=='2022-6-20':
-                    print(current)
+                # if date_str=='2022-6-20':
+                    # print(current)
                 current += timedelta(minutes=15)
             
             
