@@ -5,10 +5,12 @@ Created on Tue Aug 20 14:13:45 2024
 @author: Kian Sartipzadeh
 """
 
-
+import pandas as pd
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Patch
 from scipy.interpolate import interp1d
 from sklearn.mixture import GaussianMixture, BayesianGaussianMixture
 from datetime import datetime, timedelta
@@ -22,7 +24,172 @@ from matplotlib.dates import DateFormatter
 import matplotlib.colors as colors
 from data_utils import from_array_to_datetime, inspect_dict, get_day, get_day_data, MatchingFiles, from_strings_to_datetime, save_dict, load_dict
 from scipy.interpolate import interp1d
-import numpy as np
+import seaborn as sns
+
+
+
+def plot_available_data(data_dict):
+    # Extract dates and M values
+    dates = []
+    m_values = []
+    
+    for date, measurements in data_dict.items():
+        dates.append(date)
+        m_values.append(measurements['r_time'].shape[0])
+    
+    # Convert dates to datetime objects
+    dates = pd.to_datetime(dates)
+    
+    df = pd.DataFrame({
+        'Date': dates,
+        'M_samples': m_values
+    })
+    
+    # Sort by date
+    df = df.sort_values('Date')
+    
+    # Calculate the total number of days in the date range
+    start_date = df['Date'].min()
+    end_date = df['Date'].max()
+    all_possible_days = pd.date_range(start=start_date, end=end_date, freq='D')
+    total_days = len(all_possible_days)
+    available_days = len(df)
+    
+    # Calculate total number of samples available
+    total_samples_available = df['M_samples'].sum()
+    
+    # Define the maximum possible samples per day (e.g., based on the maximum observed M)
+    max_samples_per_day = df['M_samples'].max()
+    
+    # Calculate the total possible samples if data were available every day
+    total_possible_samples = total_days * max_samples_per_day
+    
+    # Print statistics
+    print(f"Number of available days: {available_days}/{total_days}")
+    print(f"Percentage of days with data: {available_days / total_days * 100:.2f}%")
+    print(f"Total samples available: {total_samples_available}")
+    print(f"Total possible samples: {total_possible_samples}")
+    print(f"Percentage of samples available: {total_samples_available / total_possible_samples * 100:.2f}%")
+    
+    
+    # Create a single plot figure
+    # fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Load and process sunspot data (same as before)
+    data = np.genfromtxt('sunspots.csv', delimiter=';', dtype=float)
+    years = data[:, 0]
+    months = data[:, 1]
+    sunspot_numbers = data[:, 3]
+    sunspot_std_dev = data[:, 4]
+    dates = [datetime(int(year), int(month), 1) for year, month in zip(years, months)]
+    df_sun = pd.DataFrame({
+        'Date': dates,
+        'Sunspot Number': sunspot_numbers,
+        'Standard Deviation': sunspot_std_dev
+    })
+    df_sun.set_index('Date', inplace=True)
+    
+    # Filter sunspot data to radar's time range
+    radar_start_date = df['Date'].min()
+    radar_end_date = df['Date'].max()
+    df_sun_filtered = df_sun.loc[radar_start_date:radar_end_date]
+
+    # Create figure with 2 subplots using GridSpec
+    fig = plt.figure(figsize=(12, 8))
+    gs = plt.GridSpec(2, 1, height_ratios=[1, 2], hspace=0.4)
+    
+    # Top subplot (Radar data statistics)
+    ax1 = fig.add_subplot(gs[0])
+    ax1.bar(df['Date'], df['M_samples'], color='teal', width=2, alpha=0.7)
+    
+    # Calculate statistics
+    days_ratio = f"{available_days}/{total_days} ({available_days/total_days:.1%})"
+    samples_ratio = f"{total_samples_available}/{total_possible_samples} ({total_samples_available/total_possible_samples:.1%})"
+    
+    # Create legend text
+    legend_text = (f"Available Days: {days_ratio}\n"
+                   f"Available Samples: {samples_ratio}")
+    
+    # Add legend-like text box
+    ax1.text(0.02, 0.98, legend_text,
+             transform=ax1.transAxes,
+             ha='left', va='top',
+             bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round', alpha=0.9),
+             fontsize=10)
+    
+    # Configure top plot
+    ax1.set_title("Radar Data Availability Statistics")
+    ax1.set_ylabel("Samples/Day")
+    ax1.grid(axis='y', alpha=0.3)
+    
+    # Bottom subplot (Sunspots + Radar days)
+    ax2 = fig.add_subplot(gs[1], sharex=ax1)
+    
+    # Plot sunspot data
+    ax2.plot(df_sun_filtered.index, df_sun_filtered['Sunspot Number'], 
+            color='darkorange', label='Sunspot Number', zorder=2)
+    ax2.fill_between(df_sun_filtered.index,
+                    df_sun_filtered['Sunspot Number'] - df_sun_filtered['Standard Deviation'],
+                    df_sun_filtered['Sunspot Number'] + df_sun_filtered['Standard Deviation'],
+                    color='darkorange', alpha=0.2, label='±1 STD', zorder=2)
+    
+    # Add radar availability lines
+    for date in df['Date']:
+        ax2.axvline(x=date, color='dodgerblue', alpha=0.3, linewidth=0.8, zorder=-1)
+    
+    # Configure bottom plot
+    ax2.set_title('Sunspot Numbers with Radar Observation Days')
+    ax2.set_xlabel('Date')
+    ax2.set_ylabel('Sunspot Number')
+    ax2.grid(True, alpha=0.3)
+    
+    # Create unified legend
+    handles = [
+        plt.Line2D([0], [0], color='darkorange', lw=2, label='Sunspots'),
+        Patch(color='darkorange', alpha=0.2, label='Sunspot STD'),
+        plt.Line2D([0], [0], color='dodgerblue', lw=1, label='Radar Days')
+    ]
+    ax2.legend(handles=handles, loc='upper left', framealpha=0.9)
+    
+    # # Add statistics text to top plot
+    # stats_text = (f"Days with data: {available_days}/{total_days} ({available_days/total_days:.1%})\n"
+    #             f"Total samples: {total_samples_available}\n"
+    #             f"Possible samples: {total_possible_samples}")
+    # ax1.text(0.98, 0.85, stats_text, 
+    #         transform=ax1.transAxes,
+    #         ha='right', va='top',
+    #         bbox=dict(facecolor='white', alpha=0.8))
+    
+    plt.tight_layout()
+    plt.show()
+    
+    
+        
+        # # Plot the data
+        # plt.figure(figsize=(12, 6))
+        
+        # # Plot the dates with data
+        # plt.bar(df['Date'], df['M_samples'], label='Number of Samples (M)')
+        
+        # # Add text annotation for the number of available days and samples
+        # text = (
+        #     f"Available Days: {available_days}/{total_days} ({available_days / total_days * 100:.2f}%)\n"
+        #     f"Available Samples: {total_samples_available}/{total_possible_samples} ({total_samples_available / total_possible_samples * 100:.2f}%)"
+        # )
+        # plt.text(0.02, 0.95, text, transform=plt.gca().transAxes, fontsize=12, verticalalignment='top', bbox=dict(facecolor='white', alpha=0.8))
+        
+        # # Formatting the plot
+        # plt.xlabel('Date')
+        # plt.ylabel('Number of Samples (M)')
+        # plt.title('Radar Measurements Availability and Sample Count')
+        # plt.xticks(rotation=45)
+        # # plt.grid(axis='y', linestyle='--', alpha=0.7)
+        # plt.legend()
+        
+        # # Show the plot
+        # plt.tight_layout()
+        # plt.show()
+
 
 
 
@@ -64,8 +231,8 @@ def plot_sample(data, j):
     
     
 # # Use the local folder name containing data
-# folder_name_in  = "EISCAT_Madrigal/2015"
-# folder_name_out = "EISCAT_MAT/2015"
+# folder_name_in  = "EISCAT_Madrigal/2012"
+# folder_name_out = "EISCAT_MAT/2012"
 
 # # Extract info from hdf5 files
 # madrigal_processor = EISCATDataProcessor(folder_name_in, folder_name_out)
@@ -76,8 +243,8 @@ def plot_sample(data, j):
 # VHF_folder = "EISCAT_MAT/VHF_All"
 # both_folder = "EISCAT_MAT/EISCAT_test_data"
 
-# both_folder = "EISCAT_MAT/UHF_All"
-both_folder = "EISCAT_MAT/2015"
+both_folder = "EISCAT_MAT/UHF_All"
+# both_folder = "EISCAT_MAT/2012"
 
 # Match = MatchingFiles(VHF_folder, UHF_folder)
 # Match.remove_matching_vhf_files()
@@ -113,15 +280,17 @@ X_outliers_filtered = outlier_filter.return_data()
 
 
 # __________  Averaging data __________ 
-AVG = EISCATAverager(X_outliers_filtered, plot_result=True)
+AVG = EISCATAverager(X_outliers_filtered, plot_result=False)
 AVG.average_15min()
 X_avg = AVG.return_data()
 
 
 
-# # print(X_avg['2022-6-20']['r_time'])
+plot_available_data(X_avg)
 
-# # save_dict(X_filt, file_name="X_avg_all")
+
+
+# save_dict(X_filt, file_name="X_avg_all")
 
 
 
