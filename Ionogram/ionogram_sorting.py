@@ -103,6 +103,176 @@ class IonogramSorting:
 
 
 
+# import pickle
+
+# class IonogramSorting:
+#     def __init__(self):
+#         # This will eventually hold the nested dictionary:
+#         # { "yyyy-m-d": { "r_time": np.array(...), "r_param": np.array(...) }, ... }
+#         self.ionogram_dataset = {}
+
+#     def import_data(self, datapath: str):
+#         """
+#         Processes one monthly ionosonde text file into a nested dictionary.
+        
+#         The file is assumed to contain multiple 15-minute batches. Each batch
+#         starts with a header line of length 30 containing a date and time (e.g.,
+#         "2018.09.21 (264) 00:00:00.000"), followed by one or more data lines
+#         (each of length 46) with 8 ionogram features. A blank line (or a line 
+#         that becomes empty after stripping) indicates the end of a batch.
+        
+#         After processing, the nested dictionary is built so that the global keys
+#         are day strings ("yyyy-m-d"). For each day the two keys are:
+#             "r_time": an array of timestamps (each row: [year, month, day, hour, minute, second])
+#             "r_param": an object array where each element is a NumPy array of shape (N,8)
+        
+#         Parameters:
+#             datapath (str): Path to the monthly ionosonde text file.
+#         """
+#         # This dictionary will be built incrementally.
+#         sorted_dict = {}
+
+#         with open(datapath, "r") as file:
+#             lines = file.readlines()
+
+#         # Temporary holders for a given 15-min batch:
+#         data_batch = []          # List of data rows (each a list of 8 floats)
+#         current_time = None      # Will hold the current timestamp as a list of ints
+#         current_day_key = None   # Global key string "yyyy-m-d" for the batch
+        
+#         for line in lines:
+#             # --- Check for a header line ---
+#             # (Your original code assumes header lines have length 30.)
+#             if len(line) == 30:
+#                 # Example header: "2018.09.21 (264) 00:00:00.000"
+#                 # Extract the date part and convert to integers.
+#                 iono_date = line[0:10]  # e.g., "2018.09.21"
+#                 try:
+#                     year, month, day = [int(x) for x in iono_date.split('.')]
+#                 except Exception as e:
+#                     print("Error parsing date in header:", line)
+#                     continue
+                
+#                 # Extract the time from the header.
+#                 try:
+#                     hour   = int(line[-13:-11])  # e.g., "00"
+#                     minute = int(line[-10:-8])   # e.g., "00"
+#                     second = int(line[-7:-5])    # e.g., "00"
+#                 except Exception as e:
+#                     print("Error parsing time in header:", line)
+#                     continue
+                
+#                 # Save the current timestamp (as a list of ints).
+#                 current_time = [year, month, day, hour, minute, second]
+#                 # Create the global key for this day using the desired "yyyy-m-d" format.
+#                 current_day_key = f"{year}-{month}-{day}"
+                
+#             # --- Check for a data line (ionogram measurements) ---
+#             # (Your original code assumes data lines have length 46.)
+#             elif len(line) == 46:
+#                 parts = line.split()
+#                 try:
+#                     # Convert each string to a float.
+#                     values = [float(x) for x in parts]
+#                 except Exception as e:
+#                     print("Error converting data line to floats:", line)
+#                     continue
+#                 data_batch.append(values)
+                
+#             # --- Check for a blank line (end of batch) ---
+#             # (Your original code uses a line length of 1 for whitespace; here we use strip().)
+#             elif len(line.strip()) == 0:
+#                 if current_time is not None:
+#                     # End of the current batch – convert collected data to a NumPy array.
+#                     # If no data were collected (which might occur), we create an empty (0,8) array.
+#                     batch_array = np.array(data_batch) if data_batch else np.empty((0, 8))
+                    
+#                     # If the current day is not yet a key, create its entry.
+#                     if current_day_key not in sorted_dict:
+#                         sorted_dict[current_day_key] = {"r_time": [], "r_param": []}
+                    
+#                     # Append the timestamp and the parameter array for this batch.
+#                     sorted_dict[current_day_key]["r_time"].append(current_time)
+#                     sorted_dict[current_day_key]["r_param"].append(batch_array)
+                    
+#                     # Reset temporary holders for the next batch.
+#                     data_batch = []
+#                     current_time = None
+#                     current_day_key = None
+#             else:
+#                 # If the line doesn't match any of the above lengths, skip it.
+#                 continue
+
+#         # In case the file does not end with a blank line, check if a batch remains:
+#         if data_batch and current_time is not None and current_day_key is not None:
+#             batch_array = np.array(data_batch) if data_batch else np.empty((0, 8))
+#             if current_day_key not in sorted_dict:
+#                 sorted_dict[current_day_key] = {"r_time": [], "r_param": []}
+#             sorted_dict[current_day_key]["r_time"].append(current_time)
+#             sorted_dict[current_day_key]["r_param"].append(batch_array)
+        
+#         # Finally, for each day, convert the lists into NumPy arrays.
+#         for day in sorted_dict:
+#             # "r_time" becomes an integer array of shape (M, 6)
+#             sorted_dict[day]["r_time"] = np.array(sorted_dict[day]["r_time"], dtype=int)
+#             # "r_param" becomes an object array; each element is a NumPy array of shape (N, 8)
+#             sorted_dict[day]["r_param"] = np.array(sorted_dict[day]["r_param"], dtype=object)
+        
+#         # Store the nested dictionary in the instance attribute.
+#         self.ionogram_dataset = sorted_dict
+
+#     def save_dataset(self, out_folder: str, filename: str):
+#         """
+#         Saves the processed nested dictionary to a file using pickle.
+        
+#         Parameters:
+#             out_folder (str): The folder in which to save the file.
+#             filename (str): The filename (for example, "processed_data.pkl").
+#         """
+#         if not os.path.exists(out_folder):
+#             os.makedirs(out_folder)
+        
+#         save_path = os.path.join(out_folder, filename)
+#         with open(save_path, "wb") as f:
+#             pickle.dump(self.ionogram_dataset, f)
+#         print(f"Dataset saved to {save_path}")
+
+#     def return_dataset(self):
+#         """Returns the processed nested dictionary."""
+#         return self.ionogram_dataset
+
+
+
+
+# # Example usage:
+# if __name__ == '__main__':
+#     # Suppose you loop through your monthly text files:
+#     input_folder = "Ionogram_TXT"
+#     output_folder = "sorted_ionogram_dicts"
+    
+#     # Process each file:
+#     for txt_filename in tqdm(os.listdir(input_folder)):
+#         # if not txt_filename.endswith(".txt"):
+#             # continue
+#         filepath = os.path.join(input_folder, txt_filename)
+        
+#         sorter = IonogramSorting()
+#         sorter.import_data(filepath)
+        
+#         # You can now work with the nested dict:
+#         nested_dict = sorter.return_dataset()
+#         # For example, print the keys (days) and shapes of the arrays:
+#         for day, data in nested_dict.items():
+#             print(f"Day: {day}, r_time shape: {data['r_time'].shape}, "
+#                   f"r_param length: {data['r_param'].shape}")
+        
+#         # Save the processed nested dict. You might choose a filename that reflects the source.
+#         save_filename = os.path.splitext(txt_filename)[0] + "_processed.pkl"
+#         sorter.save_dataset(output_folder, save_filename)
+
+
+
+
 
 
 
