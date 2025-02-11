@@ -6,8 +6,9 @@ Created on Tue Feb 11 10:59:31 2025
 """
 
 
-
+import os
 import pickle 
+import numpy as np
 
 def load_dict(file_name):
     with open(file_name, 'rb') as f:
@@ -49,3 +50,43 @@ def inspect_dict(d, indent=0):
         # If the value is also a dictionary, recursively call the function
         if isinstance(value, dict):
             inspect_dict(value, indent=indent + 1)
+
+
+
+
+
+def merge_days(folder_path, save=False, save_filename="X_merged_daily_sorted_ionosonde_data"):
+    nested_dict = {}
+    
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        
+        # Check if it's a file 
+        if os.path.isfile(file_path):
+            date_key, _ = os.path.splitext(filename)  # Remove file extension
+            
+            with open(file_path, 'rb') as file:
+                try:
+                    data = pickle.load(file)
+                    
+                    # Ensure the expected keys exist in the data
+                    if 'r_time' in data and 'r_param' in data:
+                        nested_dict[date_key] = data
+                    else:
+                        print(f"Warning: File '{filename}' is missing expected keys.")
+                except Exception as e:
+                    print(f"Error loading '{filename}': {e}")
+    
+    
+    if save:
+        save_dict(nested_dict, save_filename)
+    
+    return nested_dict
+
+
+
+
+
+
+
+
