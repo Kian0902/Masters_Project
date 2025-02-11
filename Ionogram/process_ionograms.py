@@ -24,18 +24,24 @@ class IonogramProcessing:
         self.rang_org = np.arange(80, 640 + 5, 5)      # Range axis: 80-640 km, step 5
         self.I_max = 75  # Maximum amplitude for scaling
         self.I_min = 20  # Minimum amplitude for scaling
-
+    
+    
+    
+    
     def reconstruct_ionogram(self, data_i):
         """
         Reconstructs the ionogram to its original dimensions from raw data.
         Returns the reconstructed ionogram as a uint8 array.
         """
+        
+        
         # Extract data components
         freq = np.around(data_i[:, 0], decimals=2)  # Frequency values
         rang = np.around(data_i[:, 1], decimals=2)  # Range values
         pol = np.round(data_i[:, 2])                # Polarization values
         amp = data_i[:, 4]                          # Amplitude values
         ang = np.round(data_i[:, 7])                # Angle values
+
 
         # Initialize ionogram structure
         iono_org = np.zeros((len(self.rang_org), len(self.freq_org), 3))
@@ -61,8 +67,11 @@ class IonogramProcessing:
         iono_org = iono_org.astype(np.uint8)
 
         return iono_org
-
-    def resample_ionogram(self, iono_org, Frange, Zrange, output_size):
+    
+    
+    
+    
+    def resample_ionogram(self, iono_org, Frange=[1, 9], Zrange=[80, 480], output_size=81):
         """
         Resamples the ionogram onto a new grid of specified size.
         Returns the resampled ionogram as a uint8 array.
@@ -91,7 +100,11 @@ class IonogramProcessing:
         iono_resampled = np.rot90(iono_resampled, k=1)  # Rotate for correct orientation
 
         return iono_resampled
-
+    
+    
+    
+    
+    
     def process_ionogram(self, data, times, plot=False, result_path=None):
         """
         Processes ionograms through reconstruction and resampling.
@@ -121,7 +134,10 @@ class IonogramProcessing:
 
             # Handle plotting
             if plot:
+                time_str = datetime.strptime(time, "%Y.%m.%d_%H-%M-%S").strftime("%Y-%m-%d_%H:%M")
                 fig, ax = plt.subplots(1, 2, width_ratios=[1, 0.6], figsize=(12, 5))
+                fig.suptitle(time_str)
+                
                 
                 # Original ionogram (flipped vertically for display)
                 iono_org_display = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
@@ -149,35 +165,46 @@ class IonogramProcessing:
         print("Processing complete.")
 
 
-# fig, ax = plt.subplots(1, 2, width_ratios=[1, 0.6], figsize=(12, 5))
-
-# # Original ionogram
-# ax[0].imshow(iono_org, extent=[freq_org[0], freq_org[-1], rang_org[0], rang_org[-1]],
-#                     aspect='auto')
-# ax[0].set_title("Original Ionogram", fontsize=20)
-# ax[0].set_xlabel("Frequency (MHz)", fontsize=15)
-# ax[0].set_ylabel("Virtual Altitude (km)", fontsize=15)
-
-
-# # Resampled ionogram
-# ax[1].imshow(iono_resampled, extent=[Frange[0], Frange[1], Zrange[0], Zrange[1]],
-#                     aspect='auto')
-# ax[1].set_title("Resampled Ionogram", fontsize=20)
-# ax[1].set_xlabel("Frequency (MHz)", fontsize=15)
-# ax[1].set_ylabel("Virtual Altitude (km)", fontsize=15)
-
-
-# # Custom labels with filled squares
-# green_patch = Patch(color='green', label='X-mode')
-# red_patch = Patch(color='red', label='O-mode')
-
-# # Add legends
-# for axis in ax:
-#     axis.legend(handles=[red_patch, green_patch], loc='upper right', title="Modes", frameon=True)
-
-
-# plt.tight_layout()
-# plt.show()
+    def plot_single_ionogram(self, ionogram, extent=None, title="Ionogram", flip_vertical=False):
+        """
+        Plots a single ionogram, regardless of whether it's the original or resampled version.
+        
+        Parameters:
+            ionogram (ndarray): The ionogram image array (uint8) to be plotted.
+            extent (list, optional): Axis extents [xmin, xmax, ymin, ymax]. If not provided, 
+                                     defaults to:
+                                      - [self.freq_org[0], self.freq_org[-1], self.rang_org[0], self.rang_org[-1]]
+                                        for an ionogram with dimensions matching the original ionogram,
+                                      - [1, 9, 80, 480] for an ionogram with dimensions 81x81,
+                                      - Otherwise, [0, width, 0, height].
+            title (str): Title of the plot.
+            flip_vertical (bool): If True, flips the ionogram vertically before plotting.
+        """
+        # Optionally flip the ionogram vertically for display
+        if flip_vertical:
+            ionogram = np.array(Image.fromarray(ionogram).transpose(Image.FLIP_TOP_BOTTOM))
+        
+        # Determine the extent if not provided
+        if extent is None:
+            if ionogram.shape[0] == len(self.rang_org) and ionogram.shape[1] == len(self.freq_org):
+                extent = [self.freq_org[0], self.freq_org[-1], self.rang_org[0], self.rang_org[-1]]
+            elif ionogram.shape[0] == 81 and ionogram.shape[1] == 81:
+                extent = [1, 9, 80, 480]
+            else:
+                extent = [0, ionogram.shape[1], 0, ionogram.shape[0]]
+        
+        plt.figure(figsize=(6, 5))
+        plt.imshow(ionogram, extent=extent, aspect='auto')
+        plt.xlabel("Frequency (MHz)")
+        plt.ylabel("Virtual Altitude (km)")
+        plt.title(title)
+        
+        # Create custom legend patches for O-mode and X-mode
+        legend_handles = [Patch(color='red', label='O-mode'),
+                          Patch(color='green', label='X-mode')]
+        plt.legend(handles=legend_handles, loc='upper right')
+        plt.tight_layout()
+        plt.show()
 
 
 
