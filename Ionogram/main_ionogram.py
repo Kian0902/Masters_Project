@@ -29,49 +29,49 @@ from tqdm import tqdm
 # B.plot_single_ionogram(X_res)
 
 
-# datapath_folder = "Iono_TXT"
+datapath_folder = "Iono_TXT"
 
 
-# for file in tqdm(os.listdir(datapath_folder)):
+for file in tqdm(os.listdir(datapath_folder)):
     
-#     # print(f"Processing data from {file[6:12]}\n")
+    # print(f"Processing data from {file[6:12]}\n")
     
-#     file_path = os.path.join(datapath_folder, file)
+    file_path = os.path.join(datapath_folder, file)
     
-#     A = IonogramSorting()
-#     # print("-Sorting Mothly file into 15 min ionogram samples...")
-#     # A.import_data(file_path)
-#     # A.save_as_dict(folder_path="sorted_ionogram_dicts")
-#     # A.save_dataset()
-#     # data = A.return_dataset()
-#     times, data = A.import_data(file_path)
-#     # print("-Sorting Complete!\n")
-#     # break
+    A = IonogramSorting()
+    # print("-Sorting Mothly file into 15 min ionogram samples...")
+    # A.import_data(file_path)
+    # A.save_as_dict(folder_path="sorted_ionogram_dicts")
+    # A.save_dataset()
+    # data = A.return_dataset()
+    times, data = A.import_data(file_path)
+    # print("-Sorting Complete!\n")
+    # break
     
     
-#     # print(data[0])
-#     # print(data[0].shape)
-#     # print(data.shape)
+    # print(data[0])
+    # print(data[0].shape)
+    # print(data.shape)
     
-#     B = IonogramProcessing()
-#     B.process_ionogram(data, times, plot=True)
-#     break
+    B = IonogramProcessing()
+    B.process_ionogram(data, times, plot=False, result_path="Iono_Images")
+    # break
     
-#     # print("-Making Ionogram images...")
-#     # # B.process_ionogram(data, times, plot=False, result_path="Ionogram_Images")
-#     # B.process_ionogram(data, times, plot=True)
-#     # print("-Making Ionograms Complete!\n")
-#     # print("==========================================================")
-#     # break
+    # print("-Making Ionogram images...")
+    # # B.process_ionogram(data, times, plot=False, result_path="Ionogram_Images")
+    # B.process_ionogram(data, times, plot=True)
+    # print("-Making Ionograms Complete!\n")
+    # print("==========================================================")
+    # break
 
 
 
 
 
-Data = merge_days("sorted_ionogram_dicts")
+# Data = merge_days("sorted_ionogram_dicts")
 
 
-data = Data['2012-1-14']
+# data = Data['2012-1-14']
 
 
 
@@ -110,52 +110,52 @@ data = Data['2012-1-14']
 
 
 
-for i in range(len(data['r_time'])):
-    X = data['r_param'][i]
-    y = data['r_time'][i]
+# for i in range(len(data['r_time'])):
+#     X = data['r_param'][i]
+#     y = data['r_time'][i]
     
-    freq = X[:, 0]  # Frequency values
-    rang = X[:, 1]  # Range values
-    pol = np.round(X[:, 2])  # Polarization values
-    amp = X[:, 4]  # Amplitude values
-    ang = np.round(X[:, 7])  # Angle values
+#     freq = X[:, 0]  # Frequency values
+#     rang = X[:, 1]  # Range values
+#     pol = np.round(X[:, 2])  # Polarization values
+#     amp = X[:, 4]  # Amplitude values
+#     ang = np.round(X[:, 7])  # Angle values
     
-    # Initialize amplitude mask
-    mask_amp = np.zeros_like(freq, dtype=bool)
-    unique_freqs = np.unique(freq)
+#     # Initialize amplitude mask
+#     mask_amp = np.zeros_like(freq, dtype=bool)
+#     unique_freqs = np.unique(freq)
     
-    for f in unique_freqs:
-        indices = np.where(freq == f)[0]
-        if len(indices) == 0:
-            continue
-        current_amps = amp[indices]
-        max_amp_f = np.max(current_amps)
-        threshold = 0.75 * max_amp_f
-        mask_amp[indices] = current_amps >= threshold
+#     for f in unique_freqs:
+#         indices = np.where(freq == f)[0]
+#         if len(indices) == 0:
+#             continue
+#         current_amps = amp[indices]
+#         max_amp_f = np.max(current_amps)
+#         threshold = 0.75 * max_amp_f
+#         mask_amp[indices] = current_amps >= threshold
         
-    # Apply masks for polarization, angle, and amplitude
-    mask_O = (pol == 90) & (ang == 0) & mask_amp
-    mask_X = (pol == -90) & (ang == 0) & mask_amp
+#     # Apply masks for polarization, angle, and amplitude
+#     mask_O = (pol == 90) & (ang == 0) & mask_amp
+#     mask_X = (pol == -90) & (ang == 0) & mask_amp
     
-    # Apply masks for polarization, angle, and amplitude
-    org_mask_O = (pol == 90) & (ang == 0)
-    org_mask_X = (pol == -90) & (ang == 0)
+#     # Apply masks for polarization, angle, and amplitude
+#     org_mask_O = (pol == 90) & (ang == 0)
+#     org_mask_X = (pol == -90) & (ang == 0)
     
     
-    # Plotting
-    fig, ax = plt.subplots()
-    fig.suptitle(y)
+#     # Plotting
+#     fig, ax = plt.subplots()
+#     fig.suptitle(y)
     
-    ax.scatter(freq[mask_O], rang[mask_O], s=1, c=amp[mask_O], cmap="turbo", zorder=2)
-    ax.scatter(freq[mask_X], rang[mask_X], s=1, c=amp[mask_X], cmap="turbo", zorder=2)
-    ax.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=0)
-    ax.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=0)
-    ax.set_xlabel("Frequency")
-    ax.set_ylabel("Range")
-    ax.set_xlim(0, 9.1)
-    ax.set_ylim(78, 645)
+#     ax.scatter(freq[mask_O], rang[mask_O], s=1, c=amp[mask_O], cmap="turbo", zorder=2)
+#     ax.scatter(freq[mask_X], rang[mask_X], s=1, c=amp[mask_X], cmap="turbo", zorder=2)
+#     ax.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=0)
+#     ax.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=0)
+#     ax.set_xlabel("Frequency")
+#     ax.set_ylabel("Range")
+#     ax.set_xlim(0, 9.1)
+#     ax.set_ylim(78, 645)
     
-    plt.show()
+#     plt.show()
 
 
 

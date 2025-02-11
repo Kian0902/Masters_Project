@@ -22,8 +22,10 @@ class IonogramProcessing:
         # Original ionogram axes and parameters
         self.freq_org = np.arange(1, 16 + 0.05, 0.05)  # Frequency axis: 1-16 MHz, step 0.05
         self.rang_org = np.arange(80, 640 + 5, 5)      # Range axis: 80-640 km, step 5
-        self.I_max = 75  # Maximum amplitude for scaling
-        self.I_min = 20  # Minimum amplitude for scaling
+        self.I_max = 160  # Maximum amplitude for scaling
+        self.I_min = 1  # Minimum amplitude for scaling
+    
+    
     
     
     
@@ -41,31 +43,49 @@ class IonogramProcessing:
         pol = np.round(data_i[:, 2])                # Polarization values
         amp = data_i[:, 4]                          # Amplitude values
         ang = np.round(data_i[:, 7])                # Angle values
-
-
+        
+        
         # Initialize ionogram structure
         iono_org = np.zeros((len(self.rang_org), len(self.freq_org), 3))
-
+        
         # Calculate indices for frequency and range
         F_idx = np.clip(np.searchsorted(self.freq_org, freq), 0, len(self.freq_org)-1)
         Z_idx = np.clip(np.searchsorted(self.rang_org, rang), 0, len(self.rang_org)-1)
         I_idx = np.clip(amp, self.I_min, self.I_max)  # Clip amplitudes
-
-        # Create masks for O-mode and X-mode
-        mask_O = (pol == 90) & (ang == 0)
-        mask_X = (pol == -90) & (ang == 0)
-
+        
+        
+        # Initialize amplitude mask
+        mask_amp = np.zeros_like(freq, dtype=bool)
+        unique_freqs = np.unique(freq)
+        
+        for f in unique_freqs:
+            indices = np.where(freq == f)[0]
+            if len(indices) == 0:
+                continue
+            current_amps = amp[indices]
+            max_amp_f = np.max(current_amps)
+            threshold = 0.75 * max_amp_f
+            mask_amp[indices] = current_amps >= threshold
+            
+        # Apply masks for polarization, angle, and amplitude
+        mask_O = (pol == 90) & (ang == 0) & mask_amp
+        mask_X = (pol == -90) & (ang == 0) & mask_amp
+        
+        # # Create masks for O-mode and X-mode
+        # mask_O = (pol == 90) & (ang == 0)
+        # mask_X = (pol == -90) & (ang == 0)
+        
         # Populate O-mode and X-mode data
         iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = (I_idx[mask_O] - self.I_min) / (self.I_max - self.I_min)
         iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = (I_idx[mask_X] - self.I_min) / (self.I_max - self.I_min)
-
+        
         # Normalize and convert to uint8
         if np.max(iono_org) > 0:
             iono_org = (iono_org / np.max(iono_org)) * 255
         else:
             iono_org = np.zeros_like(iono_org)
         iono_org = iono_org.astype(np.uint8)
-
+        
         return iono_org
     
     
