@@ -49,23 +49,23 @@ class IonogramSorting:
             for line in lines:
                 
                 # When encountering new header containing date and time (Ex: "2018.09.21 (264) 00:00:00.000")
-                if len(line) == 30:  # length of header containing date and time which is 30
-                    iono_date = line[0:10]  # length of date (Ex: "2018.09.21" has length=10)
-                    iono_time = f"{line[-13:-11]}-{line[-10:-8]}-{line[-7:-5]}"  # defining new time format (Ex: 20-15-00)
-                    iono_datetime = f"{iono_date}_{iono_time}"  # changing the format to be "yyyy.MM.dd_hh-mm-ss"
+                if len(line) == 30:                                                 # length of header containing date and time which is 30
+                    iono_date = line[0:10]                                          # length of date (Ex: "2018.09.21" has length=10)
+                    iono_time = f"{line[-13:-11]}-{line[-10:-8]}-{line[-7:-5]}"     # defining new time format (Ex: 20-15-00)
+                    iono_datetime = f"{iono_date}_{iono_time}"                      # changing the format to be "yyyy.MM.dd_hh-mm-ss"
                     ionogram_time.append(iono_datetime)
                 
                 # When encountering ionogram data (Ex: 3.400  315.0  90  24  33  -1.172 270.0  30.0)
-                if len(line) == 46:  # length of each line containing ionogram values which is 46
-                    line_split = line.split()  # splitting strings in line by the whitespace between values
-                    line_final = [float(x) for x in line_split]  # Converting strings to floats
+                if len(line) == 46:                                      # length of each line containing ionogram values which is 46
+                    line_split = line.split()                            # splitting strings in line by the whitespace between values
+                    line_final = [float(x) for x in line_split]          # Converting strings to floats
                     data_batch.append(line_final)
                 
                 # When encountering space between each batch of 15 min data
-                if len(line) == 1:  # length of whitespace which is 1
-                    if data_batch:  # Check if data_batch is not empty
-                        ionogram_data.append(np.array(data_batch))  # appending the "batch" to the total data list 
-                        data_batch = []  # resetting the batch list 
+                if len(line) == 1:                                       # length of whitespace which is 1
+                    if data_batch:                                       # Check if data_batch is not empty
+                        ionogram_data.append(np.array(data_batch))       # appending the "batch" to the total data list 
+                        data_batch = []                                  # resetting the batch list 
                 
             # Handle the last batch if the file doesn't end with a whitespace
             if data_batch:
