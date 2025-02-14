@@ -41,61 +41,6 @@ class StoreDataset(Dataset):
 
 
 
-# VariationalAutoEncoder
-class AutoEncoder(nn.Module):
-    def __init__(self):
-        super(AutoEncoder, self).__init__()
-        
-        # Encoder
-        self.Encoder = nn.Sequential(
-            nn.Linear(27, 22),
-            nn.BatchNorm1d(22),
-            nn.ReLU(),
-            nn.Linear(22, 16),
-            nn.BatchNorm1d(16),
-            nn.ReLU(),
-            nn.Linear(16, 12),
-            nn.BatchNorm1d(12),
-            nn.ReLU(),
-            nn.Linear(12, 8),
-            nn.BatchNorm1d(8),
-            nn.ReLU(),
-            nn.Linear(8, 4),
-            nn.BatchNorm1d(4),
-            nn.ReLU(),
-            nn.Linear(4, 2)
-            )
-        
-        # self.Bottleneck = nn.Linear(4, 2)
-        
-        self.Decoder = nn.Sequential(
-            nn.ReLU(),
-            nn.Linear(2, 4),
-            nn.BatchNorm1d(4),
-            nn.ReLU(),
-            nn.Linear(4, 8),
-            nn.BatchNorm1d(8),
-            nn.ReLU(),
-            nn.Linear(8, 12),
-            nn.BatchNorm1d(12),
-            nn.ReLU(),
-            nn.Linear(12, 16),
-            nn.BatchNorm1d(16),
-            nn.ReLU(),
-            nn.Linear(16, 22),
-            nn.BatchNorm1d(22),
-            nn.ReLU(),
-            nn.Linear(22, 27),
-            )
-
-
-    def forward(self, x):
-        x = self.Encoder(x)
-        # z_bottleneck = self.Bottleneck(x)
-        z = self.Decoder(x)
-        return z, x
-
-
 
 # VariationalAutoEncoder
 class VariationalAutoEncoder(nn.Module):
@@ -104,43 +49,36 @@ class VariationalAutoEncoder(nn.Module):
         
         # Encoder
         self.Encoder = nn.Sequential(
-            nn.Linear(27, 22),
-            nn.BatchNorm1d(22),
-            nn.ReLU(),
-            nn.Linear(22, 16),
+            nn.Linear(27, 64),
+            nn.Dropout(0.2),
+            nn.BatchNorm1d(64),
+            nn.LeakyReLU(0.2),
+            nn.Linear(64, 32),
+            nn.BatchNorm1d(32),
+            nn.LeakyReLU(0.2),
+            nn.Linear(32, 16),
             nn.BatchNorm1d(16),
-            nn.ReLU(),
-            nn.Linear(16, 12),
-            nn.BatchNorm1d(12),
-            nn.ReLU(),
-            nn.Linear(12, 8),
-            nn.BatchNorm1d(8),
-            nn.ReLU(),
-            nn.Linear(8, 6)
-            )
+            nn.LeakyReLU(0.2)
+        )
         
-        self.mean = nn.Linear(6, 3)
-        self.logvar = nn.Linear(6, 3)
+        self.mean = nn.Linear(16, 3)
+        self.logvar = nn.Linear(16, 3)
         
+        # Decoder
         self.Decoder = nn.Sequential(
-            nn.ReLU(),
-            nn.Linear(3, 6),
-            nn.BatchNorm1d(6),
-            nn.ReLU(),
-            nn.Linear(6, 8),
-            nn.BatchNorm1d(8),
-            nn.ReLU(),
-            nn.Linear(8, 12),
-            nn.BatchNorm1d(12),
-            nn.ReLU(),
-            nn.Linear(12, 16),
+            nn.Linear(3, 16),
+            # nn.Dropout(0.2),
             nn.BatchNorm1d(16),
-            nn.ReLU(),
-            nn.Linear(16, 22),
-            nn.BatchNorm1d(22),
-            nn.ReLU(),
-            nn.Linear(22, 27),
-            )
+            nn.LeakyReLU(0.2),
+            nn.Linear(16, 32),
+            nn.BatchNorm1d(32),
+            nn.LeakyReLU(0.2),
+            nn.Linear(32, 64),
+            nn.BatchNorm1d(64),
+            nn.LeakyReLU(0.2),
+            nn.Linear(64, 27),
+            nn.Sigmoid()  # Constrain output to [0,1]
+        )
     
     def Encode(self, x):
         x = self.Encoder(x)
@@ -170,7 +108,7 @@ class VariationalAutoEncoder(nn.Module):
 
 
 
-def loss_function(recon_x, x, mean, logvar, beta=1):
+def loss_function(recon_x, x, mean, logvar, beta=0.0001):
     
     # MSE or BCE Reconstruction Loss
     recon_loss = nn.functional.mse_loss(recon_x, x, reduction="sum")
@@ -192,20 +130,13 @@ def preprocess_data(X):
     X = np.log10(X)
     X = np.nan_to_num(X, nan=0.0)  # Replace NaNs with 0
     X[X < 6] == 8
-    # X = (X - np.min(X)) / (np.max(X) - np.min(X))  # Normalize to [0,1]
+    X = (X - np.min(X)) / (np.max(X) - np.min(X))  # Normalize to [0,1]
     return X
 
 
-x = load_dict("X_avg_all")
-# X = ravel_dict(X).T
-# X = np.nan_to_num(X, nan=1e6)
-# X[X < 1e6] == 1e8
-# X = np.log10(X)
-
+x = load_dict("X_avg_all_VAE")
 x = ravel_dict(x).T
-
 X = preprocess_data(x)
-
 
 A = StoreDataset(X, X)
 
@@ -214,20 +145,19 @@ A = StoreDataset(X, X)
 
 # Split the dataset into train and validation sets
 train_size = int(0.8 * len(A))
+print(train_size)
 val_size = len(A) - train_size
 train_dataset, val_dataset = torch.utils.data.random_split(A, [train_size, val_size])
 
-train_loader = DataLoader(train_dataset, batch_size=256, shuffle=True)
+train_loader = DataLoader(train_dataset, batch_size=256*4, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=val_size, shuffle=True)
 
 
 num_epochs = 200
 model = VariationalAutoEncoder().to(device)
-# model = AutoEncoder().to(device)
-# criterion = nn.MSELoss()
+optimizer = optim.Adam(model.parameters(), lr=0.01)  # Use Adam optimizer
 
-optimizer = optim.Adam(model.parameters(), lr=0.001)  # Use Adam optimizer
-
+scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.1)
 
 
 # Function to count the number of parameters
@@ -265,7 +195,11 @@ for epoch in range(num_epochs):
         optimizer.step()
 
         train_loss += loss.item()
-
+    
+    
+    # Step the learning rate scheduler
+    scheduler1.step()
+    
     avg_train_loss = train_loss / len(train_dataset)
 
     # Validation loop
