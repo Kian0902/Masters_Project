@@ -143,8 +143,7 @@ class EISCATDataFilter:
             self.filter_interpolate(num_of_ref_alt)
     
     
-    # The rest of the methods (filter_range, filter_nan, filter_outlier, plot_data, return_data) remain unchanged
-    # Ensure to include them as in the original code
+    
     
     def filter_range(self, data: dict, key: str, min_val: float, max_val: float):
         # Existing implementation
