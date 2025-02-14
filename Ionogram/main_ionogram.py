@@ -29,7 +29,7 @@ from tqdm import tqdm
 # B.plot_single_ionogram(X_res)
 
 
-datapath_folder = "Iono_TXT"
+datapath_folder = "Ionogram_TXT"
 
 
 for file in tqdm(os.listdir(datapath_folder)):
@@ -54,8 +54,8 @@ for file in tqdm(os.listdir(datapath_folder)):
     # print(data.shape)
     
     B = IonogramProcessing()
-    B.process_ionogram(data, times, plot=False, result_path="Iono_Images")
-    # break
+    B.process_ionogram(data, times, plot=True, apply_amplitude_filter=False)
+    break
     
     # print("-Making Ionogram images...")
     # # B.process_ionogram(data, times, plot=False, result_path="Ionogram_Images")
