@@ -41,12 +41,15 @@ formatter = FuncFormatter(format_ticks)
 
 
 class RadarPlotter:
-    def __init__(self, X_EISCAT, X_HNN, X_Artist, X_Ionogram):
+    def __init__(self, X_EISCAT, X_KIAN, X_Artist, X_IRI, X_Ionogram, X_GEO):
         self.X_EISCAT = X_EISCAT
-        self.X_HNN = X_HNN
+        self.X_KIAN = X_KIAN
         self.X_Artist = X_Artist
+        self.X_IRI = X_IRI
         self.X_Ionogram = X_Ionogram
+        self.X_GEO = X_GEO
         self.selected_indices = []
+    
     
     
     def get_general_r2(self, scores):
@@ -92,7 +95,7 @@ class RadarPlotter:
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_kian = self.X_HNN["r_param"]
+        ne_kian = self.X_KIAN["r_param"]
         ne_art = np.log10(self.X_Artist["r_param"])
         
         alt_min, alt_max = alt_range
@@ -379,7 +382,7 @@ class RadarPlotter:
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_kian = self.X_HNN["r_param"]
+        ne_kian = self.X_KIAN["r_param"]
         
         r2_scores = get_altitude_r2_score(ne_eis, ne_kian)
         rmse = self.get_rmse(ne_eis, ne_kian)
@@ -443,13 +446,17 @@ class RadarPlotter:
         return err
     
     
+    def relative_error(self, X_eis, X_kian):
+        err =  np.abs(X_eis - X_kian)/(X_eis)
+        return err
+    
     def plot_error_and_chi2(self):
         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
         ne_eis_err = np.log10(self.X_EISCAT["r_error"])
-        ne_kian = self.X_HNN["r_param"]
+        ne_kian = self.X_KIAN["r_param"]
         
         ne_chi_2 = self.chi_squared(ne_eis, ne_eis_err, ne_kian)
         ne_err = self.error_sigma(ne_eis, ne_kian)
@@ -507,7 +514,7 @@ class RadarPlotter:
         # Log-transform observed and error data
         ne_eis = np.log10(self.X_EISCAT["r_param"])
         ne_eis_err = np.log10(self.X_EISCAT["r_error"])
-        ne_kian = self.X_HNN["r_param"]  # Predicted data
+        ne_kian = self.X_KIAN["r_param"]  # Predicted data
     
         # Compute chi-squared values for all points
         ne_chi_2 = np.log10(self.chi_squared(ne_eis, ne_eis_err, ne_kian))
@@ -567,7 +574,7 @@ class RadarPlotter:
         
     #     ne_eis = np.log10(self.X_EISCAT["r_param"])
     #     ne_eis_err = np.log10(self.X_EISCAT["r_error"])
-    #     ne_kian = self.X_HNN["r_param"]
+    #     ne_kian = self.X_KIAN["r_param"]
         
     #     # ne_chi_2 = self.chi_squared(ne_eis, ne_kian)
     #     ne_err = self.chi_squared(ne_eis, ne_eis_err, ne_kian)
@@ -605,7 +612,7 @@ class RadarPlotter:
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_hnn = self.X_HNN["r_param"]
+        ne_hnn = self.X_KIAN["r_param"]
         ne_art = np.log10(self.X_Artist["r_param"])
         
         date_str = r_time[0].strftime('%Y-%m-%d')
@@ -680,7 +687,7 @@ class RadarPlotter:
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_kian = self.X_HNN["r_param"]
+        ne_kian = self.X_KIAN["r_param"]
         ne_art = np.log10(self.X_Artist["r_param"])
         
         date_str = r_time[0].strftime('%Y-%m-%d')
@@ -768,14 +775,14 @@ class RadarPlotter:
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_kian = self.X_HNN["r_param"]
+        ne_kian = self.X_KIAN["r_param"]
         ne_art = np.log10(self.X_Artist["r_param"])
         
         ne_art = np.nan_to_num(ne_art, nan=0)
         
         
         h_peak_eis = self.X_EISCAT["r_h_peak"]
-        h_peak_kian = self.X_HNN["r_h_peak"]
+        h_peak_kian = self.X_KIAN["r_h_peak"]
         h_peak_art = self.X_Artist["r_h_peak"]
         
         
@@ -882,7 +889,7 @@ class RadarPlotter:
         
         for ax, idx in zip(axes, self.selected_indices):
             ax.plot(np.log10(self.X_EISCAT["r_param"][:, idx]), r_h, label='EISCAT', linestyle='-')
-            ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
+            ax.plot(self.X_KIAN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
             ax.plot(np.log10(self.X_Artist["r_param"][:, idx]), r_h, label='Artist 4.5', linestyle='-')
             
             time_str = r_time[idx].strftime('%H:%M')
@@ -925,11 +932,13 @@ class RadarPlotter:
             ne_eis = self.X_EISCAT["r_param"][:, idx]
             ne_eis_err = self.X_EISCAT["r_error"][:, idx]
             
-            ne_kian = self.X_HNN["r_param"][:, idx]
+            ne_kian = self.X_KIAN["r_param"][:, idx]
             ne_art = self.X_Artist["r_param"][:, idx]
             
             
-            ax.plot(np.log10(ne_eis), r_h, label='EISCAT', linestyle='-')
+            ax.plot(ne_eis, r_h, label='EISCAT', linestyle='-')
+            ax.set_xscale("log")
+            
             # ax.plot(10**ne_kian, r_h, label='KIAN-Net', linestyle='-')
             # ax.plot(ne_art, r_h, label='Artist 4.5', linestyle='-')
             
@@ -940,10 +949,10 @@ class RadarPlotter:
             
             # print(ne_eis - ne_eis_err)
             # print(ne_eis + ne_eis_err)
-            # ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
+            # ax.plot(self.X_KIAN["r_param"][:, idx], r_h, label='DL Model', linestyle='-')
             
-            low = np.log10(ne_eis - ne_eis_err)
-            high = np.log10(ne_eis + ne_eis_err)
+            low = np.where((ne_eis - ne_eis_err) < 1, 1, ne_eis - ne_eis_err)
+            high = ne_eis + ne_eis_err
             
             ax.fill_betweenx(r_h, low, high, alpha=0.3)
             # ax.set_xscale("log")
@@ -977,7 +986,7 @@ class RadarPlotter:
     
     def calculate_errors(self, idx):
         eiscat_param = np.log10(self.X_EISCAT["r_param"][:, idx])
-        hnn_param = self.X_HNN["r_param"][:, idx]
+        hnn_param = self.X_KIAN["r_param"][:, idx]
         artist_param = np.log10(self.X_Artist["r_param"][:, idx])
         
         # Check if all values are NaN
@@ -1121,7 +1130,7 @@ class RadarPlotter:
         
         # Extract electron density values for the given index
         ne_eis = self.X_EISCAT["r_param"][:, idx]  # True measurements
-        ne_hnn = self.X_HNN["r_param"][:, idx]  # HNN predictions
+        ne_hnn = self.X_KIAN["r_param"][:, idx]  # HNN predictions
         ne_artist = self.X_Artist["r_param"][:, idx] if self.X_Artist is not None else None  # Artist 4.5 predictions
         
         
@@ -1189,7 +1198,7 @@ class RadarPlotter:
         
         
     #     ax.plot(np.log10(ne_eis), r_h, label='EISCAT', linestyle='-')
-    #     ax.plot(self.X_HNN["r_param"][:, idx], r_h, label='KIAN-Net', linestyle='-')
+    #     ax.plot(self.X_KIAN["r_param"][:, idx], r_h, label='KIAN-Net', linestyle='-')
     #     if self.X_Artist is not None:
     #         ax.plot(np.log10(self.X_Artist["r_param"][:, idx]), r_h, label='Artist 4.5', linestyle='-')
         
@@ -1250,14 +1259,13 @@ class RadarPlotter:
         
         ax.grid(True)
         ax.legend()
-        
-        
+
     # =============================================================================
-    #                        Interactive Plot
-    #                             (Start)
+    #                              Paper Plot
+    #                                (Start)
     
 
-    def plot_compare_all_interactive(self):
+    def plot_paper(self):
         """
         Method for creating interactive plot. Here the user has the option to
         click on any M measurement on the colorplots to view the corresponding
@@ -1270,159 +1278,634 @@ class RadarPlotter:
 
         # Logarithmic scaling for electron density
         ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_hnn = self.X_HNN["r_param"]
+        ne_kian = self.X_KIAN["r_param"]
         ne_art = np.log10(self.X_Artist["r_param"])
+        ne_iri = np.log10(self.X_IRI["r_param"])
+        
+        
+        # Calculate absolute differences
+        diff_kian = self.error_function(ne_eis, ne_kian)
+        diff_art = self.error_function(ne_eis, ne_art)
+        
+        # Calculate the difference in magnitude to depict which one is closer
+        diff_magnitude = diff_art - diff_kian
+        
+        
+        rel_error = self.relative_error(ne_eis, ne_kian)
+        
+        
         
         date_str = r_time[0].strftime('%Y-%m-%d')
 
         # Create the figure and layout
-        fig = plt.figure(figsize=(18, 10))
-        gs = GridSpec(2, 4, height_ratios=[1, 1], width_ratios=[1, 1, 1, 0.05], hspace=0.5, wspace=0.2)
+        fig = plt.figure(figsize=(24, 10))
+        gs = GridSpec(3, 8, width_ratios=[1, 1, 0.05, 0.3, 1, 0.05, 0.5, 1.2], height_ratios=[1, 0.05, 1], wspace=0.1)
+        
+        # First row
+        ax00 = fig.add_subplot(gs[0, 0])
+        ax01 = fig.add_subplot(gs[0, 1], sharey=ax00)
+        cax01 = fig.add_subplot(gs[0, 2])
+        
+        ax02 = fig.add_subplot(gs[0, 4])
+        cax02 = fig.add_subplot(gs[0, 5])
+        
+        with sns.axes_style("dark"):
+            ax03 = fig.add_subplot(gs[0, 7])
+        
+        ax_space1 = fig.add_subplot(gs[:, 3])
+        ax_space2 = fig.add_subplot(gs[:, 6])
         
         
-        ax0 = fig.add_subplot(gs[0, 0])
-        ax1 = fig.add_subplot(gs[0, 1], sharey=ax0)
-        ax2 = fig.add_subplot(gs[0, 2], sharey=ax0)
-        cax = fig.add_subplot(gs[0, 3])
+        
+        # Second row
+        ax_ver_space = fig.add_subplot(gs[1, :])
+        
+        
+        # Third row
+        ax10 = fig.add_subplot(gs[2, 0])
+        ax11 = fig.add_subplot(gs[2, 1], sharey=ax10)
+        cax11 = fig.add_subplot(gs[2, 2])
+        
+        ax12 = fig.add_subplot(gs[2, 4], sharey=ax10)
+        cax12 = fig.add_subplot(gs[2, 5])
+        
+        ax13 = fig.add_subplot(gs[2, 7])
+        
+
         
         
 
         fig.suptitle(f'Date: {date_str}', fontsize=20, y=0.95)
         
         # Plot EISCAT data
-        ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax0.set_title('EISCAT UHF')
-        ax0.set_xlabel('Time [hh:mm]')
-        ax0.set_ylabel('Altitude [km]')
-        ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ne_EISCAT = ax00.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax00.set_title('EISCAT UHF', fontsize=17)
+        ax00.set_ylabel('Altitude [km]')
+        ax00.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        # ax0.tick_params(labelbottom=False)
         
-        # Plot HNN data
-        ax1.pcolormesh(r_time, r_h, ne_hnn, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax1.set_title('KIAN-Net')
-        ax1.set_xlabel('Time [hh:mm]')
-        ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        ax1.tick_params(labelleft=False)
+        # Plot Kian-Net data
+        ax01.pcolormesh(r_time, r_h, ne_kian, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax01.set_title('KIAN-Net', fontsize=17)
+        ax01.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ax01.tick_params(labelleft=False)
+        
+        
+        # Proximity Plot
+        ne_prox = ax02.pcolormesh(r_time, r_h, diff_magnitude, shading='auto', cmap='bwr', vmin=-0.1, vmax=0.1)
+        ax02.set_title('KIAN-Net vs Artist 4.5   Proximity to EISCAT', fontsize=17)
+        ax02.set_xlabel('Time [hours]', fontsize=13)
+        ax02.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        # ax02.tick_params(labelleft=False)
+        
+        
+        cbar01 = fig.colorbar(ne_EISCAT, cax=cax01, orientation='vertical')
+        cbar01.set_label(r'$log_{10}(n_e)$ [n/m$^3$]')
+        
+        cbar02 = fig.colorbar(ne_prox, cax=cax02, orientation='vertical')
+        cbar02.set_label(r'$log_{10}(n_e)$ [n/m$^3$]')
+        
+        
         
         # Plot Artist data
-        ax2.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax2.set_title('Artist 4.5')
-        ax2.set_xlabel('Time [hh:mm]')
-        ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        ax2.tick_params(labelleft=False)
+        ax10.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax10.set_title('Artist 4.5', fontsize=17)
+        ax10.set_xlabel('Time [hh:mm]')
+        ax10.set_ylabel('Altitude [km]')
+        ax10.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        
+        # Plot EISCAT data
+        ax11.pcolormesh(r_time, r_h, ne_iri, shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ax11.set_title('IRI', fontsize=17)
+        ax11.set_xlabel('Time [hh:mm]')
+        ax11.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        ax11.tick_params(labelleft=False)
+        
+        
+        ne_rel_error = ax12.pcolormesh(r_time, r_h, rel_error, shading='auto', cmap='viridis')
+        ax12.set_title('$Relative Error$', fontsize=17)
+        ax12.set_xlabel('Time [hh:mm]', fontsize=13)
+        ax12.set_ylabel('Altitude [km]', fontsize=15)
+        ax12.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        
+        
+        
+        cbar11 = fig.colorbar(ne_EISCAT, cax=cax11, orientation='vertical')
+        cbar11.set_label(r'$log_{10}(n_e)$ [n/m$^3$]')
+        
+        cbar12 = fig.colorbar(ne_rel_error, cax=cax12, orientation='vertical')
+        cbar12.set_label(r'$log_{10}(n_e)$ [n/m$^3$]')
+        
         
         # Rotate x-axis labels
-        for ax in [ax0, ax1, ax2]:
+        for ax in [ax00, ax01, ax02, ax10, ax11, ax12]:
             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
         
+        for ax in [ax_space1, ax_space2, ax_ver_space]:
+            ax.set_axis_off()
         
         
+        time_idx = 16
         
-        # Add colorbar
-        cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
-        cbar.set_label(r'$log_{10}(n_e)$ [n/m$^3$]')
+        # Single Measurement
+        r2_kian = r2_score(ne_eis[:, time_idx], ne_kian[:, time_idx])
+        r2_iri = r2_score(ne_eis[:, time_idx], ne_iri[:, time_idx])
+        
+        if ne_art[:, time_idx] is not None:
+            valid_artist = ~np.isnan(ne_eis[:, time_idx]) & ~np.isnan(ne_art[:, time_idx])
+            r2_art = (r2_score(ne_eis[:, time_idx][valid_artist], ne_art[:, time_idx][valid_artist])
+                         if np.any(valid_artist) else None)
+        else:
+            r2_art = None
+        
+        # # Add R² scores to the plot as text annotations with color coding
+        # annotation_texts = []
+        # if r2_kian is not None:
+        #     annotation_texts.append((f"R²= {r2_kian:.3f}", "C1"))  # Orange for HNN
+        # if r2_art is not None:
+        #     annotation_texts.append((f"R²= {r2_art:.3f}", "C2"))  # Green for Artist 4.5
+        # if r2_iri is not None:
+        #     annotation_texts.append((f"R²= {r2_iri:.3f}", "C3"))
+
+        
+        # # Choose the best location for the annotations
+        # for i, (text, color) in enumerate(annotation_texts):
+        #     ax03.text(0.56, 87 - i * 4.5, text, transform=ax.transAxes,
+        #             fontsize=11, color=color, weight='bold',
+        #             bbox=None)
+            
+        ax03.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0', linewidth=2)
+        ax03.plot(ne_kian[:, time_idx], r_h, label="KIAN-Net", color='C1', linestyle="--", linewidth=2)
+        ax03.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2', linestyle="-.", linewidth=2)
+        ax03.plot(ne_iri[:, time_idx], r_h, label="IRI", color='C3', linestyle=":", linewidth=2)
+        ax03.set_title(f"Electron Density Profile  {r_time[time_idx].strftime('%H:%M')}")
+        ax03.set_xlabel(r'$log_{10}(n_e)$ [n/m$^3$]')
+        ax03.set_ylabel("Altitude [km]")
+        ax03.grid(True, color='white')
+        ax03.legend(fontsize = 9, loc="center left")
+    
+    
+        ionogram_img = self.X_Ionogram["r_param"][time_idx]
+        ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
+        ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
+        
+        n=9
+        Frange = np.linspace(1, 9, 81)
+        Zrange = np.linspace(80, 480, 81)
+        
+        ax13.clear()
+        ax13.imshow(ionogram_img, origin='upper')
+        x_ticks = np.linspace(0, ionogram_img.shape[1] - 1, n)
+        y_ticks = np.linspace(0, ionogram_img.shape[0] - 1, n)
+        
+        x_tick_labels = np.linspace(Frange.min(), Frange.max(), n)
+        y_tick_labels = np.linspace(Zrange.max(), Zrange.min(), n)
+        
+        ax13.set_xticks(x_ticks)
+        ax13.set_xticklabels([f"{x:.0f}" for x in x_tick_labels])
+        ax13.set_yticks(y_ticks)
+        ax13.set_yticklabels([f"{y:.0f}" for y in y_tick_labels])
+        
+        ax13.set_xlabel("Freq [MHz]")
+        ax13.set_ylabel("Virtual Altitude [km]")
+        ax13.set_title(f"Ionogram   {r_time[time_idx].strftime('%H:%M')}")
         
         
-        # Detail plot axes
-        with sns.axes_style("dark"):
-            ax_iono = fig.add_subplot(gs[1, 0])
-            ax_detail = fig.add_subplot(gs[1, 1])
-            ax_error = fig.add_subplot(gs[1, 2])
+        green_patch = Patch(color='green', label='X-mode')
+        red_patch = Patch(color='red', label='O-mode')
+        
+        ax13.legend(handles=[red_patch, green_patch], loc='upper right', title="Modes", frameon=True)
+        
+        
+        # # Detail plot axes
+        # with sns.axes_style("dark"):
+        #     ax_iono = fig.add_subplot(gs[2, 4])
+        #     ax_geo  = fig.add_subplot(gs[2, 6])
+        #     ax03 = fig.add_subplot(gs[0, 4])
+        #     ax_error = fig.add_subplot(gs[0, 6])
+            
             
         
-        # Function to update the detailed plot
-        def update_detail_plot(time_idx):
-            ax_detail.clear()
-            ax_detail.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0')
-            ax_detail.plot(ne_hnn[:, time_idx], r_h, label="HNN", color='C1')
-            ax_detail.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2')
-            ax_detail.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-            ax_detail.set_xlabel(r'$log_{10}(n_e)$ [n/m$^3$]')
-            ax_detail.set_ylabel("Altitude [km]")
-            ax_detail.legend()
-            ax_detail.grid()
-            fig.canvas.draw_idle()
+        # # Function to update the single Ne profiles plot
+        # def update_profile(time_idx):
+            
+            
+            
+        #     # Calculate R² scores
+        #     r2_kian = r2_score(ne_eis[:, time_idx], ne_kian[:, time_idx])
+        #     r2_iri = r2_score(ne_eis[:, time_idx], ne_iri[:, time_idx])
+            
+        #     if ne_art[:, time_idx] is not None:
+        #         valid_artist = ~np.isnan(ne_eis[:, time_idx]) & ~np.isnan(ne_art[:, time_idx])
+        #         r2_art = (r2_score(ne_eis[:, time_idx][valid_artist], ne_art[:, time_idx][valid_artist])
+        #                      if np.any(valid_artist) else None)
+        #     else:
+        #         r2_art = None
+            
+        #     # Add R² scores to the plot as text annotations with color coding
+        #     annotation_texts = []
+        #     if r2_kian is not None:
+        #         annotation_texts.append((f"R²= {r2_kian:.3f}", "C1"))  # Orange for HNN
+        #     if r2_art is not None:
+        #         annotation_texts.append((f"R²= {r2_art:.3f}", "C2"))  # Green for Artist 4.5
+        #     if r2_iri is not None:
+        #         annotation_texts.append((f"R²= {r2_iri:.3f}", "C3"))
+
+            
+        #     ax_profile.clear()
+        #     # Choose the best location for the annotations
+        #     for i, (text, color) in enumerate(annotation_texts):
+        #         ax_profile.text(0.56, 87 - i * 4.5, text, transform=ax.transAxes,
+        #                 fontsize=11, color=color, weight='bold',
+        #                 bbox=None)
+                
+        #     ax_profile.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0', linewidth=2)
+        #     ax_profile.plot(ne_kian[:, time_idx], r_h, label="KIAN-Net", color='C1', linestyle="--", linewidth=2)
+        #     ax_profile.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2', linestyle="-.", linewidth=2)
+        #     ax_profile.plot(ne_iri[:, time_idx], r_h, label="IRI", color='C3', linestyle=":", linewidth=2)
+        #     ax_profile.set_title(f"Electron Density Profile  {r_time[time_idx].strftime('%H:%M')}")
+        #     ax_profile.set_xlabel(r'$log_{10}(n_e)$ [n/m$^3$]')
+        #     ax_profile.set_ylabel("Altitude [km]")
+        #     ax_profile.grid(True, color='white')
+        #     ax_profile.legend(fontsize = 9, loc="center left")
+        #     fig.canvas.draw_idle()
         
         
-        def update_ionogram(time_idx):
-            ionogram_img = self.X_Ionogram["r_param"][time_idx]
-            ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
-            ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
-            
-            ax_iono.clear()
-            ax_iono.imshow(ionogram_img)
-            ax_iono.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-            fig.canvas.draw_idle()
         
-        def update_error(time_idx):
+        # def update_geophys(time_idx):
+        #     X_geo = self.X_GEO["r_param"]
+        #     feature_labels = [
+        #         'DoY/366', 'ToD/1440', 'SZ/44', 'Kp', 'R', 'Dst', 'ap', 'AE', 'AL', 'AU', 
+        #         'PC_pot', 'F10_7', 'Ly_alp', 'Bx', 'By', 'Bz', 'dBx', 'dBy', 'dBz'
+        #     ]
+        #     ax_geo.clear()
+        #     ax_geo.set_title(f"Geophysical State Parameters")
+        #     ax_geo.barh(feature_labels, X_geo[:, time_idx], edgecolor='black')  # Changed to barh
+        #     ax_geo.set_xlim(-1.05, 1.05)  # Adjust limits for horizontal orientation
+        #     ax_geo.grid(True, color='white')
+        #     # ax_geo.yaxis.set_label_position("right")
+        #     ax_geo.yaxis.tick_right()
+        #     ax_geo.set_xlabel("Normalized (Z-score)") 
+        #     fig.canvas.draw_idle()
             
-            error_hnn, error_artist, valid_artist_mask = self.calculate_errors(time_idx)
+        
+        
+        
+        # def update_ionogram(time_idx):
+        #     ionogram_img = self.X_Ionogram["r_param"][time_idx]
+        #     ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
+        #     ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
             
-            ax_error.clear()
-            ax_error.plot(error_hnn, r_h, label='Error: EISCAT vs KIAN-Net', linestyle='-', color='C1')
-            if np.any(valid_artist_mask):
-                ax_error.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Error: EISCAT vs Artist 4.5', linestyle='-', color='green')
-                # Plot red line for NaN indices from the last valid value or first valid value
-                nan_indices = np.where(~valid_artist_mask)[0]
-                last_valid_index = np.max(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
-                first_valid_index = np.min(np.where(valid_artist_mask)[0]) if np.any(valid_artist_mask) else None
-                for nan_idx in nan_indices:
-                    if nan_idx < first_valid_index or nan_idx > last_valid_index:
-                        # Draw a line from the closest valid value to the NaN index
-                        closest_valid_index = first_valid_index if nan_idx < first_valid_index else last_valid_index
-                        ax_error.plot([error_artist[closest_valid_index], error_artist[nan_idx]], [r_h[closest_valid_index], r_h[nan_idx]], 'r--', linewidth=2, label='Missing values' if nan_idx == nan_indices[0] else "")
-            else:
-                # Plot all error values if all are NaN
-                ax_error.plot(error_artist, r_h,  'r-', linewidth=2, label='No Artist Data')
+        #     n=9
+        #     Frange = np.linspace(1, 9, 81)
+        #     Zrange = np.linspace(80, 480, 81)
+            
+        #     ax_iono.clear()
+        #     ax_iono.imshow(ionogram_img, origin='upper')
+        #     x_ticks = np.linspace(0, ionogram_img.shape[1] - 1, n)
+        #     y_ticks = np.linspace(0, ionogram_img.shape[0] - 1, n)
+            
+        #     x_tick_labels = np.linspace(Frange.min(), Frange.max(), n)
+        #     y_tick_labels = np.linspace(Zrange.max(), Zrange.min(), n)
+            
+        #     ax_iono.set_xticks(x_ticks)
+        #     ax_iono.set_xticklabels([f"{x:.0f}" for x in x_tick_labels])
+        #     ax_iono.set_yticks(y_ticks)
+        #     ax_iono.set_yticklabels([f"{y:.0f}" for y in y_tick_labels])
+            
+        #     ax_iono.set_xlabel("Freq [MHz]")
+        #     ax_iono.set_ylabel("Virtual Altitude [km]")
+        #     ax_iono.set_title(f"Ionogram   {r_time[time_idx].strftime('%H:%M')}")
             
             
-            # Set x-axis limits based on valid error data
-            if np.any(valid_artist_mask):
-                ax_error.set_xlim(left=0, right=max(np.max(error_hnn), np.max(error_artist[valid_artist_mask])) * 1.1)
-            else:
-               ax_error.set_xlim(left=0, right=np.max(error_hnn) * 1.1)
+        #     green_patch = Patch(color='green', label='X-mode')
+        #     red_patch = Patch(color='red', label='O-mode')
             
-            ax_error.set_title(f"{r_time[time_idx].strftime('%H:%M:%S')}")
-            ax_error.set_xlabel("Error")
-            ax_error.set_ylabel("Altitude [km]")
-            ax_error.legend()
-            ax_error.grid()
-            fig.canvas.draw_idle()
+        #     ax_iono.legend(handles=[red_patch, green_patch], loc='upper right', title="Modes", frameon=True)
+            
+            
+            
+        #     fig.canvas.draw_idle()
+            
+            
+            
+        
+        # def update_error(time_idx):
+            
+        #     error_kian, error_artist, error_iri, valid_artist_mask = self.calculate_errors(time_idx)
+            
+        #     ax_error.clear()
+        #     ax_error.plot(error_kian, r_h, label='KIAN-Net', linestyle='-', color='C1')
+        #     ax_error.plot(error_iri, r_h, label='IRI', linestyle='-', color='C3')
+        #     if np.any(valid_artist_mask):
+        #         ax_error.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Artist 4.5', linestyle='-', color='green')
+            
+        #     ax_error.set_title(f"Relative Error")
+        #     ax_error.legend(fontsize = 9)
+        #     ax_error.grid(True, color='white')
+        #     ax_error.tick_params(labelleft=False)
+        #     fig.canvas.draw_idle()
     
         
-        # Handle click events
-        def on_click(event):
-            if event.inaxes in [ax0, ax1, ax2]:
-                # Convert xdata to datetime for comparison
-                click_time = mdates.num2date(event.xdata).replace(tzinfo=None)
-                time_idx = np.argmin([abs((t - click_time).total_seconds()) for t in r_time])
-                update_ionogram(time_idx)
-                update_detail_plot(time_idx)
-                update_error(time_idx)
+        # # Handle click events
+        # def on_click(event):
+        #     if event.inaxes in [ax0, ax1, ax2, ax3]:
+        #         # Convert xdata to datetime for comparison
+        #         click_time = mdates.num2date(event.xdata).replace(tzinfo=None)
+        #         time_idx = np.argmin([abs((t - click_time).total_seconds()) for t in r_time])
+        #         update_geophys(time_idx)
+        #         update_ionogram(time_idx)
+        #         update_profile(time_idx)
+        #         update_error(time_idx)
                 
                 
-                # Clear any existing vertical lines
-                for ax in [ax0, ax1, ax2]:
-                    for line in ax.lines:
-                        line.remove()
+        #         # Clear any existing vertical lines
+        #         for ax in [ax0, ax1, ax2, ax3]:
+        #             for line in ax.lines:
+        #                 line.remove()
                 
-                # Add a red staple line to all three color plots
-                for ax in [ax0, ax1, ax2]:
-                    ax.axvline(event.xdata, color='red', linestyle='--', linewidth=2)
+        #         # Add a red staple line to all three color plots
+        #         for ax in [ax0, ax1, ax2, ax3]:
+        #             ax.axvline(event.xdata, color='red', linestyle='--', linewidth=2)
                         
-        # Add interactivity
-        fig.canvas.mpl_connect("button_press_event", on_click)
-        Cursor(ax0, useblit=True, color='red', linewidth=1)
-        Cursor(ax1, useblit=True, color='red', linewidth=1)
-        Cursor(ax2, useblit=True, color='red', linewidth=1)
-        
+                    
+        # # Add interactivity
+        # fig.canvas.mpl_connect("button_press_event", on_click)
+        # Cursor(ax0, useblit=True, color='red', linewidth=1)
+        # Cursor(ax1, useblit=True, color='red', linewidth=1)
+        # Cursor(ax2, useblit=True, color='red', linewidth=1)
+        # Cursor(ax3, useblit=True, color='red', linewidth=1)
         plt.show()
-    
-    
     
     
     #                             (end)
     #                        Interactive Plot
+    # =============================================================================    
+        
     # =============================================================================
+    #                              Paper Plot
+    #                                (Start)
+    
+
+    # def plot_paper(self):
+    #     """
+    #     Method for creating interactive plot. Here the user has the option to
+    #     click on any M measurement on the colorplots to view the corresponding
+    #     ionogram, electron densities and the errors.
+    #     """
+        
+    #     r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
+    #     art_time = from_array_to_datetime(self.X_Artist["r_time"])
+    #     r_h = self.X_EISCAT["r_h"].flatten()
+
+    #     # Logarithmic scaling for electron density
+    #     ne_eis = np.log10(self.X_EISCAT["r_param"])
+    #     ne_kian = self.X_KIAN["r_param"]
+    #     ne_art = np.log10(self.X_Artist["r_param"])
+    #     ne_iri = np.log10(self.X_IRI["r_param"])
+        
+        
+    #     date_str = r_time[0].strftime('%Y-%m-%d')
+
+    #     # Create the figure and layout
+    #     fig = plt.figure(figsize=(24, 10))
+    #     gs = GridSpec(3, 7, width_ratios=[1, 1, 0.05, 0.5, 1, 0.1, 1], height_ratios=[1, 0.01, 1], wspace=0.1)
+        
+    #     # First row
+    #     ax0 = fig.add_subplot(gs[0, 0])
+    #     ax1 = fig.add_subplot(gs[0, 1], sharey=ax0)
+    #     cax0 = fig.add_subplot(gs[0, 2])
+    #     # ax_space0 = fig.add_subplot(gs[0, 3])
+        
+        
+    #     # Second row
+    #     ax_ver_space = fig.add_subplot(gs[1, :])
+        
+        
+    #     # Third row
+    #     ax2 = fig.add_subplot(gs[2, 0])
+    #     ax3 = fig.add_subplot(gs[2, 1], sharey=ax2)
+    #     cax1 = fig.add_subplot(gs[2, 2])
+    #     ax_space1 = fig.add_subplot(gs[:, 3])
+        
+        
+    #     # All rows
+    #     ax_space2 = fig.add_subplot(gs[:, 5])
+        
+        
+        
+
+    #     fig.suptitle(f'Date: {date_str}', fontsize=20, y=0.95)
+        
+    #     # Plot EISCAT data
+    #     ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    #     ax0.set_title('EISCAT UHF', fontsize=17)
+    #     ax0.set_ylabel('Altitude [km]')
+    #     ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    #     # ax0.tick_params(labelbottom=False)
+        
+    #     # Plot Kian-Net data
+    #     ax1.pcolormesh(r_time, r_h, ne_kian, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    #     ax1.set_title('KIAN-Net', fontsize=17)
+    #     ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    #     ax1.tick_params(labelleft=False)
+        
+    #     # Plot Artist data
+    #     ax2.pcolormesh(art_time, r_h, ne_art, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    #     ax2.set_title('Artist 4.5', fontsize=17)
+    #     ax2.set_xlabel('Time [hh:mm]')
+    #     ax2.set_ylabel('Altitude [km]')
+    #     ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+        
+        
+    #     # Plot EISCAT data
+    #     ax3.pcolormesh(r_time, r_h, ne_iri, shading='auto', cmap='turbo', vmin=10, vmax=12)
+    #     ax3.set_title('IRI', fontsize=17)
+    #     ax3.set_xlabel('Time [hh:mm]')
+    #     ax3.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    #     ax3.tick_params(labelleft=False)
+        
+    #     # Rotate x-axis labels
+    #     for ax in [ax0, ax1, ax2, ax3]:
+    #         plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        
+    #     for ax in [ax_space1, ax_space2, ax_ver_space]:
+    #         ax.set_axis_off()
+        
+        
+    #     # Add colorbar
+    #     cbar0 = fig.colorbar(ne_EISCAT, cax=cax0, orientation='vertical')
+    #     cbar0.set_label(r'$log_{10}(n_e)$ [n/m$^3$]')
+        
+    #     cbar1 = fig.colorbar(ne_EISCAT, cax=cax1, orientation='vertical')
+    #     cbar1.set_label(r'$log_{10}(n_e)$ [n/m$^3$]')
+        
+    #     # Detail plot axes
+    #     with sns.axes_style("dark"):
+    #         ax_iono = fig.add_subplot(gs[2, 4])
+    #         ax_geo  = fig.add_subplot(gs[2, 6])
+    #         ax_profile = fig.add_subplot(gs[0, 4])
+    #         ax_error = fig.add_subplot(gs[0, 6])
+            
+            
+        
+    #     # Function to update the single Ne profiles plot
+    #     def update_profile(time_idx):
+            
+            
+            
+    #         # Calculate R² scores
+    #         r2_kian = r2_score(ne_eis[:, time_idx], ne_kian[:, time_idx])
+    #         r2_iri = r2_score(ne_eis[:, time_idx], ne_iri[:, time_idx])
+            
+    #         if ne_art[:, time_idx] is not None:
+    #             valid_artist = ~np.isnan(ne_eis[:, time_idx]) & ~np.isnan(ne_art[:, time_idx])
+    #             r2_art = (r2_score(ne_eis[:, time_idx][valid_artist], ne_art[:, time_idx][valid_artist])
+    #                          if np.any(valid_artist) else None)
+    #         else:
+    #             r2_art = None
+            
+    #         # Add R² scores to the plot as text annotations with color coding
+    #         annotation_texts = []
+    #         if r2_kian is not None:
+    #             annotation_texts.append((f"R²= {r2_kian:.3f}", "C1"))  # Orange for HNN
+    #         if r2_art is not None:
+    #             annotation_texts.append((f"R²= {r2_art:.3f}", "C2"))  # Green for Artist 4.5
+    #         if r2_iri is not None:
+    #             annotation_texts.append((f"R²= {r2_iri:.3f}", "C3"))
+
+            
+    #         ax_profile.clear()
+    #         # Choose the best location for the annotations
+    #         for i, (text, color) in enumerate(annotation_texts):
+    #             ax_profile.text(0.56, 87 - i * 4.5, text, transform=ax.transAxes,
+    #                     fontsize=11, color=color, weight='bold',
+    #                     bbox=None)
+                
+    #         ax_profile.plot(ne_eis[:, time_idx], r_h, label="EISCAT", color='C0', linewidth=2)
+    #         ax_profile.plot(ne_kian[:, time_idx], r_h, label="KIAN-Net", color='C1', linestyle="--", linewidth=2)
+    #         ax_profile.plot(ne_art[:, time_idx], r_h, label="Artist", color='C2', linestyle="-.", linewidth=2)
+    #         ax_profile.plot(ne_iri[:, time_idx], r_h, label="IRI", color='C3', linestyle=":", linewidth=2)
+    #         ax_profile.set_title(f"Electron Density Profile  {r_time[time_idx].strftime('%H:%M')}")
+    #         ax_profile.set_xlabel(r'$log_{10}(n_e)$ [n/m$^3$]')
+    #         ax_profile.set_ylabel("Altitude [km]")
+    #         ax_profile.grid(True, color='white')
+    #         ax_profile.legend(fontsize = 9, loc="center left")
+    #         fig.canvas.draw_idle()
+        
+        
+        
+    #     def update_geophys(time_idx):
+    #         X_geo = self.X_GEO["r_param"]
+    #         feature_labels = [
+    #             'DoY/366', 'ToD/1440', 'SZ/44', 'Kp', 'R', 'Dst', 'ap', 'AE', 'AL', 'AU', 
+    #             'PC_pot', 'F10_7', 'Ly_alp', 'Bx', 'By', 'Bz', 'dBx', 'dBy', 'dBz'
+    #         ]
+    #         ax_geo.clear()
+    #         ax_geo.set_title(f"Geophysical State Parameters")
+    #         ax_geo.barh(feature_labels, X_geo[:, time_idx], edgecolor='black')  # Changed to barh
+    #         ax_geo.set_xlim(-1.05, 1.05)  # Adjust limits for horizontal orientation
+    #         ax_geo.grid(True, color='white')
+    #         # ax_geo.yaxis.set_label_position("right")
+    #         ax_geo.yaxis.tick_right()
+    #         ax_geo.set_xlabel("Normalized (Z-score)") 
+    #         fig.canvas.draw_idle()
+            
+        
+        
+        
+    #     def update_ionogram(time_idx):
+    #         ionogram_img = self.X_Ionogram["r_param"][time_idx]
+    #         ionogram_img = np.asarray(ionogram_img)  # Ensure it's a NumPy array
+    #         ionogram_img = ionogram_img.astype(np.int64)  # Ensure it has a valid numeric type
+            
+    #         n=9
+    #         Frange = np.linspace(1, 9, 81)
+    #         Zrange = np.linspace(80, 480, 81)
+            
+    #         ax_iono.clear()
+    #         ax_iono.imshow(ionogram_img, origin='upper')
+    #         x_ticks = np.linspace(0, ionogram_img.shape[1] - 1, n)
+    #         y_ticks = np.linspace(0, ionogram_img.shape[0] - 1, n)
+            
+    #         x_tick_labels = np.linspace(Frange.min(), Frange.max(), n)
+    #         y_tick_labels = np.linspace(Zrange.max(), Zrange.min(), n)
+            
+    #         ax_iono.set_xticks(x_ticks)
+    #         ax_iono.set_xticklabels([f"{x:.0f}" for x in x_tick_labels])
+    #         ax_iono.set_yticks(y_ticks)
+    #         ax_iono.set_yticklabels([f"{y:.0f}" for y in y_tick_labels])
+            
+    #         ax_iono.set_xlabel("Freq [MHz]")
+    #         ax_iono.set_ylabel("Virtual Altitude [km]")
+    #         ax_iono.set_title(f"Ionogram   {r_time[time_idx].strftime('%H:%M')}")
+            
+            
+    #         green_patch = Patch(color='green', label='X-mode')
+    #         red_patch = Patch(color='red', label='O-mode')
+            
+    #         ax_iono.legend(handles=[red_patch, green_patch], loc='upper right', title="Modes", frameon=True)
+            
+            
+            
+    #         fig.canvas.draw_idle()
+            
+            
+            
+        
+    #     def update_error(time_idx):
+            
+    #         error_kian, error_artist, error_iri, valid_artist_mask = self.calculate_errors(time_idx)
+            
+    #         ax_error.clear()
+    #         ax_error.plot(error_kian, r_h, label='KIAN-Net', linestyle='-', color='C1')
+    #         ax_error.plot(error_iri, r_h, label='IRI', linestyle='-', color='C3')
+    #         if np.any(valid_artist_mask):
+    #             ax_error.plot(error_artist[valid_artist_mask], r_h[valid_artist_mask], label='Artist 4.5', linestyle='-', color='green')
+            
+    #         ax_error.set_title(f"Relative Error")
+    #         ax_error.legend(fontsize = 9)
+    #         ax_error.grid(True, color='white')
+    #         ax_error.tick_params(labelleft=False)
+    #         fig.canvas.draw_idle()
+    
+        
+    #     # Handle click events
+    #     def on_click(event):
+    #         if event.inaxes in [ax0, ax1, ax2, ax3]:
+    #             # Convert xdata to datetime for comparison
+    #             click_time = mdates.num2date(event.xdata).replace(tzinfo=None)
+    #             time_idx = np.argmin([abs((t - click_time).total_seconds()) for t in r_time])
+    #             update_geophys(time_idx)
+    #             update_ionogram(time_idx)
+    #             update_profile(time_idx)
+    #             update_error(time_idx)
+                
+                
+    #             # Clear any existing vertical lines
+    #             for ax in [ax0, ax1, ax2, ax3]:
+    #                 for line in ax.lines:
+    #                     line.remove()
+                
+    #             # Add a red staple line to all three color plots
+    #             for ax in [ax0, ax1, ax2, ax3]:
+    #                 ax.axvline(event.xdata, color='red', linestyle='--', linewidth=2)
+                        
+                    
+    #     # Add interactivity
+    #     fig.canvas.mpl_connect("button_press_event", on_click)
+    #     Cursor(ax0, useblit=True, color='red', linewidth=1)
+    #     Cursor(ax1, useblit=True, color='red', linewidth=1)
+    #     Cursor(ax2, useblit=True, color='red', linewidth=1)
+    #     Cursor(ax3, useblit=True, color='red', linewidth=1)
+    #     plt.show()
+    
+    
+    # #                             (end)
+    # #                        Interactive Plot
+    # # =============================================================================
         
     
     
@@ -1438,17 +1921,17 @@ class RadarPlotter:
         r_h = self.X_EISCAT["r_h"].flatten()
         
         ne_eis = np.log10(self.X_EISCAT["r_param"])
-        ne_hnn = self.X_HNN["r_param"]
+        ne_hnn = self.X_KIAN["r_param"]
         ne_art = np.log10(self.X_Artist["r_param"])
         
         
         
         eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-        hnn_param_peak = self.X_HNN["r_param_peak"]
+        hnn_param_peak = self.X_KIAN["r_param_peak"]
         art_param_peak = np.log10(self.X_Artist["r_param_peak"])
         
         eis_h_peak = self.X_EISCAT["r_h_peak"]
-        hnn_h_peak = self.X_HNN["r_h_peak"]
+        hnn_h_peak = self.X_KIAN["r_h_peak"]
         art_h_peak = self.X_Artist["r_h_peak"]
         
         
@@ -1484,11 +1967,11 @@ class RadarPlotter:
         
         
     #     eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-    #     hnn_param_peak = self.X_HNN["r_param_peak"]
+    #     hnn_param_peak = self.X_KIAN["r_param_peak"]
     #     art_param_peak = np.log10(self.X_Artist["r_param_peak"])
         
     #     eis_h_peak = self.X_EISCAT["r_h_peak"]
-    #     hnn_h_peak = self.X_HNN["r_h_peak"]
+    #     hnn_h_peak = self.X_KIAN["r_h_peak"]
     #     art_h_peak = self.X_Artist["r_h_peak"]
         
         
@@ -1563,7 +2046,7 @@ class RadarPlotter:
         ne_eis = np.log10(self.X_EISCAT["r_param"])
         
         eis_h_peak = self.X_EISCAT["r_h_peak"]
-        hnn_h_peak = self.X_HNN["r_h_peak"]
+        hnn_h_peak = self.X_KIAN["r_h_peak"]
         art_h_peak = self.X_Artist["r_h_peak"]
         
         
@@ -1658,7 +2141,7 @@ class RadarPlotter:
         
         
         eis_h_peak = self.X_EISCAT["r_h_peak"]
-        kian_h_peak = self.X_HNN["r_h_peak"]
+        kian_h_peak = self.X_KIAN["r_h_peak"]
         art_h_peak = self.X_Artist["r_h_peak"]
     
         # Format date for plot title
@@ -1778,7 +2261,7 @@ class RadarPlotter:
     
         # Extract and process peak parameters
         eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-        kian_param_peak = self.X_HNN["r_param_peak"]
+        kian_param_peak = self.X_KIAN["r_param_peak"]
         art_param_peak = np.log10(self.X_Artist["r_param_peak"])
     
     
@@ -1897,7 +2380,7 @@ class RadarPlotter:
     
     #     # Extract and process peak parameters
     #     eis_param_peak = np.log10(self.X_EISCAT["r_param_peak"])
-    #     kian_param_peak = self.X_HNN["r_param_peak"]
+    #     kian_param_peak = self.X_KIAN["r_param_peak"]
     #     art_param_peak = np.log10(self.X_Artist["r_param_peak"])
     
     #     # Format date for plot title

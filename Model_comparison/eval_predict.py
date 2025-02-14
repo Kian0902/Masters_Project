@@ -19,8 +19,12 @@ from torchvision import transforms
 from storing_dataset import Matching3Pairs, Store3Dataset
 
 
-from eval_utils import add_key_with_matching_times,inspect_dict, save_dict, load_dict, add_key_from_dict_to_dict, convert_pred_to_dict, convert_geophys_to_dict, convert_ionograms_to_dict, from_csv_to_numpy, from_strings_to_array, from_strings_to_datetime, filter_artist_times
+from eval_utils import from_strings_to_array, filter_artist_times, load_dict, save_dict, convert_pred_to_dict, from_array_to_datetime, from_strings_to_datetime, from_csv_to_numpy, add_key_from_dict_to_dict, add_key_with_matching_times, inspect_dict, convert_ionograms_to_dict, convert_geophys_to_dict
 from hnn_model import CombinedNetwork
+
+
+from matplotlib.dates import DateFormatter
+import matplotlib.colors as colors
 
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -69,15 +73,159 @@ def model_predict(stored_dataset, DL_model, model_weights):
     return model_ne
 
 
+def plot_day(data):
+    r_time = from_array_to_datetime(np.array([[2012,    1,   19,    0,    0,    0],
+           [2012,    1,   19,    0,   15,    0],
+           [2012,    1,   19,    0,   30,    0],
+           [2012,    1,   19,    0,   45,    0],
+           [2012,    1,   19,    1,    0,    0],
+           [2012,    1,   19,    1,   15,    0],
+           [2012,    1,   19,    1,   30,    0],
+           [2012,    1,   19,    1,   45,    0],
+           [2012,    1,   19,    2,    0,    0],
+           [2012,    1,   19,    2,   15,    0],
+           [2012,    1,   19,    2,   30,    0],
+           [2012,    1,   19,    2,   45,    0],
+           [2012,    1,   19,    3,    0,    0],
+           [2012,    1,   19,    3,   15,    0],
+           [2012,    1,   19,    3,   30,    0],
+           [2012,    1,   19,    3,   45,    0],
+           [2012,    1,   19,    4,    0,    0],
+           [2012,    1,   19,    4,   15,    0],
+           [2012,    1,   19,    4,   30,    0],
+           [2012,    1,   19,    4,   45,    0],
+           [2012,    1,   19,    5,    0,    0],
+           [2012,    1,   19,    5,   15,    0],
+           [2012,    1,   19,    5,   30,    0],
+           [2012,    1,   19,    5,   45,    0],
+           [2012,    1,   19,    6,    0,    0],
+           [2012,    1,   19,    6,   15,    0],
+           [2012,    1,   19,    6,   30,    0],
+           [2012,    1,   19,    6,   45,    0],
+           [2012,    1,   19,    7,    0,    0],
+           [2012,    1,   19,    7,   15,    0],
+           [2012,    1,   19,    7,   30,    0],
+           [2012,    1,   19,    7,   45,    0],
+           [2012,    1,   19,    8,    0,    0],
+           [2012,    1,   19,    8,   15,    0],
+           [2012,    1,   19,    8,   30,    0],
+           [2012,    1,   19,    8,   45,    0],
+           [2012,    1,   19,    9,    0,    0],
+           [2012,    1,   19,    9,   15,    0],
+           [2012,    1,   19,    9,   30,    0],
+           [2012,    1,   19,    9,   45,    0],
+           [2012,    1,   19,   10,    0,    0],
+           [2012,    1,   19,   10,   15,    0],
+           [2012,    1,   19,   10,   30,    0],
+           [2012,    1,   19,   10,   45,    0],
+           [2012,    1,   19,   11,    0,    0],
+           [2012,    1,   19,   11,   15,    0],
+           [2012,    1,   19,   11,   30,    0],
+           [2012,    1,   19,   11,   45,    0],
+           [2012,    1,   19,   12,    0,    0],
+           [2012,    1,   19,   12,   15,    0],
+           [2012,    1,   19,   12,   30,    0],
+           [2012,    1,   19,   12,   45,    0],
+           [2012,    1,   19,   13,    0,    0],
+           [2012,    1,   19,   13,   15,    0],
+           [2012,    1,   19,   13,   30,    0],
+           [2012,    1,   19,   13,   45,    0],
+           [2012,    1,   19,   14,    0,    0],
+           [2012,    1,   19,   14,   15,    0],
+           [2012,    1,   19,   14,   30,    0],
+           [2012,    1,   19,   14,   45,    0],
+           [2012,    1,   19,   15,    0,    0],
+           [2012,    1,   19,   15,   15,    0],
+           [2012,    1,   19,   15,   30,    0],
+           [2012,    1,   19,   15,   45,    0],
+           [2012,    1,   19,   16,    0,    0],
+           [2012,    1,   19,   16,   15,    0],
+           [2012,    1,   19,   16,   30,    0],
+           [2012,    1,   19,   16,   45,    0],
+           [2012,    1,   19,   17,    0,    0],
+           [2012,    1,   19,   17,   15,    0],
+           [2012,    1,   19,   17,   30,    0],
+           [2012,    1,   19,   17,   45,    0],
+           [2012,    1,   19,   18,    0,    0],
+           [2012,    1,   19,   18,   15,    0],
+           [2012,    1,   19,   18,   30,    0],
+           [2012,    1,   19,   18,   45,    0],
+           [2012,    1,   19,   19,    0,    0],
+           [2012,    1,   19,   19,   15,    0],
+           [2012,    1,   19,   19,   30,    0],
+           [2012,    1,   19,   19,   45,    0],
+           [2012,    1,   19,   20,    0,    0],
+           [2012,    1,   19,   20,   15,    0],
+           [2012,    1,   19,   20,   30,    0],
+           [2012,    1,   19,   20,   45,    0],
+           [2012,    1,   19,   21,    0,    0],
+           [2012,    1,   19,   21,   15,    0],
+           [2012,    1,   19,   21,   30,    0],
+           [2012,    1,   19,   21,   45,    0],
+           [2012,    1,   19,   22,    0,    0],
+           [2012,    1,   19,   22,   15,    0],
+           [2012,    1,   19,   22,   30,    0],
+           [2012,    1,   19,   22,   45,    0],
+           [2012,    1,   19,   23,    0,    0],
+           [2012,    1,   19,   23,   15,    0],
+           [2012,    1,   19,   23,   30,    0],
+           [2012,    1,   19,   23,   45,    0]]))
+    # r_time = from_array_to_datetime(data['r_time'])
+    r_h = np.array([[ 91.46317376],
+           [ 94.45832965],
+           [ 97.58579014],
+           [100.70052912],
+           [103.70339597],
+           [106.70131251],
+           [109.94666419],
+           [113.57783654],
+           [118.09858718],
+           [123.86002718],
+           [130.60948667],
+           [138.3173866 ],
+           [147.00535981],
+           [156.73585448],
+           [167.59278336],
+           [179.57721244],
+           [192.43624664],
+           [206.30300179],
+           [221.17469246],
+           [237.20685488],
+           [254.39143579],
+           [272.34757393],
+           [291.47736465],
+           [311.68243288],
+           [332.82898428],
+           [354.92232018],
+           [377.86223818]]).flatten()
+    # r_h = data['r_h'].flatten()
+    r_param = data['r_param']
+    # r_error = data['r_error'] 
+    
+    
+    fig, ax = plt.subplots()
+    
+    ne=ax.pcolormesh(r_time, r_h, r_param, shading="auto", cmap="turbo", norm=colors.LogNorm(vmin=1e10, vmax=1e12))
+    ax.set_xlabel("Time (UT)")
+    ax.set_ylabel("Altitudes (km)")
+    ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
+    fig.colorbar(ne, ax=ax, orientation='vertical')
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
+    plt.show()
 
 
 if __name__ == "__main__":
     
     
-    # Test data folder names
-    test_ionogram_folder = "testing_data/test_ionogram_folder"
-    test_radar_folder = "testing_data/test_eiscat_folder"        # These are the true data
-    test_sp19_folder = "testing_data/test_geophys_folder"
+    # # Test data folder names
+    # test_ionogram_folder = "testing_data/test_ionogram_folder"
+    # test_radar_folder = "testing_data/test_eiscat_folder"        # These are the true data
+    # test_sp19_folder = "testing_data/test_geophys_folder"
+    
+    test_ionogram_folder = "testing_data/test_ionogram_shutup_rusland_2"
+    test_radar_folder = "testing_data/test_eiscat_shutup_rusland_2"        # These are the true data
+    test_sp19_folder = "testing_data/test_geophys_shutup_rusland_2"
+    
     
     # # Test data folder names
     # test_ionogram_folder = "hypothesis_data/hyp_ionogram_folder"
@@ -101,7 +249,7 @@ if __name__ == "__main__":
     
     
     
-    # print(type(sp), len(sp), sp[0])
+#     # print(type(sp), len(sp), sp[0])
     
     
     
@@ -123,10 +271,13 @@ if __name__ == "__main__":
     X_kian = convert_pred_to_dict(r_t, r_times, X_pred)
     
     
+    
+    
+    
     X_true = from_csv_to_numpy(test_radar_folder)[0]
     X_eis = convert_pred_to_dict(r_t, r_times, X_true)
     
-    
+    # plot_day(X_eis['2012-1-19'])
     # print(inspect_dict(X_eis))
     
     
@@ -139,7 +290,6 @@ if __name__ == "__main__":
     X_eis = add_key_from_dict_to_dict(Eiscat_support, X_eis, key="r_h")
     X_eis = add_key_with_matching_times(Eiscat_support, X_eis, key="r_error")
     
-    
     # print(inspect_dict(X_eis))
     
     X_kian = add_key_from_dict_to_dict(Eiscat_support, X_kian, key="r_h")
@@ -149,11 +299,15 @@ if __name__ == "__main__":
     # inspect_dict(X_geo)
     # inspect_dict(X_eis)
     
-    # save_dict(X_eis, "hyp_eis.pkl")
-    # save_dict(X_kian, "hyp_kian.pkl")
-    # save_dict(X_art, "hyp_art.pkl")
-    # save_dict(X_ion, "hyp_ion.pkl")
-    # save_dict(X_geo, "hyp_geo.pkl")
+    
+    # plot_day(X_kian)
+    
+    
+    save_dict(X_eis, "testing_data_shutup_rusland/X_eis.pkl")
+    save_dict(X_kian, "testing_data_shutup_rusland/X_kian.pkl")
+    save_dict(X_art, "testing_data_shutup_rusland/X_art.pkl")
+    save_dict(X_ion, "testing_data_shutup_rusland/X_ion.pkl")
+    save_dict(X_geo, "testing_data_shutup_rusland/X_geo.pkl")
 
 
 

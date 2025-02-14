@@ -58,8 +58,8 @@ def make_samples(dataset: dict, output_dir="outputs"):
 if __name__ == "__main__":
     
     
-    filename = "artist_test_days.pkl"
-    output_dir = "testing_data/test_artist_folder"
+    filename = "X_avg_test_data"
+    output_dir = "testing_data/test_eiscat_shutup_rusland"
 
     X = import_file(filename)
     make_samples(X, output_dir)

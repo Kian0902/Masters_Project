@@ -105,6 +105,27 @@ class RadarInteractive:
         
     
     
+    def plot_geophys(self, time_idx):
+        
+        X_geo = self.X_GEO["r_param"]
+        feature_labels = [
+            'DoY/366', 'ToD/1440', 'SZ/44', 'Kp', 'R', 'Dst', 'ap', 'AE', 'AL', 'AU', 
+            'PC_pot', 'F10_7', 'Ly_alp', 'Bx', 'By', 'Bz', 'dBx', 'dBy', 'dBz'
+        ]
+        
+        
+        fig, ax_geo = plt.subplots(figsize=(6,6))
+        
+        # ax_geo.set_title(f"Geophysical State Parameters")
+        
+        ax_geo.barh(feature_labels, X_geo[:, time_idx], edgecolor='black')  # Changed to barh
+        ax_geo.set_xlim(-1.05, 1.05)  # Adjust limits for horizontal orientation
+        # ax_geo.grid(True, color='white')
+        # ax_geo.yaxis.set_label_position("right")
+        ax_geo.yaxis.tick_right()
+        # ax_geo.set_xlabel("Normalized (Z-score)") 
+        # ax_geo.set_axis_off()
+        plt.show()
 
     def plot_interactive(self):
         """
