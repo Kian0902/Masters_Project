@@ -16,7 +16,7 @@ from matplotlib.dates import DateFormatter
 from datetime import datetime
 
 
-from utils import from_strings_to_datetime
+from utils import from_array_to_datetime
 
 class IRIPlotter:
     def __init__(self, X_IRI):
@@ -61,7 +61,7 @@ class IRIPlotter:
 
 
     def plot_day(self):
-        iri_time = from_strings_to_datetime(self.X_IRI["r_time"])
+        iri_time = from_array_to_datetime(self.X_IRI["r_time"])
         r_iri = self.X_IRI["r_h"]
         ne_iri = np.log10(self.X_IRI["r_param"])
         
@@ -103,11 +103,11 @@ class IRIPlotter:
         """
         
         
-        iri_time = from_strings_to_datetime(self.X_IRI["r_time"])
+        iri_time = from_array_to_datetime(self.X_IRI["r_time"])
         r_iri = self.X_IRI["r_h"]
         ne_iri = np.log10(self.X_IRI["r_param"])
         
-        iri_time_inter = from_strings_to_datetime(X_after["r_time"])
+        iri_time_inter = from_array_to_datetime(X_after["r_time"])
         r_iri_inter = X_after["r_h"]
         ne_iri_inter = np.log10(X_after["r_param"])
         
@@ -130,7 +130,7 @@ class IRIPlotter:
         
         # Plotting original data
         ne_before = ax0.pcolormesh(iri_time, r_iri.flatten(), ne_iri, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax0.set_title('Before Interp', fontsize=17)
+        ax0.set_title('Before Downsampling', fontsize=17)
         ax0.set_xlabel('Time [hh:mm]', fontsize=13)
         ax0.set_ylabel('Altitude [km]', fontsize=15)
         ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
@@ -138,7 +138,7 @@ class IRIPlotter:
         
         # Plotting original data
         ne_after = ax1.pcolormesh(iri_time_inter, r_iri_inter.flatten(), ne_iri_inter, shading='auto', cmap='turbo', vmin=10, vmax=12)
-        ax1.set_title('After Interp', fontsize=17)
+        ax1.set_title('After Downsampling', fontsize=17)
         ax1.set_xlabel('Time [hh:mm]', fontsize=13)
         ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         # ax1.set_xlim(x_limits)

@@ -28,14 +28,16 @@ X_IRI = load_dict("X_IRI")
 
 IRI_processed = {}
 
-for day in X_IRI:
+for day in X_EISCAT:
     X_iri = X_IRI[day]
     X_uhf = X_EISCAT[day]
-
+    
     plotter = IRIPlotter(X_iri)
     
+    
+    
     # plotter.plot_profile()
-    # plotter.plot_profiles()
+    plotter.plot_profiles()
     # plotter.plot_day()
     
     
@@ -48,7 +50,7 @@ for day in X_IRI:
     plotter.plot_before_vs_after(X_inter)
     
     IRI_processed[day] = X_inter
-    
+        
 
 save_dict(IRI_processed, "X_IRI_interp")
 inspect_dict(load_dict("X_IRI_interp"))

@@ -7,7 +7,9 @@ Created on Thu Jan 16 16:39:02 2025
 
 import os
 import numpy as np
+from datetime import datetime
 from utils import save_dict, load_dict
+
 
 def convert_xarray(data, save_path=None):
 
@@ -19,10 +21,10 @@ def convert_xarray(data, save_path=None):
     # Process each xarray in the dataset
     for xarr in data:
         # Extract time and convert to the desired format
-        time = np.datetime_as_string(xarr.time.values[0], unit="m")
-        formatted_time = time.replace("-", "").replace(":", "").replace("T", "_")
-        r_time.append(formatted_time)
-        
+        time = np.datetime_as_string(xarr.time.values[0], unit="s")  # Ensure seconds precision
+        dt = datetime.strptime(time, "%Y-%m-%dT%H:%M:%S")  # Parse datetime
+        r_time.append([dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second])
+
         # Extract altitude and electron density
         if r_h is None:  # Set r_h once (assume it doesn't change across time steps)
             r_h = xarr.alt_km.values[:, np.newaxis]
@@ -30,7 +32,10 @@ def convert_xarray(data, save_path=None):
         # Extract electron density ("ne") and append to r_param
         r_param.append(xarr.ne.values)
 
-    # Convert to numpy array
+    # Convert r_time to numpy array with dtype np.int64
+    r_time = np.array(r_time, dtype=np.int64)  # (M, 6)
+
+    # Convert r_param to numpy array
     r_param = np.stack(r_param, axis=-1)  # (N, M)
 
     # Create the final dictionary
@@ -43,7 +48,9 @@ def convert_xarray(data, save_path=None):
     # Save the dictionary (optional)
     if save_path:
         save_dict(custom_dict, save_path)
+
     return custom_dict
+
 
 
 
@@ -74,15 +81,16 @@ def sort_days(folder_path, save_path=None):
 
 if __name__=="__main__":
     
-    file_path = "IRI_unformatted/iri_data_20200227.pickle"
+    # file_path = "IRI_unformatted/iri_data_20190105.pickle"
     
+    # x = load_dict(file_path)
     
-    # convert_xarray(x, "IRI_unformatted/iri_20200227.pickle")
-    # folder_path = "IRI_formatted"
+    # convert_xarray(x, "IRI_formatted/iri_20190105.pickle")
+    folder_path = "IRI_formatted"
     
-    # sort_days(folder_path, save_path="X_IRI")
+    sort_days(folder_path, save_path="X_IRI")
     
-    # nested_dict = load_dict("X_IRI")
+    nested_dict = load_dict("X_IRI")
     
     
     
