@@ -94,8 +94,8 @@ class EISCATAverager:
                 
                 # Append the averaged data
                 averaged_r_time.append([
-                    bin_start.year, bin_start.month, bin_start.day,
-                    bin_start.hour, bin_start.minute, bin_start.second
+                    bin_end.year, bin_end.month, bin_end.day,
+                    bin_end.hour, bin_end.minute, bin_end.second
                 ])
                 
                 averaged_r_param.append(avg_param)
@@ -148,8 +148,8 @@ class EISCATAverager:
         
         
         
-        fig = plt.figure(figsize=(12, 6))
-        fig.suptitle(date_str)
+        fig = plt.figure(figsize=(12, 5))
+        fig.suptitle(date_str, fontsize=17)
         gs = GridSpec(1, 3, width_ratios=[1, 1, 0.05], wspace=0.1)
         
         
@@ -164,20 +164,22 @@ class EISCATAverager:
         
         # EISCAT UHF
         org_Ne = ax0.pcolormesh(org_time, org_h, org_param, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-        # ax0.set_title('EISCAT UHF', fontsize=subtit_size)
-        # ax0.set_ylabel('Altitude [km]', fontsize=ylab_size)
+        ax0.set_title('EISCAT UHF', fontsize=subtit_size)
+        ax0.set_ylabel('Altitude [km]', fontsize=ylab_size)
+        ax0.set_xlabel('Time [UT]', fontsize=ylab_size)
         ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-
+        
         
         # KIAN-Net
         ax1.pcolormesh(avg_time, avg_h, avg_param, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-        # ax1.set_title('KIAN-Net', fontsize=subtit_size)
+        ax1.set_title('Averaged', fontsize=subtit_size)
+        ax1.set_xlabel('Time [UT]', fontsize=ylab_size)
         ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
         ax1.tick_params(labelleft=False)
         
         # Colorbar
         cbar2 = fig.colorbar(org_Ne, cax=cax2, orientation='vertical')
-        cbar2.set_label('$n_e$ [n/m$^3$]', fontsize=cbar_size)
+        cbar2.set_label('$n_e$ [n m$^{-3}$]', fontsize=cbar_size)
         
         # Rotate x-axis labels
         for ax in [ax0, ax1]:
