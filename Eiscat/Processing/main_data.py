@@ -22,201 +22,23 @@ from data_plotting import EISCATPlotter
 from data_outlier_detection import EISCATOutlierDetection
 from matplotlib.dates import DateFormatter
 import matplotlib.colors as colors
-from data_utils import from_array_to_datetime, inspect_dict, get_day, get_day_data, MatchingFiles, from_strings_to_datetime, save_dict, load_dict
+from data_utils import from_array_to_datetime, inspect_dict, get_day, get_day_data, MatchingFiles, from_strings_to_datetime, save_dict, load_dict, plot_compare_all
 from scipy.interpolate import interp1d
-import seaborn as sns
-
-
-
-def plot_available_data(data_dict):
-    # Extract dates and M values
-    dates = []
-    m_values = []
-    
-    for date, measurements in data_dict.items():
-        dates.append(date)
-        m_values.append(measurements['r_time'].shape[0])
-    
-    # Convert dates to datetime objects
-    dates = pd.to_datetime(dates)
-    
-    df = pd.DataFrame({
-        'Date': dates,
-        'M_samples': m_values
-    })
-    
-    # Sort by date
-    df = df.sort_values('Date')
-    
-    # Calculate the total number of days in the date range
-    start_date = df['Date'].min()
-    end_date = df['Date'].max()
-    all_possible_days = pd.date_range(start=start_date, end=end_date, freq='D')
-    total_days = len(all_possible_days)
-    available_days = len(df)
-    
-    # Calculate total number of samples available
-    total_samples_available = df['M_samples'].sum()
-    
-    # Define the maximum possible samples per day (e.g., based on the maximum observed M)
-    max_samples_per_day = df['M_samples'].max()
-    
-    # Calculate the total possible samples if data were available every day
-    total_possible_samples = total_days * max_samples_per_day
-    
-    # Print statistics
-    print(f"Number of available days: {available_days}/{total_days}")
-    print(f"Percentage of days with data: {available_days / total_days * 100:.2f}%")
-    print(f"Total samples available: {total_samples_available}")
-    print(f"Total possible samples: {total_possible_samples}")
-    print(f"Percentage of samples available: {total_samples_available / total_possible_samples * 100:.2f}%")
-    
-    
-
-    # Load and process sunspot data (same as before)
-    data = np.genfromtxt('sunspots.csv', delimiter=';', dtype=float)
-    years = data[:, 0]
-    months = data[:, 1]
-    sunspot_numbers = data[:, 3]
-    sunspot_std_dev = data[:, 4]
-    dates = [datetime(int(year), int(month), 1) for year, month in zip(years, months)]
-    df_sun = pd.DataFrame({
-        'Date': dates,
-        'Sunspot Number': sunspot_numbers,
-        'Standard Deviation': sunspot_std_dev
-    })
-    df_sun.set_index('Date', inplace=True)
-    
-    # Filter sunspot data to radar's time range
-    radar_start_date = df['Date'].min()
-    radar_end_date = df['Date'].max()
-    df_sun_filtered = df_sun.loc[radar_start_date:radar_end_date]
+# import seaborn as sns
 
 
 
 
+    
+    
+    
+# # Use the local folder name containing data
+# folder_name_in  = "EISCAT_Madrigal/2018"
+# folder_name_out = "EISCAT_MAT/2018"
 
-
-    # Create figure with 2 subplots using GridSpec
-    fig = plt.figure(figsize=(10, 6))
-    gs = plt.GridSpec(2, 1, height_ratios=[0.6, 1], hspace=0.3)
-    
-    with sns.axes_style("dark"):
-        # Top subplot (Radar data statistics)
-        ax0 = fig.add_subplot(gs[0])
-        
-    ax0.bar(df['Date'], df['M_samples'], color='teal', width=2, alpha=0.65)
-    
-
-    
-    # Configure top plot
-    ax0.set_title("Number of 15 min samples within each available day")
-    ax0.set_ylabel("Samples/Day")
-    ax0.grid(True)
-    ax0.set_xticklabels([])
-    
-    
-    # Bottom subplot (Sunspots + Radar days)
-    ax1 = fig.add_subplot(gs[1])
-    
-    # Calculate statistics
-    days_ratio = f"{available_days} / {total_days} ({available_days/total_days:.1%})"
-    samples_ratio = f"{total_samples_available} / {total_possible_samples} ({total_samples_available/total_possible_samples:.1%})"
-    
-    # Create legend text
-    legend_text = (f"Days: {days_ratio}\n"
-                   f"Samples: {samples_ratio}")
-    
-    # Add legend-like text box
-    ax1.text(0.015, 0.65, legend_text,
-             transform=ax1.transAxes,
-             ha='left', va='top',
-             bbox=dict(facecolor='white', edgecolor='gray', boxstyle='round', alpha=0.9),
-             fontsize=10)
-    
-    
-    # Add radar availability lines
-    for date in df['Date']:
-        ax1.axvline(x=date, color='C0', alpha=0.7, linewidth=0.2, zorder=-2)
-    
-    # Plot sunspot data
-    ax1.plot(df_sun_filtered.index, df_sun_filtered['Sunspot Number'], 
-            color='red', label='Sunspot Number', zorder=2)
-    ax1.fill_between(df_sun_filtered.index,
-                    df_sun_filtered['Sunspot Number'] - df_sun_filtered['Standard Deviation'],
-                    df_sun_filtered['Sunspot Number'] + df_sun_filtered['Standard Deviation'],
-                    color='darkorange', alpha=0.5, label='±1 STD', zorder=2)
-    
-
-    
-    # Configure bottom plot
-    ax1.set_title('Sunspots with available days of data')
-    ax1.set_xlabel('Date (UT)')
-    ax1.set_ylabel('Sunspot Number')
-    ax1.grid(axis='y', alpha=0.3)
-    
-    # Create unified legend
-    handles = [
-        plt.Line2D([0], [0], color='red', lw=1, label='Sunspots'),
-        Patch(color='darkorange', alpha=0.5, label='Sunspot STD'),
-        plt.Line2D([0], [0], color='dodgerblue', lw=1, label='Available Data')
-    ]
-    ax1.legend(handles=handles, loc='upper left', framealpha=0.9)
-    
-    for ax in [ax0, ax1]:
-        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-    
-    # plt.tight_layout()
-    plt.show()
-
-
-
-
-
-def plot_day(data):
-    r_time = from_array_to_datetime(data['r_time'])
-    r_h = data['r_h'].flatten()
-    r_param = data['r_param']
-    r_error = data['r_error'] 
-    
-    
-    fig, ax = plt.subplots()
-    
-    ne=ax.pcolormesh(r_time, r_h, r_param, shading="auto", cmap="turbo", norm=colors.LogNorm(vmin=1e10, vmax=1e12))
-    ax.set_xlabel("Time (UT)")
-    ax.set_ylabel("Altitudes (km)")
-    ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-    fig.colorbar(ne, ax=ax, orientation='vertical')
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-    plt.show()
-
-
-def plot_sample(data, j):
-    r_time = from_array_to_datetime(data['r_time'])
-    r_h = data['r_h'].flatten()
-    r_param = data['r_param']
-    r_error = data['r_error'] 
-    
-    
-    for i in range(0, len(r_time)):
-        
-        plt.plot(r_param[:, i], r_h)
-        plt.errorbar(r_param[:, i], r_h, xerr=r_error[:, i])
-        plt.xscale("log")
-        plt.show()
-        
-        if i == j:
-            break
-    
-    
-    
-# Use the local folder name containing data
-folder_name_in  = "EISCAT_Madrigal/2018"
-folder_name_out = "EISCAT_MAT/2018"
-
-# Extract info from hdf5 files
-madrigal_processor = EISCATDataProcessor(folder_name_in, folder_name_out)
-madrigal_processor.process_all_files()
+# # Extract info from hdf5 files
+# madrigal_processor = EISCATDataProcessor(folder_name_in, folder_name_out)
+# madrigal_processor.process_all_files()
 
 
 
@@ -224,7 +46,7 @@ madrigal_processor.process_all_files()
 # both_folder = "EISCAT_MAT/EISCAT_test_data"
 
 # both_folder = "EISCAT_MAT/New"
-# both_folder = "EISCAT_MAT/UHF_All"
+folder_name_out = "EISCAT_MAT/2022"
 
 # Match = MatchingFiles(VHF_folder, UHF_folder)
 # Match.remove_matching_vhf_files()
@@ -235,9 +57,8 @@ Eiscat = EISCATDataSorter(folder_name_out)
 Eiscat.sort_data()
 X_eis = Eiscat.return_data()
 
+# save_dict(X_eis, file_name="X_eis")
 
-# plot_day(X_eis['2022-1-27'])
-# save_dict(X_filt, file_name="X_avg_new")
 
 
 # __________ Clipping range and Filtering data for nan __________ 
@@ -257,18 +78,41 @@ X_outliers = Outlier.return_outliers()
 
 # __________ Filtering outliers __________ 
 outlier_filter = EISCATDataFilter(X_filt, filt_outlier=True)
-outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=3, plot_after_each_day=False)
+outlier_filter.batch_filtering(dataset_outliers=X_outliers, filter_size=5, plot_after_each_day=False)
 X_outliers_filtered = outlier_filter.return_data()
+
+
+# save_dict(X_outliers_filtered, file_name="X_outliers_filtered")
 
 
 
 # __________  Averaging data __________ 
-AVG = EISCATAverager(X_outliers_filtered, plot_result=True)
+AVG = EISCATAverager(X_outliers_filtered, plot_result=False)
 AVG.average_15min()
 X_avg = AVG.return_data()
 
-# plot_day(X_avg['2022-1-27'])
 
+
+# save_dict(X_avg, file_name="X_avg")
+
+X_1 = load_dict("X_eis")['2022-1-30']
+X_2 = load_dict("X_outliers_filtered")['2022-1-30']
+X_3 = load_dict("X_avg")['2022-1-30']
+
+
+# plot_day(X_1, '2022-1-30')
+# plot_day(X_2, '2022-1-30')
+
+
+# plot_compare(X_1, X_2, '2022-1-30')
+
+plot_compare_all(X_1, X_2, X_3, '2022-1-30')
+
+
+
+
+
+# plot_day(X_avg['2022-1-30'], '2022-1-30')
 # save_dict(X_filt, file_name="X_avg_test_data")
 
 # for day in X_avg:
