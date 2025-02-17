@@ -13,8 +13,9 @@ import matplotlib.pyplot as plt
 from scipy.io import loadmat
 from scipy.interpolate import interp1d
 from scipy.signal import medfilt
-from data_utils import inspect_dict
-
+from data_utils import inspect_dict, from_array_to_datetime
+import seaborn as sns
+# sns.set(style="dark", context=None, palette=None)
 
 class EISCATDataFilter:
     """
@@ -217,7 +218,7 @@ class EISCATDataFilter:
         num_plots = len(outlier_indices)
         
         # Create a plotting grid with 2 rows and num_plots columns
-        fig, axes = plt.subplots(2, num_plots, figsize=(num_plots * 4, 8))
+        fig, axes = plt.subplots(2, num_plots, figsize=(num_plots * 3.5, 9))
         
         # If there's only one outlier, adjust axes to be a 2D list for consistency
         if num_plots == 1:
@@ -228,36 +229,49 @@ class EISCATDataFilter:
         X_orig = original_data['r_param']
         X_filt = filtered_data['r_param']
         
+        t_orig = from_array_to_datetime(original_data['r_time'])
+        
         
         # Loop over each outlier index to plot
         for i, idx in enumerate(outlier_indices):
             
-            axes[0, i].plot(X_orig[:, idx - 1], original_data['r_h'].flatten(), label=f"Data at {idx-1}", color="C0", zorder=0)
+            
+            if i != 0:
+                axes[0, i].tick_params(labelleft=False)
+                axes[1, i].tick_params(labelleft=False)
+            else:
+                axes[0, i].set_ylabel("Altitude [km]", fontsize=13)
+                axes[1, i].set_ylabel("Altitude [km]", fontsize=13)
+            
+            axes[0, i].plot(X_orig[:, idx - 2], original_data['r_h'].flatten(), color="C0", zorder=1)
+            axes[0, i].plot(X_orig[:, idx - 1], original_data['r_h'].flatten(), label="2 steps before", color="C0", zorder=1)
             axes[0, i].plot(X_orig[:, idx], original_data['r_h'].flatten(), label="Outlier", color="C1", zorder=2)
-            axes[0, i].plot(X_orig[:, idx + 1], original_data['r_h'].flatten(), label=f"Data at {idx+1}", color="C2", zorder=1)
-            axes[0, i].set_title(f"Original Data (Outlier at {idx})")
-            axes[0, i].set_ylabel("Altitude")
-            axes[0, i].set_xlabel("Electron Density")
+            axes[0, i].plot(X_orig[:, idx + 1], original_data['r_h'].flatten(), label="2 steps after", color="C2", zorder=1)
+            axes[0, i].plot(X_orig[:, idx + 2], original_data['r_h'].flatten(), color="C2", zorder=1)
+            axes[0, i].set_title(f"Before  ({t_orig[idx].strftime('%H:%M:%S')})", fontsize=15)
+            axes[0, i].set_xlabel("Electron Density $n_e$ [n m$^{-3}$]", fontsize=13)
             axes[0, i].set_xscale('log')
-    
+            axes[0, i].grid(True)
+            
             # Plot the filtered data
-            axes[1, i].plot(X_filt[:, idx - 1], filtered_data['r_h'].flatten(), label=f"Data at {idx-1}", color="C0", zorder=0)
+            axes[1, i].plot(X_filt[:, idx - 2], filtered_data['r_h'].flatten(), color="C0", zorder=1)
+            axes[1, i].plot(X_filt[:, idx - 1], filtered_data['r_h'].flatten(), label="2 steps before", color="C0", zorder=1)
             axes[1, i].plot(X_filt[:, idx], filtered_data['r_h'].flatten(), label="Filtered", color="C1", zorder=2)
-            axes[1, i].plot(X_filt[:, idx + 1], filtered_data['r_h'].flatten(), label=f"Data at {idx+1}", color="C2", zorder=1)
-            axes[1, i].set_title(f"Filtered Data (at {idx})")
-            axes[1, i].set_ylabel("Altitude")
-            axes[1, i].set_xlabel("Electron Density")
+            axes[1, i].plot(X_filt[:, idx + 1], filtered_data['r_h'].flatten(), label="2 steps after", color="C2", zorder=1)
+            axes[1, i].plot(X_filt[:, idx + 2], filtered_data['r_h'].flatten(), color="C2", zorder=1)
+            axes[1, i].set_title(f"After  ({t_orig[idx].strftime('%H:%M:%S')})", fontsize=15)
+            axes[1, i].set_xlabel("Electron Density $n_e$ [n m$^{-3}$]", fontsize=13)
             axes[1, i].set_xscale('log')
-    
+            axes[1, i].grid(True)
+            
             # Show legends
-            axes[0, i].legend()
-            axes[1, i].legend()
+            axes[0, i].legend(facecolor="white")
+            axes[1, i].legend(facecolor="white")
     
         # Add a global title for the entire figure
         fig.suptitle(f'Original vs Filtered Data.\nDate {date}', fontsize=16)
-        plt.tight_layout()
         plt.subplots_adjust(top=0.87)  # Adjust the top to make room for the suptitle
-        
+        plt.tight_layout()
         plt.show()
     
     def return_data(self):
