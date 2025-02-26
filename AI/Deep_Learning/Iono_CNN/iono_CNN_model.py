@@ -16,9 +16,9 @@ from torchsummary import summary
 
 
 
-class BranchCNN(nn.Module):
+class IonoCNN(nn.Module):
     def __init__(self):
-        super(BranchCNN, self).__init__()
+        super(IonoCNN, self).__init__()
 
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1),
@@ -36,16 +36,44 @@ class BranchCNN(nn.Module):
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),   # 20 --> 10
             
-            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(128),
+            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64),
             nn.ReLU(),
+        )
+        
+        
+        self.mlp = nn.Sequential(
+            # nn.Linear(12800, 6400),
+            # nn.BatchNorm1d(6400),
+            # nn.ReLU(),
+            
+            nn.Linear(6400, 3200),
+            nn.BatchNorm1d(3200),
+            nn.ReLU(),
+            
+            nn.Linear(3200, 1600),
+            nn.BatchNorm1d(1600),
+            nn.ReLU(),
+            
+            nn.Linear(1600, 800),
+            nn.BatchNorm1d(800),
+            nn.ReLU(),
+            
+            nn.Linear(800, 200),
+            nn.BatchNorm1d(200),
+            nn.ReLU(),
+            
+            nn.Linear(200, 27)
         )
         
         
     def forward(self, x):
         c = self.conv(x)
         x_flat = c.view(c.size(0), -1)
-        return x_flat
+        
+        m = self.mlp(x_flat)
+        
+        return m
 
 
 
@@ -72,12 +100,12 @@ if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
     # Create instances of the networks
-    cnn = BranchCNN().to(device)
+    iono_cnn = IonoCNN().to(device)
    
     # Apply He initialization
-    cnn.apply(he_initialization)
+    iono_cnn.apply(he_initialization)
     
     
     print("Iono-CNN Summary:")
-    summary(cnn, input_size=(3, 81, 81))
+    summary(iono_cnn, input_size=(3, 81, 81))
     
