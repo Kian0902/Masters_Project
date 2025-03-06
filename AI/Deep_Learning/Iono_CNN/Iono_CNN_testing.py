@@ -19,7 +19,7 @@ from storing_dataset import MatchingPairs, StoreDataset
 
 
 from Iono_CNN_utils import from_strings_to_array, filter_artist_times, load_dict, save_dict, convert_pred_to_dict, from_array_to_datetime, from_strings_to_datetime, from_csv_to_numpy, add_key_from_dict_to_dict, add_key_with_matching_times, inspect_dict, convert_ionograms_to_dict, convert_geophys_to_dict
-from iono_CNN_model import IonoCNN
+from Iono_CNN_model import IonoCNN
 
 
 from matplotlib.dates import DateFormatter
@@ -63,7 +63,7 @@ def plot_compare(data1, data2):
     
     # Plotting DL model
     ax1.pcolormesh(r_time, r_h, ne_pred, shading='auto', cmap='turbo', norm=colors.LogNorm(vmin=1e10, vmax=1e12))
-    ax1.set_title('KIAN-Net', fontsize=17)
+    ax1.set_title('Iono-CNN', fontsize=17)
     ax1.set_xlabel('Time [hh:mm]', fontsize=13)
     ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
     ax1.tick_params(labelleft=False)
@@ -127,8 +127,8 @@ def model_predict(stored_dataset, DL_model, model_weights):
 if __name__ == "__main__":
     
     # Test data folder names
-    test_ionogram_folder = "testing_data/test_ionogram_folder"
-    test_radar_folder = "testing_data/test_eiscat_folder"
+    test_ionogram_folder = "testing_data/iono_test_flow_new"
+    test_radar_folder = "testing_data/eis_test_flow_new"
     
     
     # Initializing class for matching pairs
@@ -150,7 +150,7 @@ if __name__ == "__main__":
     A = StoreDataset(ion, np.log10(rad), transforms.Compose([transforms.ToTensor()]))
     
     # Path to trained weights
-    weights_path = 'Iono_CNN_v1.pth'
+    weights_path = 'Iono_CNN_v2.pth'
     
     
     X_pred = model_predict(A, IonoCNN(), weights_path)
@@ -164,7 +164,7 @@ if __name__ == "__main__":
     X_eis = convert_pred_to_dict(r_t, r_times, X_true)
     
     # plot_day(X_eis['2012-1-19'])
-    print(inspect_dict(X_eis))
+    # print(inspect_dict(X_eis))
     
     
     # X_art = load_dict("processed_artist_test_days.pkl")
@@ -176,7 +176,7 @@ if __name__ == "__main__":
     X_eis = add_key_from_dict_to_dict(Eiscat_support, X_eis, key="r_h")
     X_eis = add_key_with_matching_times(Eiscat_support, X_eis, key="r_error")
     
-    print(inspect_dict(X_eis))
+    # print(inspect_dict(X_eis))
     
     X_kian = add_key_from_dict_to_dict(Eiscat_support, X_kian, key="r_h")
     # X_art = add_key_from_dict_to_dict(Eiscat_support, X_art, key="r_h")

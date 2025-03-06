@@ -155,8 +155,8 @@ class MatchingPairs:
         
         return sorted(list(ionogram_filenames.intersection(radar_filenames)))
         
-    
-    def find_pairs(self):
+        
+    def find_pairs(self, return_date:bool = False):
         i=0
         
         RAD = []
@@ -176,10 +176,31 @@ class MatchingPairs:
             ION.append(ionogram_array)
             
             i+=1
+            
+        if return_date is True:
+            return RAD, ION, matching_filenames
         
-        return RAD, ION
+        else:
+            return RAD, ION
+        
+    def save_matching_files(self, new_ionogram_folder, new_radar_folder):
+        # Create new folders if they don't exist
+        os.makedirs(new_ionogram_folder, exist_ok=True)
+        os.makedirs(new_radar_folder, exist_ok=True)
 
+        matching_filenames = self.get_matching_filenames()
 
+        for filename in matching_filenames:
+            # Copy ionogram files
+            ionogram_src = os.path.join(self.ionogram_folder, f"{filename}.png")
+            ionogram_dst = os.path.join(new_ionogram_folder, f"{filename}.png")
+            shutil.copy2(ionogram_src, ionogram_dst)
+
+            # Copy radar files
+            radar_src = os.path.join(self.radar_folder, f"{filename}.csv")
+            radar_dst = os.path.join(new_radar_folder, f"{filename}.csv")
+            shutil.copy2(radar_src, radar_dst)
+            
 
 
 class Matching3Pairs:
@@ -277,5 +298,17 @@ class Matching3Pairs:
 
 
 if __name__ == "__main__":
+    ionogram_folder = "testing_data/iono_test_flow"
+    radar_folder = "testing_data/eis_test_flow"
+
+    new_ionogram_folder = "testing_data/iono_test_flow_new"
+    new_radar_folder = "testing_data/eis_test_flow_new"
+
+    matcher = MatchingPairs(ionogram_folder, radar_folder)
+    matcher.save_matching_files(new_ionogram_folder, new_radar_folder)
     print("...")
+
+
+
+
 

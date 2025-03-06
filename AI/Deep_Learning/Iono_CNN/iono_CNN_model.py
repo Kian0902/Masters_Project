@@ -21,31 +21,37 @@ class IonoCNN(nn.Module):
         super(IonoCNN, self).__init__()
 
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels=3, out_channels=16, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(16),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),   # 81 --> 40
-
-            nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(32),
             nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),   # 40 --> 20
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),   # 81 --> 40
 
             nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),   # 40 --> 20
+
+            nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2, padding=0),   # 20 --> 10
             
-            nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(256),
             nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2, padding=0),   # 10 --> 5
+
+            nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(),
+            
         )
         
         
         self.mlp = nn.Sequential(
-            # nn.Linear(12800, 6400),
-            # nn.BatchNorm1d(6400),
-            # nn.ReLU(),
+            nn.Linear(12800, 6400),
+            nn.BatchNorm1d(6400),
+            nn.ReLU(),
             
             nn.Linear(6400, 3200),
             nn.BatchNorm1d(3200),
