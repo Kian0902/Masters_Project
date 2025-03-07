@@ -10,6 +10,8 @@ import os
 import pickle 
 import numpy as np
 from tqdm import tqdm
+from datetime import datetime
+
 
 def load_dict(file_name):
     with open(file_name, 'rb') as f:
@@ -19,6 +21,52 @@ def load_dict(file_name):
 def save_dict(dataset: dict, file_name: str):
     with open(file_name, 'wb') as file:
         pickle.dump(dataset, file)
+
+
+
+
+
+
+
+def from_strings_to_datetime(data_strings):
+    data = from_strings_to_array(data_strings)
+    
+    # Convert time arrays to datetime objects
+    r_time = np.array([datetime(year, month, day, hour, minute, second) 
+                            for year, month, day, hour, minute, second in data])
+    
+    return r_time
+
+
+def from_array_to_datetime(data):
+    # Convert time arrays to datetime objects
+    r_time = np.array([datetime(year, month, day, hour, minute, second) 
+                            for year, month, day, hour, minute, second in data])
+    
+    return r_time
+
+
+
+# Function to preprocess the input strings
+def from_strings_to_array(date_strings):
+    result = []
+    for date_string in date_strings:
+        date_part, time_part = date_string.split("_")
+        year = int(date_part[:4])
+        month = int(date_part[4:6])
+        day = int(date_part[6:8])
+        hour = int(time_part[:2])
+        minute = int(time_part[2:4])
+        second = 0  # Assuming seconds are always zero
+        result.append(np.array([year, month, day, hour, minute, second]))
+        
+    return result
+
+
+
+
+
+
 
 def inspect_dict(d, indent=0):
     """
