@@ -11,9 +11,9 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from ionogram_sorting import IonogramSorting
-from iono_utils import save_dict, load_dict, inspect_dict, merge_days
+from iono_utils import save_dict, load_dict, inspect_dict, merge_days, from_array_to_datetime
 
-
+from matplotlib.gridspec import GridSpec
 from process_ionograms import IonogramProcessing
 from tqdm import tqdm
 
@@ -32,22 +32,22 @@ from tqdm import tqdm
 # B.plot_single_ionogram(X_res)
 
 
-datapath_folder = "Temp"
+# datapath_folder = "Temp"
 
 
-for file in tqdm(os.listdir(datapath_folder)):
+# for file in tqdm(os.listdir(datapath_folder)):
     
-    print(f"Processing data from {file[6:12]}\n")
+    # print(f"Processing data from {file[6:12]}\n")
     
-    file_path = os.path.join(datapath_folder, file)
+    # file_path = os.path.join(datapath_folder, file)
     
-    A = IonogramSorting()
+    # A = IonogramSorting()
     # print("-Sorting Mothly file into 15 min ionogram samples...")
-    A.import_data(file_path)
+    # A.import_data(file_path)
     # A.save_as_dict(folder_path="sorted_ionogram_dicts")
     # A.save_dataset()
     # data = A.return_dataset()
-    times, data = A.import_data(file_path)
+    # times, data = A.import_data(file_path)
     
     
     
@@ -56,8 +56,8 @@ for file in tqdm(os.listdir(datapath_folder)):
     
 
     
-    B = IonogramProcessing()
-    B.process_ionogram(data, times, plot=True, apply_amplitude_filter=True)
+    # B = IonogramProcessing()
+    # B.process_ionogram(data, times, plot=True, apply_amplitude_filter=True)
 #     break
     
 #     # print("-Making Ionogram images...")
@@ -70,17 +70,21 @@ for file in tqdm(os.listdir(datapath_folder)):
 
 
 
-# data = load_dict("sorted_ionogram_dicts/2012-1-20.pkl")
+
+
+
+data = load_dict("sorted_ionogram_dicts/2012-1-20.pkl")
 
 
 # data = Data['2012-1-20']
 
 
-
+import seaborn as sns
+sns.set(style="dark", context=None, palette=None)
 
 for i in range(len(data['r_time'])):
     X = data['r_param'][i]
-    y = data['r_time'][i]
+    y = from_array_to_datetime(data['r_time'])[i]
     
     freq = X[:, 0]  # Frequency values
     rang = X[:, 1]  # Range values
@@ -110,24 +114,107 @@ for i in range(len(data['r_time'])):
     org_mask_X = (pol == -90) & (ang == 0)
     
     
-    # Plotting
-    fig, ax = plt.subplots()
-    fig.suptitle(y)
+    # # Plotting
+    # fig, ax = plt.subplots()
+    # fig.suptitle(y)
     
-    ax.scatter(freq[mask_O], rang[mask_O], s=1, c=amp[mask_O], cmap="turbo", zorder=2)
-    ax.scatter(freq[mask_X], rang[mask_X], s=1, c=amp[mask_X], cmap="turbo", zorder=2)
-    ax.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=0)
-    ax.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=0)
-    ax.set_xlabel("Frequency")
-    ax.set_ylabel("Range")
-    ax.set_xlim(0, 9.1)
-    ax.set_ylim(78, 645)
+    # ax.scatter(freq[mask_O], rang[mask_O], s=1, c=amp[mask_O], cmap="turbo", zorder=2)
+    # ax.scatter(freq[mask_X], rang[mask_X], s=1, c=amp[mask_X], cmap="turbo", zorder=2)
+    # ax.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=0)
+    # ax.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=0)
+    # ax.set_xlabel("Frequency")
+    # ax.set_ylabel("Range")
+    # ax.set_xlim(0, 9.1)
+    # ax.set_ylim(78, 645)
+    
+    # plt.show()
+
+    
+    # fig, ax = plt.subplots(1, 3, figsize=(16, 5))
+    
+    # fig.suptitle(y)
+    
+    # ax[0].scatter(freq[org_mask_O], rang[org_mask_O], s=1, c=amp[org_mask_O], cmap="turbo", zorder=2)
+    # ax[0].scatter(freq[org_mask_X], rang[org_mask_X], s=1, c=amp[org_mask_X], cmap="turbo", zorder=2)
+    # # ax[0].scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=0)
+    # # ax[0].scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=0)
+    # ax[0].set_xlabel("Frequency")
+    # ax[0].set_ylabel("Range")
+    # # ax[0].set_xlim(0, 9.6)
+    # ax[0].set_ylim(78, 645)
+    
+    
+    # ax[1].scatter(freq[mask_O], rang[mask_O], s=1, c=amp[mask_O], cmap="turbo", zorder=2)
+    # ax[1].scatter(freq[mask_X], rang[mask_X], s=1, c=amp[mask_X], cmap="turbo", zorder=2)
+    # ax[1].scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=0)
+    # ax[1].scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=0)
+    # ax[1].set_xlabel("Frequency")
+    # ax[1].set_ylabel("Range")
+    # # ax[1].set_xlim(0, 9.6)
+    # ax[1].set_ylim(78, 645)
+    
+    
+    # ax[2].scatter(freq[mask_O], rang[mask_O], s=1, c=amp[mask_O], cmap="turbo", zorder=2)
+    # ax[2].scatter(freq[mask_X], rang[mask_X], s=1, c=amp[mask_X], cmap="turbo", zorder=2)
+    # # ax[2].scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=0)
+    # # ax[2].scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=0)
+    # ax[2].set_xlabel("Frequency")
+    # ax[2].set_ylabel("Range")
+    # # ax[2].set_xlim(0, 9.6)
+    # ax[2].set_ylim(78, 645)
+    
+    # plt.show()
+    
+    
+    date_str = y.strftime('%Y-%m-%d %H:%M')
+
+    # Create a grid layout
+    fig = plt.figure(figsize=(11, 4))
+    gs = GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.1)
+    
+    # Shared y-axis setup
+    ax0 = fig.add_subplot(gs[0])
+    ax1 = fig.add_subplot(gs[1], sharey=ax0)
+    ax2 = fig.add_subplot(gs[2], sharey=ax0)
+    cax = fig.add_subplot(gs[3])
+    
+    fig.suptitle(f'{date_str}', fontsize=16, y=1.03)
+    
+    a=ax0.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c=amp[org_mask_O], cmap="turbo", zorder=2)
+    ax0.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c=amp[org_mask_X], cmap="turbo", zorder=2)
+    ax0.set_title("Original")
+    ax0.set_xlabel("Frequency (MHz)")
+    ax0.set_ylabel("Virtual Altitude (km)")
+    ax0.set_xlim(0.9, 9.1)
+    ax0.set_ylim(78, 645)
+    ax0.grid(True)
+    
+    ax1.scatter(freq[mask_O], rang[mask_O], s=1, c=amp[mask_O], cmap="turbo", zorder=2)
+    ax1.scatter(freq[mask_X], rang[mask_X], s=1, c=amp[mask_X], cmap="turbo", zorder=2)
+    ax1.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=1)
+    ax1.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=1)
+    ax1.set_title("Outlined Noise")
+    ax1.set_xlabel("Frequency (MHz)")
+    ax1.set_xlim(0.9, 9.1)
+    ax1.set_ylim(78, 645)
+    ax1.tick_params(labelleft=False)
+    ax1.grid(True)
+    
+    ax2.scatter(freq[mask_O], rang[mask_O], s=1, c=amp[mask_O], cmap="turbo", zorder=2)
+    ax2.scatter(freq[mask_X], rang[mask_X], s=1, c=amp[mask_X], cmap="turbo", zorder=2)
+    ax2.set_title("Filtered")
+    ax2.set_xlabel("Frequency (MHz)")
+    ax2.set_xlim(0.9, 9.1)
+    ax2.set_ylim(78, 645)
+    ax2.tick_params(labelleft=False)
+    ax2.grid(True)
+    
+    # Add colorbar
+    cbar = fig.colorbar(a, cax=cax, orientation='vertical')
+    cbar.set_label('Amplitude', fontsize=13)
     
     plt.show()
-
-
-
-
+    
 
 # for i in range(0, len(data['r_time'])):
 
