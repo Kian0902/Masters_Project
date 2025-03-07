@@ -9,6 +9,7 @@ Created on Tue Feb 11 10:59:31 2025
 import os
 import pickle 
 import numpy as np
+from tqdm import tqdm
 
 def load_dict(file_name):
     with open(file_name, 'rb') as f:
@@ -58,7 +59,7 @@ def inspect_dict(d, indent=0):
 def merge_days(folder_path, save=False, save_filename="X_merged_daily_sorted_ionosonde_data"):
     nested_dict = {}
     
-    for filename in os.listdir(folder_path):
+    for filename in tqdm(os.listdir(folder_path)):
         file_path = os.path.join(folder_path, filename)
         
         # Check if it's a file 
