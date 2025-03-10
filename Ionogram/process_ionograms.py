@@ -8,267 +8,538 @@ Updated:
     Sat Sep 28 13:36:00 2024
     @author: Kian Sartipzadeh
 """
+import os
 import numpy as np
 from scipy.interpolate import RegularGridInterpolator
 from PIL import Image
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
-import os
+from matplotlib.gridspec import GridSpec
+import seaborn as sns
 from datetime import datetime
+
+
+
+# class IonogramProcessing:
+#     def __init__(self):
+#         # Original ionogram axes and parameters
+#         self.freq_org = np.arange(1, 16 + 0.05, 0.05)  # Frequency axis: 1-16 MHz, step 0.05
+#         self.rang_org = np.arange(80, 640 + 5, 5)       # Range axis: 80-640 km, step 5
+#         self.I_max = 120  # Maximum amplitude for scaling
+#         self.I_min = 20  # Minimum amplitude for scaling
+
+#     def amplitude_filter(self, freq, amp, threshold_fraction=0.75):
+#         mask_amp = np.zeros_like(freq, dtype=bool)
+#         unique_freqs = np.unique(freq)
+#         for f in unique_freqs:
+#             indices = np.where(freq == f)[0]
+#             if len(indices) == 0:
+#                 continue
+#             current_amps = amp[indices]
+#             max_amp_f = np.max(current_amps)
+#             threshold = threshold_fraction * max_amp_f
+#             mask_amp[indices] = current_amps >= threshold
+#         return mask_amp
+
+#     def reconstruct_ionogram(self, data_i, apply_amplitude_filter=False):
+#         # Extract data components
+#         freq = np.around(data_i[:, 0], decimals=2)  # Frequency values
+#         rang = np.around(data_i[:, 1], decimals=2)  # Range values
+#         pol  = np.round(data_i[:, 2])               # Polarization values
+#         amp  = data_i[:, 4]                         # Amplitude values
+#         ang  = np.round(data_i[:, 7])               # Angle values
+
+#         # Initialize ionogram structure: dimensions (range, frequency, channels)
+#         iono_org = np.zeros((len(self.rang_org), len(self.freq_org), 3))
+        
+#         # Calculate indices for frequency and range
+#         F_idx = np.clip(np.searchsorted(self.freq_org, freq), 0, len(self.freq_org)-1)
+#         Z_idx = np.clip(np.searchsorted(self.rang_org, rang), 0, len(self.rang_org)-1)
+#         I_idx = np.clip(amp, self.I_min, self.I_max)  # Clip amplitudes
+        
+#         # Apply amplitude filter (optional)
+#         if apply_amplitude_filter:
+#             mask_amp = self.amplitude_filter(freq, amp, threshold_fraction=0.75)
+#         else:
+#             mask_amp = np.ones_like(freq, dtype=bool)
+        
+#         # Create masks for O-mode and X-mode
+#         mask_O = (pol == 90) & (ang == 0) & mask_amp
+#         mask_X = (pol == -90) & (ang == 0) & mask_amp
+        
+#         # Populate the image channels
+#         iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = (I_idx[mask_O] - self.I_min) / (self.I_max - self.I_min)
+#         iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = (I_idx[mask_X] - self.I_min) / (self.I_max - self.I_min)
+        
+#         # Normalize to 255 and convert to uint8
+#         if np.max(iono_org) > 0:
+#             iono_org = (iono_org / np.max(iono_org)) * 255
+#         else:
+#             iono_org = np.zeros_like(iono_org)
+#         return iono_org.astype(np.uint8)
+
+#     def resample_ionogram(self, iono_org, Frange=[1, 9], Zrange=[80, 480], output_size=81):
+#         # New grid coordinates
+#         frequency_axis = np.linspace(Frange[0], Frange[1], output_size)
+#         range_axis = np.linspace(Zrange[0], Zrange[1], output_size)
+#         r, f = np.meshgrid(range_axis, frequency_axis)
+
+#         # Prepare the output for O-mode and X-mode (channels 0 and 1)
+#         iono_resampled = np.zeros((output_size, output_size, 3))
+#         for mode in range(2):
+#             interpolator = RegularGridInterpolator(
+#                 (self.rang_org, self.freq_org), iono_org[:, :, mode],
+#                 method='linear', bounds_error=False, fill_value=0
+#             )
+#             grid_coords = np.array([r.ravel(), f.ravel()]).T
+#             iono_resampled[:, :, mode] = interpolator(grid_coords).reshape((output_size, output_size))
+        
+#         # Normalize and convert to uint8
+#         if np.max(iono_resampled) > 0:
+#             iono_resampled = (iono_resampled / np.max(iono_resampled)) * 255
+#         else:
+#             iono_resampled = np.zeros_like(iono_resampled)
+#         iono_resampled = iono_resampled.astype(np.uint8)
+#         # Rotate for proper display orientation
+#         return np.rot90(iono_resampled, k=1)
+
 
 class IonogramProcessing:
     def __init__(self):
         # Original ionogram axes and parameters
         self.freq_org = np.arange(1, 16 + 0.05, 0.05)  # Frequency axis: 1-16 MHz, step 0.05
-        self.rang_org = np.arange(80, 640 + 5, 5)      # Range axis: 80-640 km, step 5
-        self.I_max = 75  # Maximum amplitude for scaling
-        self.I_min = 20    # Minimum amplitude for scaling
+        self.rang_org = np.arange(80, 640 + 5, 5)       # Range axis: 80-640 km, step 5
 
     def amplitude_filter(self, freq, amp, threshold_fraction=0.75):
-        """
-        Returns a boolean mask indicating which data points
-        pass the amplitude filter based on `threshold_fraction`.
-        
-        :param freq: 1D array of frequency values
-        :param amp:  1D array of amplitude values
-        :param threshold_fraction: Fraction of the maximum amplitude
-                                   used as the cutoff threshold
-        :return: Boolean mask (True where data is kept)
-        """
         mask_amp = np.zeros_like(freq, dtype=bool)
         unique_freqs = np.unique(freq)
-        
         for f in unique_freqs:
             indices = np.where(freq == f)[0]
-            if len(indices) == 0:
+            if indices.size == 0:
                 continue
             current_amps = amp[indices]
             max_amp_f = np.max(current_amps)
             threshold = threshold_fraction * max_amp_f
             mask_amp[indices] = current_amps >= threshold
-        
         return mask_amp
 
     def reconstruct_ionogram(self, data_i, apply_amplitude_filter=False):
-        """
-        Reconstructs the ionogram to its original dimensions from raw data.
-        Returns the reconstructed ionogram as a uint8 array.
-        
-        :param data_i: Raw ionogram data (N x M array-like)
-        :param apply_amplitude_filter: Whether to apply amplitude-based filtering
-        """
         # Extract data components
         freq = np.around(data_i[:, 0], decimals=2)  # Frequency values
         rang = np.around(data_i[:, 1], decimals=2)  # Range values
         pol  = np.round(data_i[:, 2])               # Polarization values
         amp  = data_i[:, 4]                         # Amplitude values
         ang  = np.round(data_i[:, 7])               # Angle values
-        
-        # Initialize ionogram structure
+
+        # Initialize ionogram array: dimensions (range, frequency, channels)
         iono_org = np.zeros((len(self.rang_org), len(self.freq_org), 3))
         
-        # Calculate indices for frequency and range
+        # Calculate indices for frequency and range on the grid
         F_idx = np.clip(np.searchsorted(self.freq_org, freq), 0, len(self.freq_org)-1)
         Z_idx = np.clip(np.searchsorted(self.rang_org, rang), 0, len(self.rang_org)-1)
-        I_idx = np.clip(amp, self.I_min, self.I_max)  # Clip amplitudes
         
-        # Apply amplitude filter (optional)
+        # Apply amplitude filter if requested
         if apply_amplitude_filter:
             mask_amp = self.amplitude_filter(freq, amp, threshold_fraction=0.75)
         else:
-            # If not applying the filter, just use a mask that keeps all points
             mask_amp = np.ones_like(freq, dtype=bool)
         
-        # Apply masks for polarization, angle, and amplitude
+        # Create masks for O-mode and X-mode
         mask_O = (pol == 90) & (ang == 0) & mask_amp
         mask_X = (pol == -90) & (ang == 0) & mask_amp
-        
-        # Populate O-mode and X-mode data
-        iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = \
-            (I_idx[mask_O] - self.I_min) / (self.I_max - self.I_min)
-        iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = \
-            (I_idx[mask_X] - self.I_min) / (self.I_max - self.I_min)
-        
-        # Normalize and convert to uint8
+
+        # Process O-mode: normalize amplitude using the dynamic range found in the data
+        if np.any(mask_O):
+            amp_O = amp[mask_O]
+            min_O, max_O = np.min(amp_O), np.max(amp_O)
+            # Avoid division by zero
+            if max_O - min_O > 0:
+                norm_O = (amp_O - min_O) / (max_O - min_O)
+            else:
+                norm_O = np.zeros_like(amp_O)
+            iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = norm_O
+
+        # Process X-mode similarly
+        if np.any(mask_X):
+            amp_X = amp[mask_X]
+            min_X, max_X = np.min(amp_X), np.max(amp_X)
+            if max_X - min_X > 0:
+                norm_X = (amp_X - min_X) / (max_X - min_X)
+            else:
+                norm_X = np.zeros_like(amp_X)
+            iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = norm_X
+
+        # Finally, scale the entire ionogram to 0-255 and convert to uint8.
         if np.max(iono_org) > 0:
             iono_org = (iono_org / np.max(iono_org)) * 255
         else:
             iono_org = np.zeros_like(iono_org)
-        iono_org = iono_org.astype(np.uint8)
-        
-        return iono_org
+        return iono_org.astype(np.uint8)
 
     def resample_ionogram(self, iono_org, Frange=[1, 9], Zrange=[80, 480], output_size=81):
-        """
-        Resamples the ionogram onto a new grid of specified size.
-        Returns the resampled ionogram as a uint8 array.
-        """
-        # Create new grid coordinates
+        # Create new grid coordinates for resampling
         frequency_axis = np.linspace(Frange[0], Frange[1], output_size)
         range_axis = np.linspace(Zrange[0], Zrange[1], output_size)
         r, f = np.meshgrid(range_axis, frequency_axis)
 
-        # Interpolate each mode
+        # Prepare output ionogram for O-mode and X-mode (channels 0 and 1)
         iono_resampled = np.zeros((output_size, output_size, 3))
-        for mode in range(2):  # Process O-mode and X-mode
+        for mode in range(2):
             interpolator = RegularGridInterpolator(
                 (self.rang_org, self.freq_org), iono_org[:, :, mode],
                 method='linear', bounds_error=False, fill_value=0
             )
             grid_coords = np.array([r.ravel(), f.ravel()]).T
             iono_resampled[:, :, mode] = interpolator(grid_coords).reshape((output_size, output_size))
-
-        # Normalize and format
+        
+        # Normalize to 0-255 and convert to uint8
         if np.max(iono_resampled) > 0:
             iono_resampled = (iono_resampled / np.max(iono_resampled)) * 255
         else:
             iono_resampled = np.zeros_like(iono_resampled)
         iono_resampled = iono_resampled.astype(np.uint8)
-        # Rotate for correct orientation
-        iono_resampled = np.rot90(iono_resampled, k=1)
-
-        return iono_resampled
-    
-    # def plot_ionograms_2x2(self, iono_org, iono_resampled, iono_org_unfiltered, iono_org_filtered, time_str, apply_amplitude_filter):
-    #     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    #     fig.suptitle(time_str, fontsize=17)
-
-    #     title_top_left = "Reconstructed Ionogram (with filter)" if apply_amplitude_filter else "Reconstructed Ionogram (without filter)"
-    #     axes[0, 0].imshow(np.flipud(iono_org), extent=[self.freq_org[0], self.freq_org[-1], self.rang_org[0], self.rang_org[-1]], aspect='auto')
-    #     axes[0, 0].set_title(title_top_left, fontsize=15)
-
-    #     axes[0, 1].imshow(iono_resampled, extent=[1, 9, 80, 480], aspect='auto')
-    #     axes[0, 1].set_title("Resampled Ionogram", fontsize=15)
-
-    #     axes[1, 0].imshow(np.flipud(iono_org_unfiltered), extent=[self.freq_org[0], self.freq_org[-1], self.rang_org[0], self.rang_org[-1]], aspect='auto')
-    #     axes[1, 0].set_title("Reconstructed Ionogram (without amplitude filter)", fontsize=15)
-
-    #     axes[1, 1].imshow(np.flipud(iono_org_filtered), extent=[self.freq_org[0], self.freq_org[-1], self.rang_org[0], self.rang_org[-1]], aspect='auto')
-    #     axes[1, 1].set_title("Reconstructed Ionogram (with amplitude filter)", fontsize=15)
-
-    #     for ax in axes.flat:
-    #         ax.set_xlabel("Frequency (MHz)", fontsize=13)
-    #         ax.set_ylabel("Virtual Altitude (km)", fontsize=13)
-    #         ax.legend(handles=[Patch(color='red', label='O-mode'), Patch(color='green', label='X-mode')], loc='upper right')
-
-    #     plt.tight_layout()
-    #     plt.show()
+        # Rotate for proper display orientation
+        return np.rot90(iono_resampled, k=1)
 
 
-
-
-
-    # def process_ionogram(self, data, times, plot=False, apply_amplitude_filter=False, result_path=None):
-    #     output_size = 81
-    #     Frange = [1, 9]
-    #     Zrange = [80, 480]
-
-    #     for i in range(len(data)):
-    #         time = times[i]
-    #         data_i = data[i]
-
-    #         iono_org = self.reconstruct_ionogram(data_i, apply_amplitude_filter=apply_amplitude_filter)
-    #         str_org = f'{iono_org.shape[0]}x{iono_org.shape[1]}x{iono_org.shape[2]}'
-            
-    #         iono_resampled = self.resample_ionogram(iono_org, Frange, Zrange, output_size)
-    #         str_res = f'{iono_resampled.shape[0]}x{iono_resampled.shape[1]}x{iono_resampled.shape[2]}'
-            
-    #         if result_path:
-    #             iono_resampled_image = Image.fromarray(iono_resampled)
-    #             time_str = datetime.strptime(time, "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
-    #             save_path = os.path.join(result_path, f"{time_str}.png")
-    #             iono_resampled_image.save(save_path)
-
-    #         if plot:
-    #             if apply_amplitude_filter:
-    #                 iono_org_unfiltered = self.reconstruct_ionogram(data_i, apply_amplitude_filter=False)
-    #                 iono_org_filtered = iono_org
-    #             else:
-    #                 iono_org_filtered = self.reconstruct_ionogram(data_i, apply_amplitude_filter=True)
-    #                 iono_org_unfiltered = iono_org
-                
-    #             time_str = datetime.strptime(time, "%Y.%m.%d_%H-%M-%S").strftime("%Y-%m-%d %H:%M")
-    #             self.plot_ionograms_2x2(iono_org, iono_resampled, iono_org_unfiltered, iono_org_filtered, time_str, apply_amplitude_filter)
-
-    #     print("Processing complete.")
-
-
-
-
-
-    def process_ionogram(self, data, times, plot=False, apply_amplitude_filter=False, result_path=None):
+    def process_and_plot(self, data, times, result_path=None, apply_amplitude_filter=False):
         """
-        Processes ionograms through reconstruction and resampling.
-        Handles batch processing of multiple ionograms.
-        
-        :param data: List (or array-like) of raw ionogram data arrays
-        :param times: Corresponding list of timestamp strings
-        :param plot: Whether to plot the reconstructed and resampled ionograms
-        :param result_path: Directory path to save results (optional)
-        :param apply_amplitude_filter: Pass through to `reconstruct_ionogram`
+        Processes a list of ionogram data arrays and corresponding timestamps.
+        Generates a 2x3 figure for each ionogram:
+          - Top row: Original ionogram (spanning columns 1-2) and Resampled ionogram (column 3)
+          - Bottom row: Three filtering plots.
+        Optionally saves the figure if a result_path is provided.
         """
-        # Resampling parameters
         output_size = 81
         Frange = [1, 9]
         Zrange = [80, 480]
-
+        
         for i in range(len(data)):
-            time = times[i]
+            time_str_raw = times[i]
             data_i = data[i]
-
-            # Reconstruct original ionogram (with or without amplitude filter)
+            
+            # Reconstruct and resample ionogram
             iono_org = self.reconstruct_ionogram(data_i, apply_amplitude_filter=apply_amplitude_filter)
-            str_org = f'{iono_org.shape[0]}x{iono_org.shape[1]}x{iono_org.shape[2]}'
-            
-            # Resample to new grid
             iono_resampled = self.resample_ionogram(iono_org, Frange, Zrange, output_size)
-            str_res = f'{iono_resampled.shape[0]}x{iono_resampled.shape[1]}x{iono_resampled.shape[2]}'
+            
+            # --- Prepare filtering data ---
+            freq = np.around(data_i[:, 0], decimals=2)
+            rang = np.around(data_i[:, 1], decimals=2)
+            pol = np.round(data_i[:, 2])
+            amp = data_i[:, 4]
+            ang = np.round(data_i[:, 7])
+            
+            # Create amplitude filter mask
+            mask_amp = np.zeros_like(freq, dtype=bool)
+            unique_freqs = np.unique(freq)
+            for f in unique_freqs:
+                indices = np.where(freq == f)[0]
+                if len(indices) == 0:
+                    continue
+                current_amps = amp[indices]
+                max_amp_f = np.max(current_amps)
+                threshold = 0.75 * max_amp_f
+                mask_amp[indices] = current_amps >= threshold
+            
+            # Masks for scatter plots
+            mask_O = (pol == 90) & (ang == 0) & mask_amp
+            mask_X = (pol == -90) & (ang == 0) & mask_amp
+            org_mask_O = (pol == 90) & (ang == 0)
+            org_mask_X = (pol == -90) & (ang == 0)
             
             
-            # Handle image saving
+            
+            # --- Create figure ---
+            fig = plt.figure(figsize=(15, 10))
+            gs = GridSpec(2, 5, height_ratios=[1.2, 1], width_ratios=[1, 1, 1, -0.35, 0.05], hspace=0.3, wspace=0.4)
+            
+            # Top row plots (using default style)
+            ax_top_org = fig.add_subplot(gs[0, :2])  # Original ionogram spans columns 0 and 1
+            ax_top_res = fig.add_subplot(gs[0, 2])     # Resampled ionogram in column 2
+            
+            # Plot the original ionogram (flip vertically for proper display)
+            iono_org_disp = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
+            ax_top_org.imshow(
+                iono_org_disp,
+                extent=[self.freq_org[0], self.freq_org[-1],
+                        self.rang_org[0], self.rang_org[-1]],
+                aspect='auto'
+            )
+            ax_top_org.set_title("Filtered Ionogram", fontsize=17)
+            ax_top_org.set_xlabel("Frequency (MHz)", fontsize=13)
+            ax_top_org.set_ylabel("Virtual Altitude (km)", fontsize=13)
+            ax_top_org.legend(handles=[Patch(color='red', label='O-mode'),
+                                       Patch(color='green', label='X-mode')],
+                              loc='upper right')
+            
+            # Plot the resampled ionogram
+            ax_top_res.imshow(
+                iono_resampled,
+                extent=[Frange[0], Frange[1], Zrange[0], Zrange[1]],
+                aspect='auto'
+            )
+            ax_top_res.set_title("Resampled Ionogram", fontsize=17)
+            ax_top_res.set_xlabel("Frequency (MHz)", fontsize=13)
+            ax_top_res.set_ylabel("Virtual Altitude (km)", fontsize=13)
+            ax_top_res.legend(handles=[Patch(color='red', label='O-mode'),
+                                       Patch(color='green', label='X-mode')],
+                              loc='upper right')
+            
+            # --- Bottom row: Filtering scatter plots with Seaborn dark style ---
+            # Use a context manager so that only these axes get the dark style.
+            with sns.axes_style("dark"):
+                ax_filt0 = fig.add_subplot(gs[1, 0])
+                ax_filt1 = fig.add_subplot(gs[1, 1])
+                ax_filt2 = fig.add_subplot(gs[1, 2])
+                ax_space = fig.add_subplot(gs[1, 3])
+                ax_space.set_visible(False)
+                
+                cax      = fig.add_subplot(gs[1, 4])
+                
+                
+                # Plot 1: Original (non-filtered) data
+                scatter0 = ax_filt0.scatter(freq[org_mask_O], rang[org_mask_O], s=1, 
+                                            c=amp[org_mask_O], cmap="turbo", zorder=2)
+                ax_filt0.scatter(freq[org_mask_X], rang[org_mask_X], s=1, 
+                                 c=amp[org_mask_X], cmap="turbo", zorder=2)
+                ax_filt0.set_title("Original", fontsize=15)
+                ax_filt0.set_xlabel("Frequency (MHz)", fontsize=13)
+                ax_filt0.set_ylabel("Virtual Altitude (km)", fontsize=13)
+                ax_filt0.set_xlim(0.9, 9.1)
+                ax_filt0.set_ylim(78, 645)
+                ax_filt0.grid(True)
+                
+                # Plot 2: Outlined Noise
+                scatter1 = ax_filt1.scatter(freq[mask_O], rang[mask_O], s=1, 
+                                            c=amp[mask_O], cmap="turbo", zorder=2)
+                ax_filt1.scatter(freq[mask_X], rang[mask_X], s=1, 
+                                 c=amp[mask_X], cmap="turbo", zorder=2)
+                # Overlay original (non-filtered) points in black for context
+                ax_filt1.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=1)
+                ax_filt1.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=1)
+                ax_filt1.set_title("Outlined Noise", fontsize=15)
+                ax_filt1.set_xlabel("Frequency (MHz)", fontsize=13)
+                ax_filt1.set_xlim(0.9, 9.1)
+                ax_filt1.set_ylim(78, 645)
+                ax_filt1.grid(True)
+                
+                # Plot 3: Filtered data
+                scatter2 = ax_filt2.scatter(freq[mask_O], rang[mask_O], s=1, 
+                                            c=amp[mask_O], cmap="turbo", zorder=2)
+                ax_filt2.scatter(freq[mask_X], rang[mask_X], s=1, 
+                                 c=amp[mask_X], cmap="turbo", zorder=2)
+                ax_filt2.set_title("Filtered", fontsize=15)
+                ax_filt2.set_xlabel("Frequency (MHz)", fontsize=13)
+                ax_filt2.set_xlim(0.9, 9.1)
+                ax_filt2.set_ylim(78, 645)
+                ax_filt2.grid(True)
+                
+                cbar = fig.colorbar(scatter0, cax=cax, orientation='vertical')
+                cbar.set_label('Amplitude', fontsize=13)
+                
+            
+            # Set the overall title using the timestamp
+            time_display = datetime.strptime(time_str_raw, "%Y.%m.%d_%H-%M-%S").strftime("%Y-%m-%d %H:%M")
+            fig.suptitle(time_display, fontsize=18)
+            
+            plt.tight_layout()
+            plt.show()
+            
+            # Optionally, save the figure if a result path is provided
             if result_path:
-                iono_resampled_image = Image.fromarray(iono_resampled)
-                time_str = datetime.strptime(time, "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
-                save_path = os.path.join(result_path, f"{time_str}.png")
-                iono_resampled_image.save(save_path)
+                time_file = datetime.strptime(time_str_raw, "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
+                fig.savefig(os.path.join(result_path, f"{time_file}_combined.png"))
 
-            # Handle plotting
-            if plot:
-                time_str = datetime.strptime(time, "%Y.%m.%d_%H-%M-%S").strftime("%Y-%m-%d %H:%M")
-                fig, ax = plt.subplots(1, 2, width_ratios=[1, 0.6], figsize=(12, 5))
-                fig.suptitle(time_str, fontsize=17)
 
-                # Original ionogram (flipped vertically for displa y)
-                iono_org_display = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
-                ax[0].imshow(
-                    iono_org_display,
-                    extent=[self.freq_org[0], self.freq_org[-1], self.rang_org[0], self.rang_org[-1]],
-                    aspect='auto'
-                )
-                ax[0].set_title("Original Ionogram", fontsize=17)
 
-                # Resampled ionogram
-                ax[1].imshow(
-                    iono_resampled,
-                    extent=[Frange[0], Frange[1], Zrange[0], Zrange[1]],
-                    aspect='auto'
-                )
-                ax[1].set_title("Resampled Ionogram", fontsize=17)
+# class IonogramProcessing:
+#     def __init__(self):
+#         # Original ionogram axes and parameters
+#         self.freq_org = np.arange(1, 16 + 0.05, 0.05)  # Frequency axis: 1-16 MHz, step 0.05
+#         self.rang_org = np.arange(80, 640 + 5, 5)      # Range axis: 80-640 km, step 5
+#         self.I_max = 75  # Maximum amplitude for scaling
+#         self.I_min = 20    # Minimum amplitude for scaling
 
-                # Add legends and labels
-                for axis in ax:
-                    axis.set_xlabel("Frequency (MHz)", fontsize=13)
-                    axis.set_ylabel("Virtual Altitude (km)", fontsize=13)
-                    axis.legend(handles=[
-                        Patch(color='red', label='O-mode'),
-                        Patch(color='green', label='X-mode')
-                    ], loc='upper right')
+#     def amplitude_filter(self, freq, amp, threshold_fraction=0.75):
+#         """
+#         Returns a boolean mask indicating which data points
+#         pass the amplitude filter based on `threshold_fraction`.
+        
+#         :param freq: 1D array of frequency values
+#         :param amp:  1D array of amplitude values
+#         :param threshold_fraction: Fraction of the maximum amplitude
+#                                    used as the cutoff threshold
+#         :return: Boolean mask (True where data is kept)
+#         """
+#         mask_amp = np.zeros_like(freq, dtype=bool)
+#         unique_freqs = np.unique(freq)
+        
+#         for f in unique_freqs:
+#             indices = np.where(freq == f)[0]
+#             if len(indices) == 0:
+#                 continue
+#             current_amps = amp[indices]
+#             max_amp_f = np.max(current_amps)
+#             threshold = threshold_fraction * max_amp_f
+#             mask_amp[indices] = current_amps >= threshold
+        
+#         return mask_amp
 
-                plt.tight_layout()
-                plt.show()
+#     def reconstruct_ionogram(self, data_i, apply_amplitude_filter=False):
+#         """
+#         Reconstructs the ionogram to its original dimensions from raw data.
+#         Returns the reconstructed ionogram as a uint8 array.
+        
+#         :param data_i: Raw ionogram data (N x M array-like)
+#         :param apply_amplitude_filter: Whether to apply amplitude-based filtering
+#         """
+#         # Extract data components
+#         freq = np.around(data_i[:, 0], decimals=2)  # Frequency values
+#         rang = np.around(data_i[:, 1], decimals=2)  # Range values
+#         pol  = np.round(data_i[:, 2])               # Polarization values
+#         amp  = data_i[:, 4]                         # Amplitude values
+#         ang  = np.round(data_i[:, 7])               # Angle values
+        
+#         # Initialize ionogram structure
+#         iono_org = np.zeros((len(self.rang_org), len(self.freq_org), 3))
+        
+#         # Calculate indices for frequency and range
+#         F_idx = np.clip(np.searchsorted(self.freq_org, freq), 0, len(self.freq_org)-1)
+#         Z_idx = np.clip(np.searchsorted(self.rang_org, rang), 0, len(self.rang_org)-1)
+#         I_idx = np.clip(amp, self.I_min, self.I_max)  # Clip amplitudes
+        
+#         # Apply amplitude filter (optional)
+#         if apply_amplitude_filter:
+#             mask_amp = self.amplitude_filter(freq, amp, threshold_fraction=0.75)
+#         else:
+#             # If not applying the filter, just use a mask that keeps all points
+#             mask_amp = np.ones_like(freq, dtype=bool)
+        
+#         # Apply masks for polarization, angle, and amplitude
+#         mask_O = (pol == 90) & (ang == 0) & mask_amp
+#         mask_X = (pol == -90) & (ang == 0) & mask_amp
+        
+#         # Populate O-mode and X-mode data
+#         iono_org[Z_idx[mask_O], F_idx[mask_O], 0] = \
+#             (I_idx[mask_O] - self.I_min) / (self.I_max - self.I_min)
+#         iono_org[Z_idx[mask_X], F_idx[mask_X], 1] = \
+#             (I_idx[mask_X] - self.I_min) / (self.I_max - self.I_min)
+        
+#         # Normalize and convert to uint8
+#         if np.max(iono_org) > 0:
+#             iono_org = (iono_org / np.max(iono_org)) * 255
+#         else:
+#             iono_org = np.zeros_like(iono_org)
+#         iono_org = iono_org.astype(np.uint8)
+        
+#         return iono_org
+
+#     def resample_ionogram(self, iono_org, Frange=[1, 9], Zrange=[80, 480], output_size=81):
+#         """
+#         Resamples the ionogram onto a new grid of specified size.
+#         Returns the resampled ionogram as a uint8 array.
+#         """
+#         # Create new grid coordinates
+#         frequency_axis = np.linspace(Frange[0], Frange[1], output_size)
+#         range_axis = np.linspace(Zrange[0], Zrange[1], output_size)
+#         r, f = np.meshgrid(range_axis, frequency_axis)
+
+#         # Interpolate each mode
+#         iono_resampled = np.zeros((output_size, output_size, 3))
+#         for mode in range(2):  # Process O-mode and X-mode
+#             interpolator = RegularGridInterpolator(
+#                 (self.rang_org, self.freq_org), iono_org[:, :, mode],
+#                 method='linear', bounds_error=False, fill_value=0
+#             )
+#             grid_coords = np.array([r.ravel(), f.ravel()]).T
+#             iono_resampled[:, :, mode] = interpolator(grid_coords).reshape((output_size, output_size))
+
+#         # Normalize and format
+#         if np.max(iono_resampled) > 0:
+#             iono_resampled = (iono_resampled / np.max(iono_resampled)) * 255
+#         else:
+#             iono_resampled = np.zeros_like(iono_resampled)
+#         iono_resampled = iono_resampled.astype(np.uint8)
+#         # Rotate for correct orientation
+#         iono_resampled = np.rot90(iono_resampled, k=1)
+
+#         return iono_resampled
+    
+
+
+#     def process_ionogram(self, data, times, plot=False, apply_amplitude_filter=False, result_path=None):
+#         """
+#         Processes ionograms through reconstruction and resampling.
+#         Handles batch processing of multiple ionograms.
+        
+#         :param data: List (or array-like) of raw ionogram data arrays
+#         :param times: Corresponding list of timestamp strings
+#         :param plot: Whether to plot the reconstructed and resampled ionograms
+#         :param result_path: Directory path to save results (optional)
+#         :param apply_amplitude_filter: Pass through to `reconstruct_ionogram`
+#         """
+#         # Resampling parameters
+#         output_size = 81
+#         Frange = [1, 9]
+#         Zrange = [80, 480]
+
+#         for i in range(len(data)):
+#             time = times[i]
+#             data_i = data[i]
+
+#             # Reconstruct original ionogram (with or without amplitude filter)
+#             iono_org = self.reconstruct_ionogram(data_i, apply_amplitude_filter=apply_amplitude_filter)
+#             str_org = f'{iono_org.shape[0]}x{iono_org.shape[1]}x{iono_org.shape[2]}'
+            
+#             # Resample to new grid
+#             iono_resampled = self.resample_ionogram(iono_org, Frange, Zrange, output_size)
+#             str_res = f'{iono_resampled.shape[0]}x{iono_resampled.shape[1]}x{iono_resampled.shape[2]}'
+            
+            
+#             # Handle image saving
+#             if result_path:
+#                 iono_resampled_image = Image.fromarray(iono_resampled)
+#                 time_str = datetime.strptime(time, "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
+#                 save_path = os.path.join(result_path, f"{time_str}.png")
+#                 iono_resampled_image.save(save_path)
+
+#             # Handle plotting
+#             if plot:
+#                 time_str = datetime.strptime(time, "%Y.%m.%d_%H-%M-%S").strftime("%Y-%m-%d %H:%M")
+#                 fig, ax = plt.subplots(1, 2, width_ratios=[1, 0.6], figsize=(12, 5))
+#                 fig.suptitle(time_str, fontsize=17)
+
+#                 # Original ionogram (flipped vertically for displa y)
+#                 iono_org_display = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
+#                 ax[0].imshow(
+#                     iono_org_display,
+#                     extent=[self.freq_org[0], self.freq_org[-1], self.rang_org[0], self.rang_org[-1]],
+#                     aspect='auto'
+#                 )
+#                 ax[0].set_title("Original Ionogram", fontsize=17)
+
+#                 # Resampled ionogram
+#                 ax[1].imshow(
+#                     iono_resampled,
+#                     extent=[Frange[0], Frange[1], Zrange[0], Zrange[1]],
+#                     aspect='auto'
+#                 )
+#                 ax[1].set_title("Resampled Ionogram", fontsize=17)
+
+#                 # Add legends and labels
+#                 for axis in ax:
+#                     axis.set_xlabel("Frequency (MHz)", fontsize=13)
+#                     axis.set_ylabel("Virtual Altitude (km)", fontsize=13)
+#                     axis.legend(handles=[
+#                         Patch(color='red', label='O-mode'),
+#                         Patch(color='green', label='X-mode')
+#                     ], loc='upper right')
+
+#                 plt.tight_layout()
+#                 plt.show()
                 
                 
-                fig, ax = plt.subplots(1, 2)
+                
                 
                 
                 
@@ -276,7 +547,7 @@ class IonogramProcessing:
                 
                 
 
-        print("Processing complete.")
+#         print("Processing complete.")
         
     # def plot_single_ionogram(self, ionogram, extent=None, title="Ionogram", flip_vertical=False):
     #     """
