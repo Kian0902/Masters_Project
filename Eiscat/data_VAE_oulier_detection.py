@@ -253,18 +253,22 @@ class VAE(nn.Module):
             nn.Linear(input_dim, 20),
             nn.BatchNorm1d(20),
             nn.ReLU(),
+            nn.Dropout(0.2),
             
             nn.Linear(20, 15),
             nn.BatchNorm1d(15),
             nn.ReLU(),
+            nn.Dropout(0.2),
             
             nn.Linear(15, 10),
             nn.BatchNorm1d(10),
             nn.ReLU(),
+            nn.Dropout(0.2),
             
             nn.Linear(10, 5),
             nn.BatchNorm1d(5),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.Dropout(0.2),
             
         )
         # Latent space
@@ -276,18 +280,22 @@ class VAE(nn.Module):
             nn.Linear(latent_dim, 5),
             nn.BatchNorm1d(5),
             nn.ReLU(),
+            nn.Dropout(0.2),
             
             nn.Linear(5, 10),
             nn.BatchNorm1d(10),
             nn.ReLU(),
+            nn.Dropout(0.2),
             
             nn.Linear(10, 15),
             nn.BatchNorm1d(15),
             nn.ReLU(),
+            nn.Dropout(0.2),
             
             nn.Linear(15, 20),
             nn.BatchNorm1d(20),
             nn.ReLU(),
+            nn.Dropout(0.2),
             
             
             nn.Linear(20, input_dim),
@@ -314,7 +322,7 @@ class VAE(nn.Module):
         return recon_x, mu, logvar
 
 
-def loss_function(recon_x, x, mu, logvar, beta=0.8):
+def loss_function(recon_x, x, mu, logvar, beta=0):
     MSE = F.mse_loss(recon_x, x, reduction='mean')
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
     return MSE + beta*KLD
@@ -341,9 +349,13 @@ val_loader = DataLoader(val_dataset, batch_size=val_size, shuffle=True)
 # --------------------------
 # 2. Train the VAE
 # --------------------------
-num_epochs = 1000
+num_epochs = 200
 model = VAE(latent_dim=3).to(device)
 optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+
+scheduler1 = torch.optim.lr_scheduler.StepLR(optimizer, step_size=150, gamma=0.1)
+
 
 best_val_loss = float('inf')
 best_model_weights = model.state_dict()
@@ -371,6 +383,9 @@ for epoch in range(num_epochs):
     avg_train_loss = running_loss / len(train_loader)
     train_losses.append(avg_train_loss)
     
+    scheduler1.step()
+    
+    
     model.eval()
     val_loss = 0.0
     with torch.no_grad():
@@ -387,7 +402,7 @@ for epoch in range(num_epochs):
         best_val_loss = avg_val_loss
         best_model_weights = model.state_dict()
     
-    print(f"Epoch [{epoch + 1}/{num_epochs}], Training Loss: {avg_train_loss:.4f}, Validation Loss: {avg_val_loss:.4f}")
+    print(f"Epoch [{epoch + 1}/{num_epochs}], Training Loss: {avg_train_loss:.5f}, Validation Loss: {avg_val_loss:.5f}")
 
 torch.save(best_model_weights, 'weights/VAE_l20l15l10l5z3_epoch1000_lr0001_trBS256.pth')
 plot_losses(train_losses, val_losses)
