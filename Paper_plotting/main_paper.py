@@ -8,6 +8,7 @@ Created on Thu Nov 28 16:50:34 2024
 
 import numpy as np
 from paper_paper_plotting import PaperPlotter
+from paper_peaks_finder import IonosphericPeakFinder
 from paper_utils import save_dict, load_dict, inspect_dict, merge_nested_dict, merge_nested_pred_dict, align_artist_with_eiscat
 
 
@@ -96,13 +97,51 @@ X_eis, X_ion, X_geo, X_kian = align_X_eis(X_EISCAT, X_IONOCNN, X_GEODMLP, X_KIAN
 
 X_art = align_artist_with_eiscat(X_eis, X_ARTIST)
 
-plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
+# plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 
 
 
-plotter.plot_compare_all()
+# plotter.plot_compare_all()
 
 
+# prominence_values = np.arange(0.001, 0.1, 0.001)
+
+# peak_finder = IonosphericPeakFinder(X_kian)
+# best_p, best_s = peak_finder.grid_search(prominence_values, reference_data=X_eis)
+
+# print(best_p, best_s)
+
+
+f_prom = 0.01
+e_prom = 0.01
+
+ 
+
+eis_peak_finder = IonosphericPeakFinder(X_eis)
+X_eis = eis_peak_finder.get_peaks(e_prom, f_prom)
+
+kian_peak_finder = IonosphericPeakFinder(X_kian)
+X_kian = kian_peak_finder.get_peaks(e_prom, f_prom)
+
+ion_peak_finder = IonosphericPeakFinder(X_ion)
+X_ion = ion_peak_finder.get_peaks(e_prom, f_prom)
+
+geo_peak_finder = IonosphericPeakFinder(X_geo)
+X_geo = geo_peak_finder.get_peaks(e_prom, f_prom)
+
+art_peak_finder = IonosphericPeakFinder(X_art)
+X_art = art_peak_finder.get_peaks(e_prom, f_prom)
+
+
+ech_peak_finder = IonosphericPeakFinder(X_ech)
+X_ech = ech_peak_finder.get_peaks(e_prom, f_prom)
+
+
+
+
+peak_plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
+# peak_plotter.plot_peaks()
+peak_plotter.plot_compare_all_peak_densities()
 
 
 
