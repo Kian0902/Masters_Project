@@ -8,24 +8,33 @@ Created on Thu Nov 28 16:50:34 2024
 
 import numpy as np
 from paper_paper_plotting import PaperPlotter
-from paper_utils import load_dict, inspect_dict, merge_nested_dict, merge_nested_pred_dict
+from paper_utils import save_dict, load_dict, inspect_dict, merge_nested_dict, merge_nested_pred_dict, align_artist_with_eiscat
 
+
+import numpy as np
 
 def align_X_eis(X_eis, X_ion, X_geo, X_kian):
     """
     Aligns the X_eis dictionary to match the dates and time steps of model dictionaries.
+    Additionally, adds the "r_h" key from X_eis to the model dictionaries for common dates.
     
     Parameters:
-    - X_eis (dict): Nested dict with radar measurements.
-    - X_ion, X_geo, X_kian (dict): Nested dicts with model estimations.
+    - X_eis (dict): Nested dictionary with radar measurements.
+    - X_ion (dict): Nested dictionary with ion model estimations. Modified in place to add "r_h".
+    - X_geo (dict): Nested dictionary with geo model estimations. Modified in place to add "r_h".
+    - X_kian (dict): Nested dictionary with kian model estimations. Modified in place to add "r_h".
     
     Returns:
-    - dict: New X_eis with only common dates and arrays aligned to model time steps.
+    - tuple: (new_X_eis, X_ion, X_geo, X_kian)
+        - new_X_eis: Aligned X_eis with only common dates and arrays aligned to model time steps.
+        - X_ion: Modified ion model dictionary with "r_h" added for common dates.
+        - X_geo: Modified geo model dictionary with "r_h" added for common dates.
+        - X_kian: Modified kian model dictionary with "r_h" added for common dates.
     """
     # Find dates common to X_eis and all models
     common_dates = set(X_eis.keys()) & set(X_ion.keys()) & set(X_geo.keys()) & set(X_kian.keys())
     
-    # Initialize new dictionary
+    # Initialize new dictionary for aligned X_eis
     new_X_eis = {}
     
     for date in common_dates:
@@ -53,7 +62,7 @@ def align_X_eis(X_eis, X_ion, X_geo, X_kian):
                 new_r_error[:, i] = X_eis[date]["r_error"][:, j]
                 new_num_avg_samp[i] = X_eis[date]["num_avg_samp"][j]
         
-        # Build the new entry for this date
+        # Build the new entry for this date in new_X_eis
         new_X_eis[date] = {
             "r_time": ref_time.copy(),          # Use model’s time steps
             "r_h": X_eis[date]["r_h"].copy(),  # Keep original altitudes
@@ -61,25 +70,33 @@ def align_X_eis(X_eis, X_ion, X_geo, X_kian):
             "r_error": new_r_error,             # Aligned errors
             "num_avg_samp": new_num_avg_samp   # Aligned sample counts
         }
+        
+        # Add "r_h" to the models for this date
+        r_h = X_eis[date]["r_h"].copy()
+        X_ion[date]["r_h"] = r_h
+        X_geo[date]["r_h"] = r_h
+        X_kian[date]["r_h"] = r_h
     
-    return new_X_eis
+    # Return the aligned X_eis and the modified model dictionaries
+    return new_X_eis, X_ion, X_geo, X_kian
 
 
 
 
 
-X_eis  = load_dict('X_2012_one_week')
-X_ion  = load_dict('X_pred_one_week_ionocnn')
-X_geo  = load_dict('X_pred_one_week_geodmlp')
-X_kian = load_dict('X_pred_one_week_kiannet')
-
-X_eis_new = align_X_eis(X_eis, X_ion, X_geo, X_kian)
-
-
+X_EISCAT   = load_dict('X_true_eiscat')
+X_KIANNET  = load_dict('X_pred_kiannet')
+X_IONOCNN  = load_dict('X_pred_ionocnn')
+X_GEODMLP  = load_dict('X_pred_geodmlp')
+X_ARTIST   = load_dict('X_pred_artist.pkl')
+X_ech      = load_dict('X_pred_echaim.pkl') 
 
 
+X_eis, X_ion, X_geo, X_kian = align_X_eis(X_EISCAT, X_IONOCNN, X_GEODMLP, X_KIANNET)
 
-plotter = PaperPlotter(X_eis_new, X_kian, X_ion, X_geo)
+X_art = align_artist_with_eiscat(X_eis, X_ARTIST)
+
+plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 
 
 

@@ -29,13 +29,13 @@ from paper_utils import from_array_to_datetime, merge_nested_dict, merge_nested_
 
 
 class PaperPlotter:
-    def __init__(self, X_EIS, X_KIAN, X_ION, X_GEO):#, X_ART, X_ECH):
+    def __init__(self, X_EIS, X_KIAN, X_ION, X_GEO, X_ART, X_ECH):
         self.X_EIS = X_EIS
         self.X_KIAN = X_KIAN
         self.X_ION = X_ION
         self.X_GEO = X_GEO
-        # self.X_ART = X_ART
-        # self.X_ECH = X_ECH
+        self.X_ART = X_ART
+        self.X_ECH = X_ECH
         # self.selected_indices = []
     
     
@@ -53,6 +53,8 @@ class PaperPlotter:
         x_kian = merge_nested_pred_dict(self.X_KIAN)['All']
         x_ion = merge_nested_pred_dict(self.X_ION)['All']
         x_geo = merge_nested_pred_dict(self.X_GEO)['All']
+        x_art = merge_nested_dict(self.X_ART)['All']
+        x_ech = merge_nested_dict(self.X_ECH)['All']
         
         r_time = from_array_to_datetime(x_eis['r_time'])
         r_h = x_eis['r_h'].flatten()
@@ -62,21 +64,24 @@ class PaperPlotter:
         ne_kian = 10**x_kian["r_param"]
         ne_ion  = 10**x_ion["r_param"]
         ne_geo  = 10**x_geo["r_param"]
-        
+        ne_art  = x_art["r_param"]
+        ne_ech  = x_ech["r_param"]
         
         date_str = r_time[0].strftime('%b-%Y')
         
         
         
         # ___________ Defining axes ___________
-        fig = plt.figure(figsize=(14, 8))
-        fig.suptitle(f'Comparrison Between Prediction Models and Ground Truth\nDate: {date_str}', fontsize=17, y=1.01)
+        fig = plt.figure(figsize=(12, 12))
+        fig.suptitle(f'Comparrison Between Prediction Models and Ground Truth\nDate: {date_str}', fontsize=17, y=0.97)
         
-        gs = GridSpec(4, 2, width_ratios=[1, 0.015], wspace=0.1, hspace=0.3)
+        gs = GridSpec(6, 2, width_ratios=[1, 0.015], wspace=0.1, hspace=0.35)
         ax0 = fig.add_subplot(gs[0, 0])
         ax1 = fig.add_subplot(gs[1, 0], sharex=ax0)
         ax2 = fig.add_subplot(gs[2, 0], sharex=ax0)
         ax3 = fig.add_subplot(gs[3, 0], sharex=ax0)
+        ax4 = fig.add_subplot(gs[4, 0], sharex=ax0)
+        ax5 = fig.add_subplot(gs[5, 0], sharex=ax0)
         cax = fig.add_subplot(gs[:, 1])
         
         
@@ -88,35 +93,44 @@ class PaperPlotter:
         ax1.pcolormesh(r_time, r_h, ne_kian, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
         ax2.pcolormesh(r_time, r_h, ne_ion, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
         ax3.pcolormesh(r_time, r_h, ne_geo, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-        
+        ax4.pcolormesh(r_time, r_h, ne_art, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
+        ax5.pcolormesh(r_time, r_h, ne_ech, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
         
         # Set titles and labels
         ax0.set_title('(a) EISCAT UHF', fontsize=16)
         ax1.set_title('(b) KIAN-Net', fontsize=16)
         ax2.set_title('(c) Iono-CNN', fontsize=16)
         ax3.set_title('(d) Geo-DMLP', fontsize=16)
+        ax4.set_title('(e) Artist 5.0', fontsize=16)
+        ax5.set_title('(f) E-Chaim', fontsize=16)
         
         # y-labels
-        ax0.set_ylabel('Altitude [km]', fontsize=13)
-        ax1.set_ylabel('Altitude [km]', fontsize=13)
-        ax2.set_ylabel('Altitude [km]', fontsize=13)
-        ax3.set_ylabel('Altitude [km]', fontsize=13)
+        fig.supylabel('Altitude [km]', x=0.075)
+        # ax0.set_ylabel('Altitude [km]', fontsize=13)
+        # ax1.set_ylabel('Altitude [km]', fontsize=13)
+        # ax2.set_ylabel('Altitude [km]', fontsize=13)
+        # ax3.set_ylabel('Altitude [km]', fontsize=13)
+        # ax4.set_ylabel('Altitude [km]', fontsize=13)
+        # ax5.set_ylabel('Altitude [km]', fontsize=13)
         
         # x-label
-        ax3.set_xlabel('UT [dd hh:mm]', fontsize=13)
+        ax5.set_xlabel('UT [dd hh:mm]', fontsize=13)
         
         # Ticks
         ax0.tick_params(labelbottom=False)  # Hide x-ticks on EISCAT plot
         ax1.tick_params(labelbottom=False)
         ax2.tick_params(labelbottom=False)
-        ax3.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+        ax3.tick_params(labelbottom=False)
+        ax4.tick_params(labelbottom=False)
+        ax5.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
         
-        plt.setp(ax3.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        plt.setp(ax5.xaxis.get_majorticklabels(), rotation=45, ha='center')
         
         # Add colorbar
         cbar = fig.colorbar(ne, cax=cax, orientation='vertical')
         cbar.set_label('$log_{10}$ $N_e$  (m$^{-3}$)', fontsize=13)
         
+        plt.show()
     
     
     
