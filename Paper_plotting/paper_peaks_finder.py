@@ -31,8 +31,8 @@ class IonosphericPeakFinder:
         r_peaks = np.full((2, r_param.shape[1]), np.nan)  # Initialize with np.nan
         
         # Defining E and F-region altitude ranges
-        e_reg = (150 >= r_h) & (92 < r_h)
-        f_reg = (325 >= r_h) & (180 < r_h)
+        e_reg = (190 >= r_h) & (92 < r_h)
+        f_reg = (325 >= r_h) & (190 < r_h)
         
         for m in range(r_param.shape[1]):
             column = r_param[:, m]
