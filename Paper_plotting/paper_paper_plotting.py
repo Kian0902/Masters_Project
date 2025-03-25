@@ -4,7 +4,7 @@ Created on Mon Jan 27 16:23:19 2025
 @author: Kian Sartipzadeh
 """
 
-
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -412,11 +412,129 @@ class PaperPlotter:
     
         plt.show()
     
+
     
-    # def plot_compare_all_peak_densities(self, show_marginal_kde=False):
-    #     # Set Seaborn style for consistent aesthetics
-    #     # sns.set(style="dark", context=None, palette=None)
+    def plot_compare_all_peak_altitudes(self):
+        # Merge data dictionaries for all regions
+        X_eis = merge_nested_peak_dict(self.X_EIS)['All']
+        X_kian = merge_nested_peak_dict(self.X_KIAN)['All']
+        X_ion = merge_nested_peak_dict(self.X_ION)['All']
+        X_geo = merge_nested_peak_dict(self.X_GEO)['All']
+        X_art = merge_nested_peak_dict(self.X_ART)['All']
+        X_ech = merge_nested_peak_dict(self.X_ECH)['All']
         
+        # Prepare peak height data
+        eis_h_peak = X_eis["r_h_peak"]
+        kian_h_peak = X_kian["r_h_peak"]
+        ion_h_peak = X_ion["r_h_peak"]
+        geo_h_peak = X_geo["r_h_peak"]
+        art_h_peak = X_art["r_h_peak"]
+        ech_h_peak = X_ech["r_h_peak"]
+        
+        # Define models with names, data, and colors
+        models = [
+            {"name": "KIAN-Net", "data": kian_h_peak, "color": "C1"},
+            {"name": "Iono-CNN", "data": ion_h_peak, "color": "C5"},
+            {"name": "Geo-DMLP", "data": geo_h_peak, "color": "C4"},
+            {"name": "Artist 5.0", "data": art_h_peak, "color": "C2"},
+            {"name": "E-CHAIM", "data": ech_h_peak, "color": "C3"},
+        ]
+        
+        # Set up the figure with two subplots
+        fig = plt.figure(figsize=(15, 7))
+        gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.2)
+        fig.suptitle('Peak Elecron Density Altitudes', fontsize=20, y=1)
+        with sns.axes_style("dark"):
+            ax_violin = fig.add_subplot(gs[0, 0])
+            ax_height = fig.add_subplot(gs[0, 1])
+           
+        # --- Original Violin Plot (Unchanged) ---
+        for region in [0, 1]:
+            # Collect data for all models and observed EISCAT data
+            data_list = []
+            
+            # Add observed EISCAT heights as a reference
+            eis_data = eis_h_peak[region, :]
+            valid_eis = ~np.isnan(eis_data)
+            df_obs = pd.DataFrame({'model': 'Observed', 'height': eis_data[valid_eis]})
+            data_list.append(df_obs)
+         
+            # Add predicted heights for each model
+            for model in models:
+                model_data = model["data"][region, :]
+                valid = ~np.isnan(model_data)
+                df = pd.DataFrame({'model': model["name"], 'height': model_data[valid]})
+                data_list.append(df)
+                    
+            # Combine all data into a single DataFrame
+            all_data = pd.concat(data_list)
+            
+            # Define color palette: 'Observed' in gray, models with their specified colors
+            palette = {'Observed': 'gray', **{m["name"]: m["color"] for m in models}}
+            
+            # Create a violin plot
+            sns.violinplot(
+                x='model',
+                y='height',
+                data=all_data,
+                ax=ax_violin,
+                hue='model',
+                palette=palette,
+                order=['Observed'] + [m["name"] for m in models],
+                # inner='quartile',
+                legend=False
+            )
+            
+            # Customize the plot
+            ax_violin.set_title('(a) Distribution Violin Plot', fontsize=17)
+            ax_violin.set_xlabel('Model', fontsize=15)
+            ax_violin.set_ylabel('Altitudes [km]', fontsize=15)
+            ax_violin.set_ylim(80, 350)
+            ax_violin.grid(True)
+        
+        # --- New RMSE Bar Plot for ax_height ---
+        rmse_data = []
+        for model in models:
+            for region, region_name in [(0, 'E'), (1, 'F')]:
+                eis_data = eis_h_peak[region, :]
+                model_data = model["data"][region, :]
+                valid = ~np.isnan(eis_data) & ~np.isnan(model_data)
+                if valid.any():
+                    rmse = np.sqrt(np.mean((eis_data[valid] - model_data[valid])**2))
+                    rmse_data.append({'Model': model["name"], 'Region': region_name, 'RMSE': rmse})
+        rmse_df = pd.DataFrame(rmse_data)
+        sns.barplot(
+            x='Model', y='RMSE', hue='Region', data=rmse_df, ax=ax_height,
+            palette=['C0', 'C1'], edgecolor='k'
+        )
+        
+        
+        # Add RMSE values above each bar
+        for p in ax_height.patches:
+            height = p.get_height()
+            if not np.isnan(height) and height > 0.01:  # Only label non-NaN bars
+                ax_height.text(
+                    p.get_x() + p.get_width() / 2.,  # Center of the bar
+                    height + 0.5,  # Slightly above the bar
+                    f'{height:.2f}',  # Format to 2 decimal places
+                    ha='center', va='bottom',
+                    fontsize=11
+                )
+        ax_height.set_title('(b) RMSE Bar Plot', fontsize=17)
+        ax_height.set_xlabel('Model', fontsize=15)
+        ax_height.set_ylabel('RMSE [km]', fontsize=15)
+        ax_height.legend(title='Region')
+        ax_height.yaxis.grid(True)  # Add horizontal grid lines
+        ax_height.xaxis.grid(False)  # Ensure no vertical grid lines
+        
+        plt.setp(ax_violin.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        plt.setp(ax_height.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        
+        # Adjust layout and display
+        plt.tight_layout()
+        plt.show()
+        
+    # def plot_compare_all_peak_altitudes(self):
     #     # Merge data dictionaries for all regions
     #     X_eis = merge_nested_peak_dict(self.X_EIS)['All']
     #     X_kian = merge_nested_peak_dict(self.X_KIAN)['All']
@@ -424,571 +542,82 @@ class PaperPlotter:
     #     X_geo = merge_nested_peak_dict(self.X_GEO)['All']
     #     X_art = merge_nested_peak_dict(self.X_ART)['All']
     #     X_ech = merge_nested_peak_dict(self.X_ECH)['All']
-    
-    #     # Prepare peak density data (all in log10(ne))
-    #     eis_param_peak = np.log10(X_eis["r_param_peak"])
-    #     kian_param_peak = X_kian["r_param_peak"]
-    #     ion_param_peak = X_ion["r_param_peak"]
-    #     geo_param_peak = X_geo["r_param_peak"]
-    #     art_param_peak = np.log10(X_art["r_param_peak"])
-    #     ech_param_peak = np.log10(X_ech["r_param_peak"])
-    
-    #     # Define models with names, data, and colors
-    #     models = [
-    #         {"name": "KIAN-Net", "data": kian_param_peak, "color": "C1"},
-    #         {"name": "Artist 5.0", "data": art_param_peak, "color": "C2"},
-    #         {"name": "E-CHAIM", "data": ech_param_peak, "color": "C3"},
-    #         {"name": "Geo-DMLP", "data": geo_param_peak, "color": "C4"},
-    #         {"name": "Iono-CNN", "data": ion_param_peak, "color": "C5"},
-    #     ]
-    
-    #     # Convert time to datetime for title
-    #     r_time = from_array_to_datetime(X_eis["r_time"])
-    #     # date_str = r_time[0].strftime('%b-%Y')
         
-        
-    #     fig = plt.figure(figsize=(14, 7))
-    
-    #     # Set up GridSpec based on whether marginal KDEs are requested
-    #     if show_marginal_kde:
-    #         gs = GridSpec(2, 5, height_ratios=[0.2, 1], width_ratios=[1, 0.2, 0.1, 1, 0.2], hspace=0, wspace=0)
-    #         with sns.axes_style("dark"):
-    #             ax_e = fig.add_subplot(gs[1, 0])
-    #             ax_f = fig.add_subplot(gs[1, 3])
-                
-    #         ax_e_top = fig.add_subplot(gs[0, 0], sharex=ax_e)
-    #         ax_f_top = fig.add_subplot(gs[0, 3], sharex=ax_f)
-    #         ax_e_top.set_axis_off()
-    #         ax_f_top.set_axis_off()
-            
-    #         # Spacing between e/f-reg plots
-    #         ax_spacing = fig.add_subplot(gs[:, 3])
-    #         ax_spacing.set_axis_off()
-            
-            
-    #         ax_e_right = fig.add_subplot(gs[1, 1], sharey=ax_e)
-    #         ax_f_right = fig.add_subplot(gs[1, 4], sharey=ax_f)
-    #         ax_e_right.set_axis_off()
-    #         ax_f_right.set_axis_off()
-    #     else:
-    #         gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.1)
-    #         ax_e = fig.add_subplot(gs[0, 0])
-    #         ax_f = fig.add_subplot(gs[0, 1])
-    
-    #     fig.suptitle('Peak Elecron densities\n(EISCAT UHF vs Model)', fontsize=20, y=0.95)
-    
-    #     def plot_region(ax, region, Min, Max, title, ax_top=None, ax_right=None):
-    #         # Plot the diagonal line (perfect agreement)
-    #         diagonal_line = np.array([Min, Max])
-    #         ax.plot([Min, Max], diagonal_line, color="C0", label="EISCAT", 
-    #                 linewidth=3, zorder=1)
-    
-    #         # Loop over models to plot scatter, regression lines, metrics, and optional KDEs
-    #         for idx, model in enumerate(models):
-    #             # Extract valid data for the region
-    #             model_data = model["data"][region, :]
-    #             valid = ~np.isnan(model_data) & ~np.isnan(eis_param_peak[region, :])
-    #             x = model_data[valid]  # Predicted values (model)
-    #             y = eis_param_peak[region, valid]  # Observed values (EISCAT)
-    
-    #             # Plot scatter points
-    #             ax.scatter(x, y, s=40, color=model["color"], label=model["name"], 
-    #                        edgecolors="black")
-                
-    #             # Subplots titles
-                
-    #             ax.text(0.3, 0.9, s=f'{title} Peaks', color='black',
-    #                     fontsize=15, transform=ax.transAxes)
-                
-                
-                
-    #             # Check if there are any valid predictions
-    #             if valid.any():
-    #                 slope, intercept, _, _, _ = linregress(x, y)
-    #                 if not np.isnan(slope) and not np.isnan(intercept):
-    #                     # Compute regression line over [Min, Max]
-    #                     reg_line = slope * np.array([Min, Max]) + intercept
-    #                     # Calculate R² between regression line and diagonal
-    #                     r2_line = self.compute_r2_score(diagonal_line, reg_line)
-    #                     # Plot regression line without legend entry
-    #                     ax.plot([Min, Max], reg_line, color=model["color"], 
-    #                             linestyle="--", linewidth=2, label="_Regression", zorder=2)
-    #                     # Calculate RMSE between data points and diagonal
-    #                     rmse = np.sqrt(np.mean((y - x) ** 2))
-    #                     # Annotate R² and RMSE with model name in lower left &
-    #                     ax.text(0.7, 0.2 - (0.04 * idx), 
-    #                             s=rf"$\mathbf{{({r2_line:.3f},\ {rmse:.3f})}}$", 
-    #                             color=model["color"], fontsize=10, transform=ax.transAxes)
-    #                 # Plot marginal KDEs if axes are provided
-    #                 if ax_top is not None and ax_right is not None:
-    #                     # KDE for x (predicted densities)
-    #                     kde_x = gaussian_kde(x)
-    #                     x_grid = np.linspace(Min, Max, 100)
-    #                     kde_x_values = kde_x(x_grid)
-    #                     ax_top.plot(x_grid, kde_x_values, color=model["color"])
-    
-    #                     # KDE for y (observed densities)
-    #                     kde_y = gaussian_kde(y)
-    #                     y_grid = np.linspace(Min, Max, 100)
-    #                     kde_y_values = kde_y(y_grid)
-    #                     ax_right.plot(kde_y_values, y_grid, color=model["color"])
-    #             else:
-    #                 # If no valid data, display "N/A"
-    #                 ax.text(0.7, 0.2 - (0.04 * idx), 
-    #                         s=rf"$\mathbf{{(N/A,\ N/A)}}$", 
-    #                         color=model["color"], fontsize=10, transform=ax.transAxes)
-                
-    #             if idx == 4:
-    #                 ax.text(0.7, 0.2 - (0.04 * (-1)), 
-    #                         s=rf"$\mathbf{{(R^{2},\ RMSE)}}$", 
-    #                         color="black", fontsize=10, transform=ax.transAxes)
-                    
-    #         # Set plot aesthetics
-    #         # ax.set_title(f'{title} Peaks', fontsize=17, y=1.2)
-    #         ax.set_xlim(Min, Max)
-    #         ax.set_ylim(Min, Max)
-    #         ax.grid(True)
-            
-    #         # Configure marginal axes if they exist
-    #         if ax_top is not None and ax_right is not None:
-    #             # Set limits to start at 0, with automatic upper bounds
-    #             ax_top.set_ylim([0, None])
-    #             ax_right.set_xlim([0, None])
-    #             # Add density labels
-    #             ax_top.set_ylabel("Density", fontsize=10)
-    #             ax_right.set_xlabel("Density", fontsize=10)
-    #             # Hide ticks that overlap with main plot
-    #             ax_top.tick_params(labelbottom=False)
-    #             ax_right.tick_params(labelleft=False)
-    #             # Remove unnecessary spines for a cleaner look
-    #             ax_top.spines['bottom'].set_visible(False)
-    #             ax_top.spines['top'].set_visible(False)
-    #             ax_top.spines['right'].set_visible(False)
-    #             ax_right.spines['left'].set_visible(False)
-    #             ax_right.spines['top'].set_visible(False)
-    #             ax_right.spines['right'].set_visible(False)
-    
-    #     # Plot E-region and F-region with appropriate parameters
-    #     if show_marginal_kde:
-    #         plot_region(ax_e, region=0, Min=8.5, Max=12.5, title='(a) E-region', ax_top=ax_e_top, ax_right=ax_e_right)
-    #         plot_region(ax_f, region=1, Min=9.5, Max=12.5, title='(b) F-region', ax_top=ax_f_top, ax_right=ax_f_right)
-    #     else:
-    #         plot_region(ax_e, region=0, Min=8.5, Max=12, title='E-region')
-    #         plot_region(ax_f, region=1, Min=9.5, Max=12.5, title='F-region')
-    
-    #     # Set axis labels
-    #     ax_e.set_xlabel(r'Model  $log_{10}\,(n_e)$', fontsize=15)
-    #     ax_e.set_ylabel(r'EISCAT UHF  $log_{10}\,(n_e)$', fontsize=15)
-    #     ax_f.set_xlabel(r'Model  $log_{10}\,(n_e)$', fontsize=15)
-    
-    #     # Add legend to F-region plot with white background
-    #     ax_e.legend(fontsize=9, facecolor='white', loc='upper left')
-    #     ax_f.legend(fontsize=9, facecolor='white', loc='upper left')
-    
-    #     plt.show()
-        
-        
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # def plot_compare_all_peak_altitudes(self):
-    #     sns.set(style="dark", context=None, palette=None)
-    
-        
-        
-        
-    #     # Merging all global keys
-    #     X_eis = merge_nested_peak_dict(self.X_EIS)['All']
-    #     X_kian = merge_nested_peak_dict(self.X_KIAN)['All']
-    #     # x_ion = merge_nested_peak_dict(self.X_ION)['All']
-    #     # x_geo = merge_nested_peak_dict(self.X_GEO)['All']
-    #     X_art = merge_nested_peak_dict(self.X_ART)['All']
-    #     # x_ech = merge_nested_peak_dict(self.X_ECH)['All']
-        
-        
+    #     # Prepare peak height data
     #     eis_h_peak = X_eis["r_h_peak"]
     #     kian_h_peak = X_kian["r_h_peak"]
+    #     ion_h_peak = X_ion["r_h_peak"]
+    #     geo_h_peak = X_geo["r_h_peak"]
     #     art_h_peak = X_art["r_h_peak"]
+    #     ech_h_peak = X_ech["r_h_peak"]
         
-        
-    #     # Convert time data to datetime objects
-    #     r_time = from_array_to_datetime(X_eis["r_time"])
-    #     art_time = from_array_to_datetime(X_art["r_time"])
-        
-        
-    #     # Format date for plot title
-    #     date_str = r_time[0].strftime('%Y-%m-%d')
+    #     # Define models with names, data, and colors
+    #     models = [
+    #         {"name": "KIAN-Net", "data": kian_h_peak, "color": "C1"},
+    #         {"name": "Geo-DMLP", "data": geo_h_peak, "color": "C4"},
+    #         {"name": "Iono-CNN", "data": ion_h_peak, "color": "C5"},
+    #         {"name": "Artist 5.0", "data": art_h_peak, "color": "C2"},
+    #         {"name": "E-CHAIM", "data": ech_h_peak, "color": "C3"},
+           
+    #         ]
     
-    #     # Create a grid layout
+    #     # Set up the figure with two subplots
     #     fig = plt.figure(figsize=(14, 7))
-    #     gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.1)
-    
-    #     # Shared y-axis setup
-    #     ax_e = fig.add_subplot(gs[0])
-    #     ax_f = fig.add_subplot(gs[1])
-    
-    #     fig.suptitle(f'Date: {date_str}', fontsize=20, y=1.0)
-        
-    #     def plot_region(ax, region, Min, Max, title):
-    #         # Extract valid data for the current region
-    #         valid_kian = ~np.isnan(kian_h_peak[region, :]) & ~np.isnan(eis_h_peak[region, :])
-    #         valid_artist = ~np.isnan(art_h_peak[region, :]) & ~np.isnan(eis_h_peak[region, :])
+    #     gs = GridSpec(1, 2, width_ratios=[1, 1])
+    #     with sns.axes_style("dark"):
+    #         ax_violin = fig.add_subplot(gs[0, 0])
+    #         ax_height = fig.add_subplot(gs[0, 1], sharey=ax_violin)
+       
+       
+
+    #     for region in [0, 1]:
+    #         # Collect data for all models and observed EISCAT data
+    #         data_list = []
             
-    #         # Determine min and max values for regression calculation based on valid data
-    #         kian_x = kian_h_peak[region, valid_kian]
-    #         kian_y = eis_h_peak[region, valid_kian]
-    #         art_x = art_h_peak[region, valid_artist]
-    #         art_y = eis_h_peak[region, valid_artist]
+    #         # Add observed EISCAT heights as a reference
+    #         eis_data = eis_h_peak[region, :]
+    #         valid_eis = ~np.isnan(eis_data)
+    #         df_obs = pd.DataFrame({'model': 'Observed', 'height': eis_data[valid_eis]})
+    #         data_list.append(df_obs)
+     
+    #         # Add predicted heights for each model
+    #         for model in models:
+    #             model_data = model["data"][region, :]
+    #             valid = ~np.isnan(model_data)
+    #             df = pd.DataFrame({'model': model["name"], 'height': model_data[valid]})
+    #             data_list.append(df)
+                
+    #         # Combine all data into a single DataFrame
+    #         all_data = pd.concat(data_list)
+            
+    #         # Define color palette: 'Observed' in gray, models with their specified colors
+    #         palette = {'Observed': 'gray', **{m["name"]: m["color"] for m in models}}
+            
+    #         # Create a violin plot
+    #         sns.violinplot(
+    #             x='model',
+    #             y='height',
+    #             data=all_data,
+    #             ax=ax_violin,
+    #             hue='model',
+    #             palette=palette,
+    #             order=['Observed'] + [m["name"] for m in models],
+    #             # inner='quartile',
+    #             legend=False
+    #         )
+            
+    #         # Customize the plot
+    #         ax_violin.set_title('(a) Violin Plot', fontsize=15)
+    #         ax_violin.set_xlabel('Model', fontsize=13)
+    #         ax_violin.set_ylabel('Altitudes (km)', fontsize=13)
+    #         ax_violin.set_ylim(80, 350)
+    #         ax_violin.grid(True)
+                
             
             
-            
-    #         # Plot diagonal reference line
-    #         ax.plot([Min, Max], [Min, Max], color="C0", label="EISCAT vs EISCAT", linewidth=3, zorder=1)
-            
-    #         # Scatter plots for KIAN-Net and Artist 4.5
-    #         ax.scatter(kian_x, kian_y, s=50, color="C1", label="KIAN-Net vs EISCAT", edgecolors="black")
-            
-    #         # Regression for KIAN-Net
-    #         if valid_kian.any():
-    #             slope_kian, intercept_kian, _, _, _ = linregress(kian_x, kian_y)
-    #             if not np.isnan(slope_kian) and not np.isnan(intercept_kian):
-                    
-    #                 kian_reg_line = slope_kian * np.array([Min, Max]) + intercept_kian
-    #                 diagonal_line = np.array([Min, Max])  # Diagonal reference
-    #                 kian_r2_line = self.compute_r2_score(diagonal_line, kian_reg_line)
-    #                 # print(f"KIAN-Net R^2 with diagonal ({title}): {kian_r2_line}")
-        
-    #                 ax.plot([Min, Max], kian_reg_line, color="C1", linestyle="--", linewidth=2,
-    #                         label="Regression line", zorder=2)
-                    
-    #                 ax.text(Max-25, Min+10, s=rf"$\mathbf{{R^2={kian_r2_line:.3f}}}$", color="C1", fontsize=15)
-                    
-    #                 # # Calculate R^2 for regression line
-    #                 # y_pred = slope * kian_x + intercept
-    #                 # y_mean = np.mean(kian_y)
-    #                 # ss_tot = np.sum((kian_y - y_mean) ** 2)
-    #                 # ss_res = np.sum((kian_y - y_pred) ** 2)
-    #                 # kian_r2 = 1 - (ss_res / ss_tot)
-    #                 # print(f"KIAN-Net R^2 ({title}): {kian_r2}")
-                    
-    #                 # ax.plot([Min, Max], [slope * Min + intercept, slope * Max + intercept], 
-    #                 #         color="C1", linestyle="--", linewidth=2, label=f" Reg $R^2=${kian_r2:.3}", zorder=2)
-                    
-                    
-    #         ax.scatter(art_x, art_y, s=50, color="C2", label="Artist 4.5 vs EISCAT", edgecolors="black")
-    #         # Regression for Artist
-    #         if valid_artist.any():
-    #             slope_artist, intercept_artist, _, _, _ = linregress(art_x, art_y)
-    #             if not np.isnan(slope_artist) and not np.isnan(intercept_artist):
-                    
-    #                 artist_reg_line = slope_artist * np.array([Min, Max]) + intercept_artist
-    #                 diagonal_line = np.array([Min, Max])
-    #                 artist_r2_line = self.compute_r2_score(diagonal_line, artist_reg_line)
-    #                 # print(f"Artist R^2 with diagonal ({title}): {artist_r2_line}")
-                    
-    #                 ax.plot([Min, Max], artist_reg_line, color="C2", linestyle="--", linewidth=2,
-    #                         label="Regression line", zorder=2)
-                    
-    #                 ax.text(Max-5, Min+0.1, s=rf"$\mathbf{{R^{2}={artist_r2_line:.3f}}}$", color="C2", fontsize=15)
-                    
-    #                 # # Calculate R^2 for regression line
-    #                 # y_pred = slope * art_x + intercept
-    #                 # y_mean = np.mean(art_y)
-    #                 # ss_tot = np.sum((art_y - y_mean) ** 2)
-    #                 # ss_res = np.sum((art_y - y_pred) ** 2)
-    #                 # artist_r2 = 1 - (ss_res / ss_tot)
-    #                 # print(f"Artist R^2 ({title}): {artist_r2}")
-                    
-    #                 # ax.plot([Min, Max], [slope * Min + intercept, slope * Max + intercept], 
-    #                 #         color="C2", linestyle="--", linewidth=2, label=f" Reg $R^2=${artist_r2:.3}", zorder=2)
-                    
-    #         # Configure plot aesthetics
-    #         ax.set_title(f'{title} Peaks', fontsize=17)
-    #         ax.set_xlabel('MODEL  $log_{10}\,(ne)$', fontsize=15)
-    #         ax.set_xlim(xmin=Min, xmax=Max)
-    #         ax.set_ylim(ymin=Min, ymax=Max)
-    #         ax.legend(fontsize=11)
-    #         ax.grid(True)
-    
-    #     # Plot E-region and F-region
-    #     plot_region(ax_e, region=0, Min=90, Max=170, title='E-region')
-    #     plot_region(ax_f, region=1, Min=90, Max=400, title='F-region')
-    
-    #     # Adjust F-region plot labels
-    #     ax_f.set_xlabel('MODEL  $log_{10}\,(ne)$', fontsize=15)
-    
+    #     # Adjust layout and display
+    #     plt.tight_layout()
     #     plt.show()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-#     def plot_vertical_compare_ne(self):
-#         """
-#         Function for comparing EISCAT UHF to KIAN-Net, Artist 4.5, and IRI in a 4x1 vertical grid.
-#         """
-#         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-#         r_h = self.X_EISCAT["r_h"].flatten()
-        
-#         # Linear scaling for electron density
-#         ne_eis = self.X_EISCAT["r_param"]
-#         ne_kian = 10**self.X_KIAN["r_param"]
-#         ne_art = self.X_Artist["r_param"]
-#         ne_iri = self.X_IRI["r_param"]
-        
-#         date_str = r_time[0].strftime('%Y-%m-%d')
-        
-#         # Figure
-#         fig = plt.figure(figsize=(6, 10))
-#         fig.suptitle(f'Date: {date_str}', fontsize=17, y=0.98)
-        
-#         gs = GridSpec(4, 2, width_ratios=[1, 0.05], height_ratios=[1, 1, 1, 1], hspace=0.3, wspace=0.05)
-        
-#         # Axes for plots
-#         ax0 = fig.add_subplot(gs[0, 0])   # EISCAT UHF
-#         ax1 = fig.add_subplot(gs[1, 0], sharex=ax0, sharey=ax0)  # KIAN-Net
-#         ax2 = fig.add_subplot(gs[2, 0], sharex=ax0, sharey=ax0)  # Artist 4.5
-#         ax3 = fig.add_subplot(gs[3, 0], sharex=ax0, sharey=ax0)  # IRI
-#         cax = fig.add_subplot(gs[:, 1])   # Shared Colorbar
-        
-#         # Global settings
-#         MIN, MAX = 1e10, 1e12
-#         subtit_size, xlab_size, ylab_size, cbar_size = 17, 13, 13, 13
-        
-#         # Plot EISCAT UHF
-#         ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-#         ax0.set_title('EISCAT UHF', fontsize=subtit_size)
-#         ax0.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#         ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#         ax0.tick_params(labelbottom=False)
-        
-#         # Plot KIAN-Net
-#         ax1.pcolormesh(r_time, r_h, ne_kian, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-#         ax1.set_title('KIAN-Net', fontsize=subtit_size)
-#         ax1.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#         ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#         ax1.tick_params(labelbottom=False)
-        
-#         # Plot Artist 4.5
-#         ax2.pcolormesh(r_time, r_h, ne_art, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-#         ax2.set_title('Artist 4.5', fontsize=subtit_size)
-#         ax2.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#         ax2.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#         ax2.tick_params(labelbottom=False)
-        
-#         # Plot IRI
-#         ax3.pcolormesh(r_time, r_h, ne_iri, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-#         ax3.set_title('IRI', fontsize=subtit_size)
-#         ax3.set_xlabel('Time [UT]', fontsize=xlab_size)
-#         ax3.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#         ax3.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        
-#         # Shared colorbar
-#         cbar = fig.colorbar(ne_EISCAT, cax=cax, orientation='vertical')
-#         cbar.set_label('$n_e$ [n/m$^3$]', fontsize=cbar_size)
-        
-#         # Rotate x-axis labels
-#         for ax in [ax0, ax1, ax2, ax3]:
-#             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-        
-#         plt.show()
-
-    
-    
-    
-#     def plot_compare_error(self):
-#         """
-#         Function for comparing relative errors between EISCAT UHF, KIAN-Net, Artist 4.5 and IRI.
-#         """
-#         r_time = from_array_to_datetime(self.X_EISCAT["r_time"])
-#         r_h = self.X_EISCAT["r_h"].flatten()
-        
-#         # Linear scaling for electron density
-#         ne_eis = self.X_EISCAT["r_param"]
-#         ne_kian = 10**self.X_KIAN["r_param"]
-#         ne_art = self.X_Artist["r_param"]
-#         ne_iri = self.X_IRI["r_param"]
         
         
-#         err_kian = self.relative_error(ne_eis, ne_kian)
-#         err_art = self.relative_error(ne_eis, ne_art)
-#         err_iri = self.relative_error(ne_eis, ne_iri)
-        
-        
-#         # date_str = r_time[0].strftime('%Y-%m-%d')
-
-#         # Figure 
-#         fig = plt.figure(figsize=(12, 5))
-#         gs = GridSpec(1, 4, width_ratios=[1, 1, 1, 0.05], wspace=0.1)
-        
-        
-#         # ___________ Defining axes ___________
-#         # 1st row
-#         ax00 = fig.add_subplot(gs[0, 0])                    # KIAN-Net
-#         ax01 = fig.add_subplot(gs[0, 1], sharey=ax00)       # Artist 4.5
-#         ax02 = fig.add_subplot(gs[0, 2], sharey=ax00)       # IRI
-#         cax03 = fig.add_subplot(gs[0, 3])                   # Colorbar
-        
-        
-#         #  ___________ Creating Plots  ___________
-#         MIN, MAX = -1, 1
-#         subtit_size, xlab_size, ylab_size, cbar_size = 17, 13, 13, 13
-        
-#         # Error KIAN-Net
-#         error_kian = ax00.pcolormesh(r_time, r_h, err_kian, shading='auto', cmap='bwr', vmin=MIN, vmax=MAX)
-#         ax00.set_title('KIAN-Net vs EISCAT', fontsize=subtit_size)
-#         ax00.set_xlabel('Time [UT]', fontsize=xlab_size)
-#         ax00.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#         ax00.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-        
-#         # Error Artist 4.5
-#         err_art_nan = np.zeros(err_art.shape)  # For grey color
-#         ax01.pcolormesh(r_time, r_h, err_art_nan, shading='auto', cmap='gray', vmin=MIN, vmax=MAX, zorder=0)
-#         ax01.pcolormesh(r_time, r_h, err_art, shading='auto', cmap='bwr', vmin=MIN, vmax=MAX, zorder=2)
-#         ax01.set_title('Artist 4.5 vs EISCAT', fontsize=subtit_size)
-#         ax01.set_xlabel('Time [UT]', fontsize=xlab_size)
-#         ax01.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#         ax01.tick_params(labelleft=False)
-        
-        
-#         # Error IRI
-#         ax02.pcolormesh(r_time, r_h, err_iri, shading='auto', cmap='bwr', vmin=MIN, vmax=MAX)
-#         ax02.set_title('IRI vs EISCAT', fontsize=subtit_size)
-#         ax02.set_xlabel('Time [UT]', fontsize=xlab_size)
-#         ax02.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#         ax02.tick_params(labelleft=False)
-        
-#         # Colorbar
-#         cbar03 = fig.colorbar(error_kian, cax=cax03, orientation='vertical')
-#         cbar03.set_label('Relative Error', fontsize=cbar_size)
-        
-    
-#         # Rotate x-axis labels
-#         for ax in [ax00, ax01, ax02]:
-#             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-        
-
-#         plt.show()
-
-
-    
-# class AdvancedPaperPlotter:
-#     def __init__(self, X_EISCAT, X_KIAN, X_Artist, X_IRI, X_Ionogram, X_GEO):
-#         self.X_EISCAT = X_EISCAT
-#         self.X_KIAN = X_KIAN
-#         self.X_Artist = X_Artist
-#         self.X_IRI = X_IRI
-#         self.X_Ionogram = X_Ionogram
-#         self.X_GEO = X_GEO
-#         # self.selected_days = []
-    
-#     def plot_vertical_compare_3days_ne(self, selected_days):
-#         """
-#         Function for comparing EISCAT UHF to KIAN-Net, Artist 4.5, and IRI over 3 selected days
-#         in a 4x3 grid where each column represents a day, with a color bar per row on the far right.
-#         """
-        
-#         fig = plt.figure(figsize=(12, 15))
-#         fig.suptitle('Comparison Over 3 Days', fontsize=20, y=0.96)
-        
-#         gs = GridSpec(4, 4, width_ratios=[1, 1, 1, 0.05], height_ratios=[1, 1, 1, 1], hspace=0.3, wspace=0.2)
-        
-#         # Global settings
-#         MIN, MAX = 1e10, 1e12
-#         subtit_size, xlab_size, ylab_size, cbar_size = 17, 13, 13, 13
-        
-#         axes = []
-#         model_pcolormeshes = [None] * 4  # To store pcolormesh objects for each row
-        
-#         for i, date in enumerate(selected_days):
-#             r_time = from_array_to_datetime(self.X_EISCAT[date]["r_time"])
-#             r_h = self.X_EISCAT[date]["r_h"].flatten()
-            
-#             ne_eis = self.X_EISCAT[date]["r_param"]
-#             ne_kian = 10**self.X_KIAN[date]["r_param"]
-#             ne_art = self.X_Artist[date]["r_param"]
-#             ne_iri = self.X_IRI[date]["r_param"]
-            
-#             # Axes for plots
-#             ax0 = fig.add_subplot(gs[0, i])   # EISCAT UHF
-#             ax1 = fig.add_subplot(gs[1, i], sharex=ax0, sharey=ax0)  # KIAN-Net
-#             ax2 = fig.add_subplot(gs[2, i], sharex=ax0, sharey=ax0)  # Artist 4.5
-#             ax3 = fig.add_subplot(gs[3, i], sharex=ax0, sharey=ax0)  # IRI
-            
-#             axes.extend([ax0, ax1, ax2, ax3])
-            
-#             # Plot EISCAT UHF
-#             ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-#             ax0.set_title(f'{date}\nEISCAT UHF', fontsize=subtit_size, fontweight='bold')
-#             ax0.tick_params(labelbottom=False)
-#             if i == 0:
-#                 model_pcolormeshes[0] = ne_EISCAT  # Save for colorbar
-            
-#             # Plot KIAN-Net
-#             ne_kian_plot = ax1.pcolormesh(r_time, r_h, ne_kian, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-#             ax1.set_title('KIAN-Net', fontsize=subtit_size, fontweight='bold')
-#             ax1.tick_params(labelbottom=False)
-#             if i == 0:
-#                 model_pcolormeshes[1] = ne_kian_plot
-            
-#             # Plot Artist 4.5
-#             ne_art_plot = ax2.pcolormesh(r_time, r_h, ne_art, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-#             ax2.set_title('Artist 4.5', fontsize=subtit_size, fontweight='bold')
-#             ax2.tick_params(labelbottom=False)
-#             if i == 0:
-#                 model_pcolormeshes[2] = ne_art_plot
-            
-#             # Plot IRI
-#             ne_iri_plot = ax3.pcolormesh(r_time, r_h, ne_iri, shading='auto', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
-#             ax3.set_title('IRI', fontsize=subtit_size, fontweight='bold')
-#             ax3.set_xlabel('Time [UT]', fontsize=xlab_size)
-#             ax3.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#             if i == 0:
-#                 model_pcolormeshes[3] = ne_iri_plot
-            
-#             # Set y-labels for the first column only
-#             if i == 0:
-#                 ax0.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#                 ax1.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#                 ax2.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#                 ax3.set_ylabel('Altitude [km]', fontsize=ylab_size)
-#             else:
-#                 ax0.tick_params(labelleft=False)
-#                 ax1.tick_params(labelleft=False)
-#                 ax2.tick_params(labelleft=False)
-#                 ax3.tick_params(labelleft=False)
-        
-#         # Add colorbars for each row
-#         for row in range(4):
-#             cax = fig.add_subplot(gs[row, 3])
-#             cbar = fig.colorbar(model_pcolormeshes[row], cax=cax, orientation='vertical')
-#             cbar.set_label('$n_e$ [n/m$^3$]', fontsize=cbar_size)
-        
-#         # Rotate x-axis labels
-#         for ax in axes:
-#             plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-        
-#         plt.show()
     
