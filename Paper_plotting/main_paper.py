@@ -141,7 +141,7 @@ X_ech = ech_peak_finder.get_peaks(e_prom, f_prom)
 
 peak_plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 # peak_plotter.plot_peaks()
-peak_plotter.plot_compare_all_peak_densities(True)
+peak_plotter.plot_compare_all_peak_altitudes()
 
 
 
