@@ -97,13 +97,13 @@ X_eis, X_ion, X_geo, X_kian = align_X_eis(X_EISCAT, X_IONOCNN, X_GEODMLP, X_KIAN
 
 X_art = align_artist_with_eiscat(X_eis, X_ARTIST)
 
-# plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
+plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 
 
 
-# plotter.plot_compare_all()
-
-
+# plotter.plot_compare_all_error()
+# plotter.plot_r2_rmse_dist()
+# plotter.plot_peaks()
 # prominence_values = np.arange(0.001, 0.1, 0.001)
 
 # peak_finder = IonosphericPeakFinder(X_kian)
@@ -141,7 +141,7 @@ X_ech = ech_peak_finder.get_peaks(e_prom, f_prom)
 
 peak_plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 # peak_plotter.plot_peaks()
-peak_plotter.plot_compare_all_peak_altitudes()
+peak_plotter.plot_compare_all_peak_densities(True)
 
 
 
