@@ -86,7 +86,7 @@ def align_X_eis(X_eis, X_ion, X_geo, X_kian):
 
 
 X_EISCAT   = load_dict('X_true_eiscat')
-X_KIANNET  = load_dict('X_pred_kiannet')
+X_KIANNET  = load_dict('X_pred_deep_kiannet')
 X_IONOCNN  = load_dict('X_pred_ionocnn')
 X_GEODMLP  = load_dict('X_pred_geodmlp')
 X_ARTIST   = load_dict('X_pred_artist.pkl')
@@ -100,10 +100,11 @@ X_art = align_artist_with_eiscat(X_eis, X_ARTIST)
 plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 
 
-
-# plotter.plot_compare_all_error()
+# plotter.plot_compare_all()
+plotter.plot_compare_error_all()
+# plotter.plot_best_model()
 # plotter.plot_r2_rmse_dist()
-# plotter.plot_peaks()
+
 # prominence_values = np.arange(0.001, 0.1, 0.001)
 
 # peak_finder = IonosphericPeakFinder(X_kian)
@@ -112,36 +113,36 @@ plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 # print(best_p, best_s)
 
 
-f_prom = 0.01
-e_prom = 0.01
+# f_prom = 0.01
+# e_prom = 0.01
 
  
 
-eis_peak_finder = IonosphericPeakFinder(X_eis)
-X_eis = eis_peak_finder.get_peaks(e_prom, f_prom)
+# eis_peak_finder = IonosphericPeakFinder(X_eis)
+# X_eis = eis_peak_finder.get_peaks(e_prom, f_prom)
 
-kian_peak_finder = IonosphericPeakFinder(X_kian)
-X_kian = kian_peak_finder.get_peaks(e_prom, f_prom)
+# kian_peak_finder = IonosphericPeakFinder(X_kian)
+# X_kian = kian_peak_finder.get_peaks(e_prom, f_prom)
 
-ion_peak_finder = IonosphericPeakFinder(X_ion)
-X_ion = ion_peak_finder.get_peaks(e_prom, f_prom)
+# ion_peak_finder = IonosphericPeakFinder(X_ion)
+# X_ion = ion_peak_finder.get_peaks(e_prom, f_prom)
 
-geo_peak_finder = IonosphericPeakFinder(X_geo)
-X_geo = geo_peak_finder.get_peaks(e_prom, f_prom)
+# geo_peak_finder = IonosphericPeakFinder(X_geo)
+# X_geo = geo_peak_finder.get_peaks(e_prom, f_prom)
 
-art_peak_finder = IonosphericPeakFinder(X_art)
-X_art = art_peak_finder.get_peaks(e_prom, f_prom)
-
-
-ech_peak_finder = IonosphericPeakFinder(X_ech)
-X_ech = ech_peak_finder.get_peaks(e_prom, f_prom)
+# art_peak_finder = IonosphericPeakFinder(X_art)
+# X_art = art_peak_finder.get_peaks(e_prom, f_prom)
 
 
+# ech_peak_finder = IonosphericPeakFinder(X_ech)
+# X_ech = ech_peak_finder.get_peaks(e_prom, f_prom)
 
 
-peak_plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
-# peak_plotter.plot_peaks()
-peak_plotter.plot_compare_all_peak_densities(True)
+
+
+# peak_plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
+# # peak_plotter.plot_peaks()
+# peak_plotter.plot_compare_all_peak_densities(True)
 
 
 
