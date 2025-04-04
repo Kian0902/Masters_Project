@@ -7,9 +7,8 @@ Created on Mon Jan 27 16:23:19 2025
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, ListedColormap, to_rgba
 from matplotlib.dates import DateFormatter
-from matplotlib.colors import to_rgba
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 import matplotlib.dates as mdates
@@ -27,8 +26,6 @@ import seaborn as sns
 import dcor
 
 
-
-
 class PaperPlotter:
     def __init__(self, X_EIS, X_KIAN, X_ION, X_GEO, X_ART, X_ECH):
         self.X_EIS = X_EIS
@@ -38,11 +35,6 @@ class PaperPlotter:
         self.X_ART = X_ART
         self.X_ECH = X_ECH
         # self.selected_indices = []
-    
-    
-    def relative_error(self, X1, X2):
-        err =  (X2 - X1)/X1
-        return err
     
     
     def plot_compare_all(self):
@@ -126,6 +118,283 @@ class PaperPlotter:
         cbar.set_label('$log_{10}$ $N_e$  (m$^{-3}$)', fontsize=13)
         
         plt.show()
+    
+    def relative_error(self, X_true, X_pred):
+        err =  (X_pred - X_true)/X_true
+        return err
+    
+    def absolute_relative_error(self, X_true, X_pred):
+        err =  abs(X_pred - X_true)/X_true
+        return err
+    
+    
+    def get_best_model(self, stacked_error):
+        # Identify points where all models have NaN
+        all_nan = np.all(np.isnan(stacked_error), axis=0)
+        err_stack_inf = np.where(np.isnan(stacked_error), 100, stacked_error)
+        best_model = np.argmin(err_stack_inf, axis=0)
+        best_model_masked = np.ma.array(best_model, mask=all_nan)
+        return best_model_masked
+    
+    
+    def plot_compare_error_all(self, model_colors=None):
+        # Default colors if none are provided
+        if model_colors is None:
+            model_colors = ['C1', 'C4', 'C5', 'C2', 'C3']
+    
+        # Check that exactly 5 colors are provided
+        if len(model_colors) != 5:
+            raise ValueError("You must provide exactly 5 colors, one for each model.")
+        
+        # ___________ Getting Data ___________
+        
+        # Merging all global keys
+        x_eis = merge_nested_dict(self.X_EIS)['All']
+        x_kian = merge_nested_pred_dict(self.X_KIAN)['All']
+        x_ion = merge_nested_pred_dict(self.X_ION)['All']
+        x_geo = merge_nested_pred_dict(self.X_GEO)['All']
+        x_art = merge_nested_dict(self.X_ART)['All']
+        x_ech = merge_nested_dict(self.X_ECH)['All']
+        
+        r_time = from_array_to_datetime(x_eis['r_time'])
+        r_h = x_eis['r_h'].flatten()
+        
+        # Ne-profiles
+        ne_eis  = np.log10(x_eis["r_param"])
+        ne_kian = x_kian["r_param"]
+        ne_ion  = x_ion["r_param"]
+        ne_geo  = x_geo["r_param"]
+        ne_art  = np.log10(x_art["r_param"])
+        ne_ech  = np.log10(x_ech["r_param"])
+        
+        # Fill nans with 0
+        nan_ind = np.isnan(ne_art)
+        ne_art = np.where(nan_ind == True, 0, ne_art)
+        
+        date_str = r_time[0].strftime('%b-%Y')
+        
+        err_kian = self.relative_error(ne_eis, ne_kian)
+        err_ion = self.relative_error(ne_eis, ne_ion)
+        err_geo = self.relative_error(ne_eis, ne_geo)
+        err_art = self.relative_error(ne_eis, ne_art)
+        err_ech = self.relative_error(ne_eis, ne_ech)
+        
+        # Calculate absolute logarithmic errors
+        abs_err_kian = self.absolute_relative_error(ne_eis, ne_kian)
+        abs_err_ion = self.absolute_relative_error(ne_eis, ne_ion)
+        abs_err_geo = self.absolute_relative_error(ne_eis, ne_geo)
+        abs_err_art = self.absolute_relative_error(ne_eis, ne_art)
+        abs_err_ech = self.absolute_relative_error(ne_eis, ne_ech)
+    
+        # Stack errors into a (5, N, M) array
+        err_stack = np.stack([abs_err_kian, abs_err_ion, abs_err_geo, abs_err_art, abs_err_ech], axis=0)
+        
+        best_model_masked = self.get_best_model(err_stack)
+        best_model_reversed = 4 - best_model_masked
+        
+        # Create a custom colormap with your colors
+        CMAP1 = ListedColormap(model_colors[::-1])
+        
+        # ___________ Defining axes ___________
+        fig = plt.figure(figsize=(12, 12))
+        fig.suptitle(f'Comparison Between Prediction Models and Ground Truth\nDate: {date_str}', fontsize=17, y=0.97)
+        
+        gs = GridSpec(6, 2, width_ratios=[1, 0.015], wspace=0.1, hspace=0.35)
+        ax0 = fig.add_subplot(gs[0, 0])
+        ax1 = fig.add_subplot(gs[1, 0], sharex=ax0)
+        ax2 = fig.add_subplot(gs[2, 0], sharex=ax0)
+        ax3 = fig.add_subplot(gs[3, 0], sharex=ax0)
+        ax4 = fig.add_subplot(gs[4, 0], sharex=ax0)
+        ax5 = fig.add_subplot(gs[5, 0], sharex=ax0)
+        cax1 = fig.add_subplot(gs[0, 1])
+        cax2 = fig.add_subplot(gs[1:, 1])
+        
+        # ___________ Creating Plots ___________
+        CMAP, MIN, MAX = "RdBu", -0.1, 0.1
+        
+        # Use best_model_reversed instead of best_model_masked
+        err1 = ax0.pcolormesh(r_time, r_h, best_model_reversed, cmap=CMAP1, shading='gouraud')
+        err2 = ax1.pcolormesh(r_time, r_h, err_kian, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax2.pcolormesh(r_time, r_h, err_ion, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax3.pcolormesh(r_time, r_h, err_geo, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax4.pcolormesh(r_time, r_h, err_art, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax5.pcolormesh(r_time, r_h, err_ech, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        
+        # Set titles and labels
+        ax0.set_title('(a) Lowest Absolute Relative Error', fontsize=16)
+        ax1.set_title('(b) KIAN-Net', fontsize=16)
+        ax2.set_title('(c) Iono-CNN', fontsize=16)
+        ax3.set_title('(d) Geo-DMLP', fontsize=16)
+        ax4.set_title('(e) Artist 5.0', fontsize=16)
+        ax5.set_title('(f) E-Chaim', fontsize=16)
+        
+        # y-labels
+        fig.supylabel('Altitude [km]', x=0.075)
+        
+        # x-label
+        ax5.set_xlabel('UT [dd hh:mm]', fontsize=13)
+        
+        # Ticks
+        ax0.tick_params(labelbottom=False)  # Hide x-ticks on EISCAT plot
+        ax1.tick_params(labelbottom=False)
+        ax2.tick_params(labelbottom=False)
+        ax3.tick_params(labelbottom=False)
+        ax4.tick_params(labelbottom=False)
+        ax5.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+        
+        plt.setp(ax5.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        
+        # Add colorbar
+        cbar1 = fig.colorbar(err1, cax=cax1, ticks=np.arange(5))
+        cbar1.ax.set_yticklabels(['E-Chaim', 'Artist 5.0', 'Geo-DMLP', 'Iono-CNN', 'KIAN-Net'])
+        # cbar1.set_label('Best Model', fontsize=13)
+        
+        cbar2 = fig.colorbar(err2, cax=cax2, orientation='vertical')
+        cbar2.set_label('Relative Error log10(m$^{-3}$)', fontsize=13)
+        
+        plt.show()
+        
+        
+    
+        
+        
+    def plot_best_model(self, model_colors=None):
+    
+        # Default colors if none are provided
+        if model_colors is None:
+            model_colors = ['C1', 'C4', 'C5', 'C2', 'C3']
+    
+        # Check that exactly 5 colors are provided
+        if len(model_colors) != 5:
+            raise ValueError("You must provide exactly 5 colors, one for each model.")
+    
+        # Merge data from all models
+        x_eis = merge_nested_dict(self.X_EIS)['All']
+        x_kian = merge_nested_pred_dict(self.X_KIAN)['All']
+        x_ion = merge_nested_pred_dict(self.X_ION)['All']
+        x_geo = merge_nested_pred_dict(self.X_GEO)['All']
+        x_art = merge_nested_dict(self.X_ART)['All']
+        x_ech = merge_nested_dict(self.X_ECH)['All']
+    
+        # Extract time and altitude
+        r_time = from_array_to_datetime(x_eis['r_time'])
+        r_h = x_eis['r_h'].flatten()
+    
+        # Compute electron densities in log10 space
+        ne_eis = np.log10(x_eis["r_param"])  # EISCAT UHF
+        ne_kian = x_kian["r_param"]          # KIAN-Net (already in log10)
+        ne_ion = x_ion["r_param"]            # Iono-CNN (already in log10)
+        ne_geo = x_geo["r_param"]            # Geo-DMLP (already in log10)
+        ne_art = np.log10(x_art["r_param"])  # Artist 5.0
+        ne_ech = np.log10(x_ech["r_param"])  # E-Chaim
+    
+        # Calculate absolute logarithmic errors
+        err_kian = self.absolute_relative_error(ne_eis, ne_kian)
+        err_ion = self.absolute_relative_error(ne_eis, ne_ion)
+        err_geo = self.absolute_relative_error(ne_eis, ne_geo)
+        err_art = self.absolute_relative_error(ne_eis, ne_art)
+        err_ech = self.absolute_relative_error(ne_eis, ne_ech)
+    
+        # Stack errors into a (5, N, M) array
+        err_stack = np.stack([err_kian, err_ion, err_geo, err_art, err_ech], axis=0)
+        
+        best_model_masked = self.get_best_model(err_stack)
+        
+        # Create a custom colormap with your colors
+        cmap = ListedColormap(model_colors)
+    
+        # Create the plot
+        fig, ax = plt.subplots(figsize=(14, 6))
+        pcm = ax.pcolormesh(r_time, r_h, best_model_masked, cmap=cmap, shading='gouraud')
+    
+        # Add a color bar with model names
+        cbar = fig.colorbar(pcm, ax=ax, ticks=np.arange(5))
+        cbar.ax.set_yticklabels(['KIAN-Net', 'Iono-CNN', 'Geo-DMLP', 'Artist 5.0', 'E-Chaim'])
+        cbar.set_label('Best Model')
+    
+        # Set labels and title
+        ax.set_xlabel('UT [dd hh:mm]')
+        ax.set_ylabel('Altitude [km]')
+        date_str = r_time[0].strftime('%b-%Y')
+        ax.set_title(f'Best Prediction Model Based on Smallest |log10(Ne_pred) - log10(Ne_true)|\nDate: {date_str}')
+    
+        # Format the x-axis with datetime
+        ax.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+        plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
+    
+        plt.tight_layout()
+        plt.show()
+    
+    # def plot_best_model(self):
+    #     # Import necessary module within the method
+    #     from matplotlib.colors import ListedColormap
+        
+    #     # Merge dictionaries to get 'All' data
+    #     x_eis = merge_nested_dict(self.X_EIS)['All']
+    #     x_kian = merge_nested_pred_dict(self.X_KIAN)['All']
+    #     x_ion = merge_nested_pred_dict(self.X_ION)['All']
+    #     x_geo = merge_nested_pred_dict(self.X_GEO)['All']
+    #     x_art = merge_nested_dict(self.X_ART)['All']
+    #     x_ech = merge_nested_dict(self.X_ECH)['All']
+        
+    #     # Extract time and altitude
+    #     r_time = from_array_to_datetime(x_eis['r_time'])
+    #     r_h = x_eis['r_h'].flatten()
+        
+    #     # Compute electron densities in log10 space
+    #     ne_eis = np.log10(x_eis["r_param"])  # EISCAT UHF
+    #     ne_kian = x_kian["r_param"]          # KIAN-Net (already log10)
+    #     ne_ion = x_ion["r_param"]            # Iono-CNN (already log10)
+    #     ne_geo = x_geo["r_param"]            # Geo-DMLP (already log10)
+    #     ne_art = np.log10(x_art["r_param"])  # Artist 5.0
+    #     ne_ech = np.log10(x_ech["r_param"])  # E-Chaim
+        
+    #     # Calculate absolute logarithmic errors
+    #     err_kian = self.absolute_relative_error(ne_eis, ne_kian)
+    #     err_ion = self.absolute_relative_error(ne_eis, ne_ion)
+    #     err_geo = self.absolute_relative_error(ne_eis, ne_geo)
+    #     err_art = self.absolute_relative_error(ne_eis, ne_art)
+    #     err_ech = self.absolute_relative_error(ne_eis, ne_ech)
+        
+    #     # Stack errors into a (5, N, M) array
+    #     err_stack = np.stack([err_kian, err_ion, err_geo, err_art, err_ech], axis=0)
+        
+    #     # Identify points where all models have NaN
+    #     all_nan = np.all(np.isnan(err_stack), axis=0)
+        
+    #     # Replace NaN with infinity for comparison
+    #     err_stack_inf = np.where(np.isnan(err_stack), np.inf, err_stack)
+        
+    #     # Find the index of the model with the smallest error (0: KIAN, 1: ION, etc.)
+    #     best_model = np.argmin(err_stack_inf, axis=0)
+        
+    #     # Create a masked array, masking points where all models are NaN
+    #     best_model_masked = np.ma.array(best_model, mask=all_nan)
+        
+    #     # Define a colormap with 5 distinct colors
+    #     cmap = ListedColormap(plt.cm.tab10(np.arange(5)))
+        
+    #     # Create the plot
+    #     fig, ax = plt.subplots(figsize=(10, 8))
+    #     pcm = ax.pcolormesh(r_time, r_h, best_model_masked, cmap=cmap, shading='auto')
+        
+    #     # Add a color bar
+    #     cbar = fig.colorbar(pcm, ax=ax, ticks=np.arange(5))
+    #     cbar.ax.set_yticklabels(['KIAN-Net', 'Iono-CNN', 'Geo-DMLP', 'Artist 5.0', 'E-Chaim'])
+    #     cbar.set_label('Best Model')
+        
+    #     # Set labels and title
+    #     ax.set_xlabel('UT [dd hh:mm]')
+    #     ax.set_ylabel('Altitude [km]')
+    #     date_str = r_time[0].strftime('%b-%Y')
+    #     ax.set_title(f'Best Prediction Model Based on Smallest |log10(Ne_pred) - log10(Ne_true)|\nDate: {date_str}')
+        
+    #     # Format the x-axis with datetime
+    #     ax.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+    #     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        
+    #     plt.tight_layout()
+    #     plt.show()
     
     def plot_compare_all_error(self):
         
