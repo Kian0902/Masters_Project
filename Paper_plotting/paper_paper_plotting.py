@@ -17,7 +17,7 @@ from matplotlib.widgets import Cursor
 from datetime import datetime
 from scipy.stats import linregress, gaussian_kde, pearsonr, spearmanr
 from paper_utils import from_array_to_datetime, merge_nested_dict, merge_nested_pred_dict, merge_nested_peak_dict, get_altitude_r2_score_nans, get_measurements_r2_score_nans, inspect_dict
-from sklearn.metrics import r2_score
+from sklearn.metrics import r2_score, mean_absolute_percentage_error
 from sklearn import preprocessing as pre
 import seaborn as sns
 # For all plots: sns.set(style="dark", context=None, palette=None)
@@ -449,6 +449,23 @@ class PaperPlotter:
             mse = np.mean((true_valid - pred_valid) ** 2)
             return np.sqrt(mse)
         
+        def calculate_relative_error_tot(ne_true_m, ne_pred_m):
+            mask = ~np.isnan(ne_pred_m)
+            if np.sum(mask) < 1:  # Need at least 1 point for RMSE
+                return 0
+            
+            # print(ne_true_m)
+            
+            true_valid = ne_true_m[mask]
+            pred_valid = ne_pred_m[mask]
+            
+            eps= 0.1
+            # err =  abs(pred_valid - true_valid)/(true_valid + eps)
+            err = mean_absolute_percentage_error(true_valid, pred_valid)
+            
+            # print(err.shape)
+            return np.mean(err)
+        
         def calculate_pearson_r(ne_true_m, ne_pred_m):
             mask = ~np.isnan(ne_pred_m)
             if np.sum(mask) < 2:  # Need at least 2 points for correlation
@@ -471,47 +488,54 @@ class PaperPlotter:
         def calculate_scores(ne_true, ne_pred, valid_measurements, score_func):
             metric_m = np.array([score_func(ne_true[:, m], ne_pred[:, m]) for m in valid_measurements])
             metric_tot = np.mean(metric_m)
-            print(f"{score_func.__name__} result: {metric_tot:.2f}")
+            
+            print(f"{score_func.__name__} result: {metric_tot:.3f}")
             return metric_tot
         
         # Define score functions
         a = calculate_r2_tot
         b = calculate_rmse_tot
-        c = calculate_pearson_r
-        d = calculate_distance_cor
+        c = calculate_relative_error_tot
+        d = calculate_pearson_r
+        e = calculate_distance_cor
         
         # Calculate scores for valid measurements
         print("KIAN-Net Metrics:")
         r2_kian = calculate_scores(ne_eis, ne_kian, valid_measurements, a)
         rmse_kian = calculate_scores(ne_eis, ne_kian, valid_measurements, b)
-        r_kian = calculate_scores(ne_eis, ne_kian, valid_measurements, c)
-        dcor_kian = calculate_scores(ne_eis, ne_kian, valid_measurements, d)
+        rel_err_kian = calculate_scores(ne_eis, ne_kian, valid_measurements, c)
+        r_kian = calculate_scores(ne_eis, ne_kian, valid_measurements, d)
+        dcor_kian = calculate_scores(ne_eis, ne_kian, valid_measurements, e)
 
         
         print("Artist Metrics:")
         r2_art  = calculate_scores(ne_eis, ne_art, valid_measurements, a)
         rmse_art  = calculate_scores(ne_eis, ne_art, valid_measurements, b)
-        r_art  = calculate_scores(ne_eis, ne_art, valid_measurements, c)
-        dcor_art = calculate_scores(ne_eis, ne_art, valid_measurements, d)
+        rel_err_art = calculate_scores(ne_eis, ne_art, valid_measurements, c)
+        r_art  = calculate_scores(ne_eis, ne_art, valid_measurements, d)
+        dcor_art = calculate_scores(ne_eis, ne_art, valid_measurements, e)
 
         
         print("E-CHAIM Metrics:")
         r2_ech  = calculate_scores(ne_eis, ne_ech, valid_measurements, a)
         rmse_ech  = calculate_scores(ne_eis, ne_ech, valid_measurements, b)
-        r_ech  = calculate_scores(ne_eis, ne_ech, valid_measurements, c)
-        dcor_ech = calculate_scores(ne_eis, ne_ech, valid_measurements, d)
+        rel_err_ech = calculate_scores(ne_eis, ne_ech, valid_measurements, c)
+        r_ech  = calculate_scores(ne_eis, ne_ech, valid_measurements, d)
+        dcor_ech = calculate_scores(ne_eis, ne_ech, valid_measurements, e)
         
         print("Iono-CNN Metrics:")
         r2_ion  = calculate_scores(ne_eis, ne_ion, valid_measurements, a)
         rmse_ion  = calculate_scores(ne_eis, ne_ion, valid_measurements, b)
-        r_ion  = calculate_scores(ne_eis, ne_ion, valid_measurements, c)
-        dcor_ion = calculate_scores(ne_eis, ne_ion, valid_measurements, d)
+        rel_err_ion = calculate_scores(ne_eis, ne_ion, valid_measurements, c)
+        r_ion  = calculate_scores(ne_eis, ne_ion, valid_measurements, d)
+        dcor_ion = calculate_scores(ne_eis, ne_ion, valid_measurements, e)
         
         print("Geo-DMLP Metrics:")
         r2_geo  = calculate_scores(ne_eis, ne_geo, valid_measurements, a)
         rmse_geo  = calculate_scores(ne_eis, ne_geo, valid_measurements, b)
-        r_geo  = calculate_scores(ne_eis, ne_geo, valid_measurements, c)
-        dcor_geo = calculate_scores(ne_eis, ne_geo, valid_measurements, d)
+        rel_err_geo = calculate_scores(ne_eis, ne_geo, valid_measurements, c)
+        r_geo  = calculate_scores(ne_eis, ne_geo, valid_measurements, d)
+        dcor_geo = calculate_scores(ne_eis, ne_geo, valid_measurements, e)
     
     # def plot_compare_all_error(self):
         
