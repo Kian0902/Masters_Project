@@ -101,7 +101,8 @@ plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 
 
 # plotter.plot_compare_all()
-plotter.plot_compare_error_all()
+plotter.plot_compare_all_error()
+# plotter.plot_compare_error_all()
 # plotter.plot_best_model()
 # plotter.plot_r2_rmse_dist()
 
