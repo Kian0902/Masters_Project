@@ -550,6 +550,62 @@ def align_artist_with_eiscat(eiscat_dict, artist_dict):
 
 
 
+def merge_nested_peak_dict(nested_dict):
+    all_r_time = []
+    all_r_param = []
+    all_r_param_peak = []
+    all_r_h_peak = []
+    
+    sorted_keys = sorted(nested_dict.keys(), key=lambda d: datetime.strptime(d, '%Y-%m-%d'))
+    
+    # Loop over keys in sorted order (optional, if order matters)
+    for key in sorted_keys:
+        all_r_time.append(nested_dict[key]['r_time'])
+        all_r_param.append(nested_dict[key]['r_param'])
+        all_r_param_peak.append(nested_dict[key]['r_param_peak'])
+        all_r_h_peak.append(nested_dict[key]['r_h_peak'])
+        h=nested_dict[key]['r_h']
+        
+    # Concatenate arrays along axis=0
+    merged_r_time = np.concatenate(all_r_time, axis=0)
+    merged_r_param = np.concatenate(all_r_param, axis=1)
+    merged_r_param_peak = np.concatenate(all_r_param_peak, axis=1)
+    merged_r_h_peak = np.concatenate(all_r_h_peak, axis=1)
+    
+    
+    # Return the merged dictionary under the key "All"
+    return {"All": {"r_time": merged_r_time, "r_h": h, "r_param": merged_r_param, "r_param_peak": merged_r_param_peak, "r_h_peak": merged_r_h_peak}}
+
+
+
+def merge_nested_peak_pred_dict(nested_dict):
+    all_r_time = []
+    all_r_param = []
+    all_r_param_peak = []
+    all_r_h_peak = []
+    
+    sorted_keys = sorted(nested_dict.keys(), key=lambda d: datetime.strptime(d, '%Y-%m-%d'))
+    
+    # Loop over keys in sorted order (optional, if order matters)
+    for key in sorted_keys:
+        all_r_time.append(nested_dict[key]['r_time'])
+        all_r_param.append(nested_dict[key]['r_param'])
+        all_r_param_peak.append(nested_dict[key]['r_param_peak'])
+        all_r_h_peak.append(nested_dict[key]['r_h_peak'])
+        
+    # Concatenate arrays along axis=0
+    merged_r_time = np.concatenate(all_r_time, axis=0)
+    merged_r_param = np.concatenate(all_r_param, axis=1)
+    merged_r_param_peak = np.concatenate(all_r_param_peak, axis=1)
+    merged_r_h_peak = np.concatenate(all_r_h_peak, axis=1)
+    
+    
+    # Return the merged dictionary under the key "All"
+    return {"All": {"r_time": merged_r_time, "r_param": merged_r_param, "r_param_peak": merged_r_param_peak, "r_h_peak": merged_r_h_peak}}
+
+
+
+
 def merge_nested_dict(nested_dict):
     all_r_time = []
     all_r_param = []
