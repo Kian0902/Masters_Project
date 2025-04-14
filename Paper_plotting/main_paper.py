@@ -98,7 +98,8 @@ X_eis, X_ion, X_geo, X_kian = align_X_eis(X_EISCAT, X_IONOCNN, X_GEODMLP, X_KIAN
 X_art = align_artist_with_eiscat(X_eis, X_ARTIST)
 
 plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
-plotter.plot_altitude_metrics()
+# plotter.plot_altitude_metrics()
+plotter.plot_metrics_vs_time_compare_all()
 # plotter.plot_metrics_vs_altitude()
 # metrics = plotter.plot_kde_altitude(330, True)
 
