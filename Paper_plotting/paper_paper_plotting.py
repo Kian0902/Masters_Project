@@ -36,8 +36,8 @@ class PaperPlotter:
         self.X_ART = X_ART
         self.X_ECH = X_ECH
         # self.selected_indices = []
-        print(inspect_dict(self.X_KIAN))
-    
+
+        
     def plot_compare_all(self):
         
         # ___________ Getting Data ___________
@@ -326,7 +326,143 @@ class PaperPlotter:
         plt.tight_layout()
         plt.show()
     
-    def plot_kde_altitude(self, altitude, use_gridspec=True):
+    
+    
+    def plot_altitude_metrics(self):
+        # ___________ Getting Data ___________
+        x_eis = merge_nested_dict(self.X_EIS)['All']
+        x_kian = merge_nested_pred_dict(self.X_KIAN)['All']
+        x_ion = merge_nested_pred_dict(self.X_ION)['All']
+        x_geo = merge_nested_pred_dict(self.X_GEO)['All']
+        x_art = merge_nested_dict(self.X_ART)['All']
+        x_ech = merge_nested_dict(self.X_ECH)['All']
+        
+        r_h = x_eis['r_h'].flatten()  # Altitude points (e.g., 27 altitudes)
+        ne_eis = np.log10(x_eis["r_param"])  # True values in log10 scale
+        ne_kian = x_kian["r_param"]          # Predicted values
+        ne_ion = x_ion["r_param"]
+        ne_geo = x_geo["r_param"]
+        ne_art = np.log10(x_art["r_param"])
+        ne_ech = np.log10(x_ech["r_param"])
+        
+        # Define models and their predictions
+        models = {
+            'KIAN-Net': ne_kian,
+            'Iono-CNN': ne_ion,
+            'Geo-DMLP': ne_geo,
+            'Artist 5.0': ne_art,
+            'E-Chaim': ne_ech
+        }
+        
+        # Define plotting properties for each model
+        plot_props = {
+            'KIAN-Net': {'color': 'C1', 'lw': 3, 'zorder': 5, 'ls': '-'},
+            'Iono-CNN': {'color': 'C4', 'lw': 3.5, 'zorder': 4, 'ls': (2, (4.5, 1))},
+            'Geo-DMLP': {'color': 'C5', 'lw': 4, 'zorder': 1, 'ls': (0, (1, 1))},
+            'Artist 5.0': {'color': 'C2', 'lw': 3, 'zorder': 3, 'ls': (1, (3, 1, 1, 1))},
+            'E-Chaim': {'color': 'C3', 'lw': 2, 'zorder': 2, 'ls': '-'}
+        }
+        
+        # Identify valid measurements where all EISCAT UHF altitudes are non-NaN
+        valid_measurements = [m for m in range(ne_eis.shape[1]) if np.all(~np.isnan(ne_eis[:, m]))]
+        if not valid_measurements:
+            print("No measurements with fully valid EISCAT UHF data found.")
+            return
+        
+        # Initialize dictionaries to store metrics for each model and altitude
+        metrics = {
+            'R2': {model: np.full(len(r_h), np.nan) for model in models},
+            'RMSE': {model: np.full(len(r_h), np.nan) for model in models},
+            'Pearson': {model: np.full(len(r_h), np.nan) for model in models},
+            'Distance Correlation': {model: np.full(len(r_h), np.nan) for model in models}
+        }
+        
+        # --- Reused Metric Calculation Functions ---
+        def normalize(X):
+            return pre.MinMaxScaler().fit_transform(X.reshape(-1, 1)).flatten()
+        
+        def calculate_r2_tot(ne_true_alt, ne_pred_alt):
+            mask = ~np.isnan(ne_pred_alt)
+            if np.sum(mask) < 2:  # Need at least 2 points for R²
+                return -1
+            true_valid = normalize(ne_true_alt[mask])
+            pred_valid = normalize(ne_pred_alt[mask])
+            return r2_score(true_valid, pred_valid)
+        
+        def calculate_rmse_tot(ne_true_alt, ne_pred_alt):
+            mask = ~np.isnan(ne_pred_alt)
+            if np.sum(mask) < 1:  # Need at least 1 point for RMSE
+                return 2
+            true_valid = normalize(ne_true_alt[mask])
+            pred_valid = normalize(ne_pred_alt[mask])
+            mse = np.mean((true_valid - pred_valid) ** 2)
+            return np.sqrt(mse)
+        
+        def calculate_pearson_r(ne_true_alt, ne_pred_alt):
+            mask = ~np.isnan(ne_pred_alt)
+            if np.sum(mask) < 2:  # Need at least 2 points for correlation
+                return 0
+            true_valid = normalize(ne_true_alt[mask])
+            pred_valid = normalize(ne_pred_alt[mask])
+            r, _ = pearsonr(true_valid, pred_valid)
+            return r
+        
+        def calculate_distance_cor(ne_true_alt, ne_pred_alt):
+            mask = ~np.isnan(ne_pred_alt)
+            if np.sum(mask) < 2:  # Need at least 2 points for correlation
+                return 0
+            true_valid = normalize(ne_true_alt[mask].astype(np.float64))
+            pred_valid = normalize(ne_pred_alt[mask].astype(np.float64))
+            return dcor.distance_correlation(true_valid, pred_valid)
+        
+        # --- Compute Metrics Per Altitude ---
+        def compute_metrics_for_altitude(alt_idx):
+            true_values = ne_eis[alt_idx, valid_measurements]  # True values at valid timestamps
+            for model_name, pred_values in models.items():
+                pred = pred_values[alt_idx, valid_measurements]  # Predicted values at valid timestamps
+                metrics['R2'][model_name][alt_idx] = calculate_r2_tot(true_values, pred)
+                metrics['RMSE'][model_name][alt_idx] = calculate_rmse_tot(true_values, pred)
+                metrics['Pearson'][model_name][alt_idx] = calculate_pearson_r(true_values, pred)
+                metrics['Distance Correlation'][model_name][alt_idx] = calculate_distance_cor(true_values, pred)
+        
+        # Loop over each altitude and compute metrics
+        for alt_idx in range(len(r_h)):
+            compute_metrics_for_altitude(alt_idx)
+        
+        # --- Plotting ---
+        with sns.axes_style("dark"):
+            fig, axes = plt.subplots(2, 2, figsize=(8, 9), sharey=True)
+        axes = axes.flatten()
+        metric_names = ['R2', 'RMSE', 'Pearson', 'Distance Correlation']
+        
+        for i, metric_name in enumerate(metric_names):
+            ax = axes[i]
+            for model_name in models:
+                if model_name == "E-Chaim":
+                    m, ms = "o", 5
+                else:
+                    m, ms = None, None
+                props = plot_props[model_name]
+                ax.plot(metrics[metric_name][model_name], r_h, label=model_name,
+                        color=props['color'], lw=props['lw'], zorder=props['zorder'], ls=props['ls'], marker=m, markersize=ms)
+            ax.set_title(metric_name, fontsize=15)
+            ax.set_xlabel(metric_name)
+            if i % 2 == 0:  # Left column
+                ax.set_ylabel('Altitude [km]')
+            ax.legend()
+            ax.grid(True)
+        
+        plt.tight_layout()
+        plt.show()
+        
+        
+                
+    def plot_kde_altitude(self, altitude, return_metrics=False, show_plot=False, print_metrics=False):
+        """
+        Plot KDE comparison of electron density models at specified altitude and compute
+        Bhattacharyya coefficient, JS-Divergence, and Wasserstein distance for each model vs EISCAT.
+        Metrics are calculated only over the valid EISCAT PDF range.
+        """
         # Merge data from all models and EISCAT
         x_eis = merge_nested_dict(self.X_EIS)['All']
         x_kian = merge_nested_pred_dict(self.X_KIAN)['All']
@@ -340,90 +476,212 @@ class PaperPlotter:
         alt_idx = np.argmin(np.abs(r_h - altitude))
         closest_alt = r_h[alt_idx]
         
-        # Prepare data for each model and EISCAT in log10 space
-        datasets = []
-        
-        # EISCAT UHF (convert to log10)
+        # Extract EISCAT data and identify valid time indices
         ne_eis = x_eis['r_param'][alt_idx, :]
         data_eis = np.log10(ne_eis)
-        valid = np.isfinite(data_eis)
-        data_eis = data_eis[valid]
-        datasets.append(('EISCAT UHF', data_eis))
+        valid_mask = np.isfinite(data_eis)
         
-        # KIAN-Net (already in log10)
-        ne_kian = x_kian['r_param'][alt_idx, :]
-        data_kian = ne_kian
-        valid = np.isfinite(data_kian)
-        data_kian = data_kian[valid]
-        datasets.append(('KIAN-Net', data_kian))
-        
-        # Iono-CNN (already in log10)
-        ne_ion = x_ion['r_param'][alt_idx, :]
-        data_ion = ne_ion
-        valid = np.isfinite(data_ion)
-        data_ion = data_ion[valid]
-        datasets.append(('Iono-CNN', data_ion))
-        
-        # Geo-DMLP (already in log10)
-        ne_geo = x_geo['r_param'][alt_idx, :]
-        data_geo = ne_geo
-        valid = np.isfinite(data_geo)
-        data_geo = data_geo[valid]
-        datasets.append(('Geo-DMLP', data_geo))
-        
-        # Artist 5.0 (convert to log10)
-        ne_art = x_art['r_param'][alt_idx, :]
-        data_art = np.log10(ne_art)
-        valid = np.isfinite(data_art)
-        data_art = data_art[valid]
-        datasets.append(('Artist 5.0', data_art))
-        
-        # E-Chaim (convert to log10)
-        ne_ech = x_ech['r_param'][alt_idx, :]
-        data_ech = np.log10(ne_ech)
-        valid = np.isfinite(data_ech)
-        data_ech = data_ech[valid]
-        datasets.append(('E-Chaim', data_ech))
-        
-        # Determine global x-axis limits
-        all_data = np.concatenate([d for _, d in datasets if len(d) > 0])
-        if len(all_data) == 0:
-            print("No valid data available for KDE.")
+        if not np.any(valid_mask):
+            print(f"No valid EISCAT data at {closest_alt} km. KDE not possible.")
             return
-        x_min, x_max = np.min(all_data), np.max(all_data)
-        x_grid = np.linspace(x_min, x_max, 1000)
         
-        # Create figure and subplots using Gridspec
-        fig = plt.figure(figsize=(12, 12))
-        fig.suptitle(f'KDE of log10(Ne) at {closest_alt:.1f} km', fontsize=16)
+        # Prepare datasets using only valid time indices
+        datasets = []
+        datasets.append(('EISCAT UHF', data_eis[valid_mask]))
         
-        if use_gridspec:
-            gs = GridSpec(6, 1, hspace=0.5)
-            axes = []
-            for i in range(6):
-                if i == 0:
-                    ax = fig.add_subplot(gs[i])
-                else:
-                    ax = fig.add_subplot(gs[i], sharex=axes[0])
-                axes.append(ax)
-        else:
-            _, axes = plt.subplots(6, 1, figsize=(12, 12), sharex=True)
+        # Define model processing parameters
+        model_params = [
+            ('KIAN-Net', x_kian, True, False),
+            ('Artist 5.0', x_art, False, True),
+            ('E-Chaim', x_ech, False, False),
+            ('Iono-CNN', x_ion, True, False),
+            ('Geo-DMLP', x_geo, True, False),
+        ]
         
-        # Plot KDE for each dataset
-        for i, (label, data) in enumerate(datasets):
-            if len(data) < 2:
-                print(f"Not enough data points for {label} at {closest_alt} km. Skipping KDE.")
+        for name, data, is_log, is_artist in model_params:
+            raw = data['r_param'][alt_idx, :][valid_mask]
+            if is_artist:
+                raw = np.where(np.isnan(raw), 1e9, raw)
+                processed = np.log10(raw)
+            else:
+                processed = raw if is_log else np.log10(raw)
+            datasets.append((name, processed))
+        
+        # Predefined visualization styles
+        style_config = {
+            'EISCAT UHF': {'color': 'C0', 'lw': 3, 'zorder': 6, 'ls': '-'},
+            'KIAN-Net': {'color': 'C1', 'lw': 3, 'zorder': 5, 'ls': '-'},
+            'Artist 5.0': {'color': 'C2', 'lw': 3, 'zorder': 3, 'ls': '-'},
+            'E-Chaim': {'color': 'C3', 'lw': 3, 'zorder': 2, 'ls': '-'},
+            'Iono-CNN': {'color': 'C4', 'lw': 3, 'zorder': 4, 'ls': '-'},
+            'Geo-DMLP': {'color': 'C5', 'lw': 3, 'zorder': 1, 'ls': '-'},
+        }
+    
+        # Create figure and axis
+        if show_plot:
+            fig = plt.figure(figsize=(12, 7))
+            with sns.axes_style("dark"):
+                ax = fig.add_subplot(GridSpec(1, 1)[0])
+    
+        # Determine x-axis grid based ONLY on EISCAT data
+        eis_data = datasets[0][1]
+        clean_eis = eis_data[np.isfinite(eis_data)]
+        x_min = np.min(clean_eis) - 0.5  # Extend slightly for KDE continuity
+        x_max = np.max(clean_eis) + 0.5
+        x_grid_global = np.linspace(x_min, x_max, 1000)
+        dx = (x_max - x_min) / (len(x_grid_global) - 1)
+    
+        # Calculate and plot KDEs, storing results for metrics
+        kde_results = []
+        for label, data in datasets:
+            clean = data[np.isfinite(data)]
+            if len(clean) < 2:
+                print(f"Skipping {label} - insufficient data")
+                kde_results.append((label, None))
                 continue
-            kde = gaussian_kde(data)
-            y = kde(x_grid)
-            axes[i].plot(x_grid, y, label=label)
-            axes[i].set_title(f'({chr(97 + i)}) {label}', fontsize=14)
-            axes[i].set_ylabel('Density')
-            if i != len(datasets) - 1:
-                axes[i].tick_params(labelbottom=False)
+            
+            kde = gaussian_kde(clean, bw_method=0.2)
+            y = kde(x_grid_global)  # Evaluate on EISCAT's grid
+            kde_results.append((label, y))
+            
+            # Plotting
+            style = style_config[label]
+            if show_plot:
+                ax.plot(x_grid_global, y, label=label, 
+                        color=style['color'],
+                        linewidth=style['lw'],
+                        linestyle=style['ls'],
+                        zorder=style['zorder'],
+                        alpha=0.9)
         
-        axes[-1].set_xlabel('log10(Ne) [m$^{-3}$]')
-        plt.show()
+        # Configure final plot appearance
+        if show_plot:
+            ax.set_xlim(x_min, x_max)
+            ax.set_xlabel(r'$\log_{10}(N_e)$ [m$^{-3}$]', fontsize=12)
+            ax.set_ylabel('Probability Density', fontsize=12)
+            ax.set_title(f'Electron Density Distribution at {closest_alt:.1f} km', 
+                        fontsize=14, pad=15)
+            ax.grid(True, alpha=1)
+            ax.legend(frameon=True, framealpha=0.9, 
+                     facecolor='white', loc='upper left',
+                     fontsize=10, handlelength=2.5)
+            plt.show()
+    
+        # Compute metrics between each model and EISCAT
+        eis_label, eis_kde = kde_results[0]
+        if eis_kde is None:
+            print("Error: EISCAT KDE not available for metrics calculation.")
+            return
+    
+        metrics_dict = {}  # Initialize dictionary for metric storage
+        epsilon = 1e-10  # To avoid division by zero in JS divergence
+        for model_label, model_kde in kde_results[1:]:
+            if model_kde is None:
+                print(f"Skipping metrics for {model_label} (insufficient data)")
+                continue
+            
+            # Bhattacharyya Coefficient
+            bc = np.sum(np.sqrt(eis_kde * model_kde)) * dx
+            
+            # JS Divergence (symmetrized measure)
+            m = 0.5 * (eis_kde + model_kde)
+            kl_p = np.sum(eis_kde * np.log((eis_kde + epsilon) / (m + epsilon))) * dx
+            kl_q = np.sum(model_kde * np.log((model_kde + epsilon) / (m + epsilon))) * dx
+            js = 0.5 * (kl_p + kl_q)
+            
+            # Wasserstein Distance
+            cdf_eis = np.cumsum(eis_kde) * dx
+            cdf_model = np.cumsum(model_kde) * dx
+            wd = np.sum(np.abs(cdf_eis - cdf_model)) * dx
+            
+            # Store as numpy array in dictionary
+            metrics_dict[model_label] = np.array([bc, js, wd])
+        
+        if print_metrics:
+            print("\nModel Comparison Metrics at {:.1f} km (EISCAT Range Only):".format(closest_alt))
+            print("{:<12} {:<20} {:<20} {:<20}".format("Model", "Bhattacharyya", "JS-Divergence", "Wasserstein"))
+        
+        # Preserve original model order
+        model_order = [param[0] for param in model_params]
+        for model in model_order:
+            if model in metrics_dict:
+                bc, js, wd = metrics_dict[model]
+                if print_metrics:
+                    print("{:<12} {:<20.4f} {:<20.4f} {:<20.4f}".format(model, bc, js, wd))
+        
+        if return_metrics:
+            return metrics_dict  # Return dictionary instead of list
+    
+    
+    def plot_metrics_vs_altitude(self, show_altitude_plots=False):
+        """
+        Calculate metrics for all altitudes and plot them against altitude.
+        Creates three plots (Bhattacharyya, JS-Divergence, Wasserstein) with
+        altitude on y-axis and metric values on x-axis.
+        """
+        # Get all available altitudes from EISCAT data
+        x_eis = merge_nested_dict(self.X_EIS)['All']
+        r_h = x_eis['r_h'].flatten()
+        unique_alts = np.unique(r_h[np.isfinite(r_h)])
+        
+        # Initialize metric storage
+        metric_names = ['Bhattacharyya', 'JS-Divergence', 'Wasserstein']
+        model_names = ['KIAN-Net', 'Artist 5.0', 'E-Chaim', 'Iono-CNN', 'Geo-DMLP']
+        metrics_cube = {name: {m: [] for m in metric_names} for name in model_names}
+        valid_alts = []
+    
+        # Collect metrics for all altitudes
+        for alt in unique_alts:
+            # Calculate metrics for this altitude
+            metrics = self.plot_kde_altitude(alt, return_metrics=True, show_plot=show_altitude_plots)
+            
+            if not metrics:
+                continue  # Skip if no valid metrics
+                
+            valid_alts.append(alt)
+            for model in model_names:
+                if model in metrics:
+                    bc, js, wd = metrics[model]
+                    metrics_cube[model]['Bhattacharyya'].append(bc)
+                    metrics_cube[model]['JS-Divergence'].append(js)
+                    metrics_cube[model]['Wasserstein'].append(wd)
+                else:
+                    # Handle missing models with NaN
+                    for m in metric_names:
+                        metrics_cube[model][m].append(np.nan)
+    
+        # Convert to numpy arrays
+        for model in model_names:
+            for m in metric_names:
+                metrics_cube[model][m] = np.array(metrics_cube[model][m])
+        
+        # Create figure with 3 subplots
+        with sns.axes_style("dark"):
+            fig, axes = plt.subplots(1, 3, figsize=(10, 8))
+        colors = ['C1', 'C2', 'C3', 'C4', 'C5']
+        
+        for i, metric in enumerate(metric_names):
+            ax = axes[i]
+            for j, model in enumerate(model_names):
+                ax.plot(metrics_cube[model][metric], valid_alts, 
+                        color=colors[j],
+                        linewidth=2.5,
+                        label=model,
+                        alpha=0.8)
+            
+            ax.set_title(metric)
+            ax.set_xlabel(metric)
+            ax.grid(True)
+            ax.set_ylim([min(valid_alts), max(valid_alts)])
+        
+        # Shared y-axis configuration
+        axes[0].set_ylabel('Altitude [km]')
+        axes[1].legend(loc='upper right', bbox_to_anchor=(1.0, 1.0))
+        plt.suptitle('Model Performance vs Altitude', y=1.02)
+        plt.tight_layout()
+        
+        return metrics_cube
+    
     
     
     # def plot_best_model(self):
@@ -1843,12 +2101,12 @@ class PaperPlotter:
     
         #region Figure Setup
         with sns.axes_style("dark"):
-            fig = plt.figure(figsize=(14, 14))
-            gs = GridSpec(2, 2, wspace=0.1, hspace=0.3)
+            fig = plt.figure(figsize=(12, 12.5))
+            gs = GridSpec(2, 2, wspace=0.1, hspace=0.2)
             ax_scatter_e = fig.add_subplot(gs[0, 0])
             ax_scatter_f = fig.add_subplot(gs[0, 1])
-            ax_kde_e = fig.add_subplot(gs[1, 0])
-            ax_kde_f = fig.add_subplot(gs[1, 1], sharey=ax_kde_e)
+            ax_kde_e = fig.add_subplot(gs[1, 0], sharex=ax_scatter_e)
+            ax_kde_f = fig.add_subplot(gs[1, 1], sharex=ax_scatter_f, sharey=ax_kde_e)
             ax_kde_f.tick_params(labelleft=False)
     
         fig.suptitle('Peak Electron Density Comparisons\n(EISCAT UHF vs Models)', fontsize=20, y=0.97)
@@ -1887,7 +2145,7 @@ class PaperPlotter:
             metrics['kl'] = trapz(p * np.log(p / q_safe), x_grid)
             return metrics
     
-        def _plot_kde(ax, models, region, min_val, max_val, title, normalize=False):
+        def _plot_kde(ax, models, region, min_val, max_val, normalize=False):
             """Plot KDEs for a single region with metrics."""
             x_grid = np.linspace(min_val, max_val, 1000)
             metrics_list = []
@@ -1895,7 +2153,7 @@ class PaperPlotter:
             # Normalize data if requested
             if normalize:
                 all_data = np.concatenate([model["data"][region, ~np.isnan(model["data"][region, :])]
-                                          for model in models])
+                                            for model in models])
                 global_min = np.min(all_data)
                 global_max = np.max(all_data)
             else:
@@ -1942,7 +2200,7 @@ class PaperPlotter:
                 wasserstein = trapz(np.abs(cdf_ref - cdf_model), x_grid)
                 metrics_list.append({"color": model["color"], "bc": bc, "kl": kl, "wasserstein": wasserstein})
     
-            # Add metrics text
+            # Add metrics text to the plot
             ax.text(0.64, 0.98, "(BC, KL, W)", transform=ax.transAxes, color='black',
                     fontsize=13, fontweight='bold', ha='left', va='top')
             for i, metric in enumerate(metrics_list):
@@ -1953,24 +2211,24 @@ class PaperPlotter:
     
             ax.set_xlim(min_val, max_val)
             ax.set_ylim(0, 2)
-            ax.set_title(title, fontsize=17, pad=12)
+            # Removed automatic title here; you can now manually add a title later if desired.
         #endregion
     
         #region Plotting Logic
+        # Removed the "title" keys from region_configs since we're setting titles manually later
         region_configs = [
             {'key': 'e', 'scatter_ax': ax_scatter_e, 'kde_ax': ax_kde_e, 'index': 0,
-             'min': 8.5 if not normalize else 0, 'max': 12.5 if not normalize else 1,
-             'title': '(a) E-region'},
+             'min': 8.5 if not normalize else 0, 'max': 12.5 if not normalize else 1},
             {'key': 'f', 'scatter_ax': ax_scatter_f, 'kde_ax': ax_kde_f, 'index': 1,
-             'min': 9.5 if not normalize else 0, 'max': 12.5 if not normalize else 1,
-             'title': '(b) F-region'}
+             'min': 9.5 if not normalize else 0, 'max': 12.5 if not normalize else 1}
         ]
     
         for config in region_configs:
             # Scatter plots (first row)
             scatter_ax = config['scatter_ax']
             _plot_diagonal(scatter_ax, config['min'], config['max'])
-            scatter_ax.text(0.3, 0.9, f"{config['title']} Peaks", fontsize=15, transform=scatter_ax.transAxes)
+            # Removed the automated scatter plot title below so you can add custom titles later:
+            # scatter_ax.text(0.3, 0.9, f"{config['title']} Peaks", fontsize=15, transform=scatter_ax.transAxes)
             legend_elements = []
     
             for idx, model in enumerate(models):
@@ -1981,257 +2239,43 @@ class PaperPlotter:
     
                 # Add legend element
                 legend_elements.append(Line2D([0], [0], marker='o', color=model['color'],
-                                             markeredgecolor='black', markersize=8, linestyle='',
-                                             label=model['name']))
+                                              markeredgecolor='black', markersize=8, linestyle='',
+                                              label=model['name']))
     
                 # Add metrics for non-EISCAT models
                 if model['name'] != "EISCAT UHF":
                     metrics = _calculate_metrics(x, y)
                     x_pos = 0.58 if config['key'] == 'e' else 0.64
-                    scatter_ax.text(x_pos, 0.23 - 0.04*idx,
-                                   rf"$\mathbf{{({metrics['r2']:.2f},\ {metrics['rmse']:.2f},\ {metrics['r_corr']:.2f})}}$",
-                                   color=model['color'], fontsize=10, transform=scatter_ax.transAxes)
+                    scatter_ax.text(x_pos, 0.23 - 0.04 * idx,
+                                    rf"$\mathbf{{({metrics['r2']:.2f},\ {metrics['rmse']:.2f},\ {metrics['r_corr']:.2f})}}$",
+                                    color=model['color'], fontsize=10, transform=scatter_ax.transAxes)
                     scatter_ax.text(x_pos, 0.23, rf"$\mathbf{{(R^2,\ RMSE,\ r)}}$",
-                                   color='black', fontsize=10, transform=scatter_ax.transAxes)
+                                    color='black', fontsize=10, transform=scatter_ax.transAxes)
     
             scatter_ax.legend(handles=legend_elements, fontsize=9, facecolor='white',
-                             loc='upper left', framealpha=1)
+                              loc='upper left', framealpha=1)
             scatter_ax.set(xlim=(config['min'], config['max']), ylim=(config['min'], config['max']))
             scatter_ax.grid(True)
     
             # KDE plots (second row)
             _plot_kde(config['kde_ax'], models, config['index'], config['min'], config['max'],
-                      config['title'], normalize=normalize)
+                      normalize=normalize)
             config['kde_ax'].grid(True)
-            config['kde_ax'].legend(fontsize=11, loc='upper left')
+            config['kde_ax'].legend(fontsize=9, facecolor='white', loc='upper left', framealpha=1)
     
-        #endregion
     
         #region Final Formatting
-        ax_scatter_e.set_xlabel(r'Prediction $\log_{10}\,(n_e)$', fontsize=15)
-        ax_scatter_e.set_ylabel(r'EISCAT UHF $\log_{10}\,(n_e)$', fontsize=15)
-        ax_scatter_f.set_xlabel(r'Prediction $\log_{10}\,(n_e)$', fontsize=15)
-        x_label = "Normalized Electron Density" if normalize else r"Electron Density $\log_{10}(n_e)$"
-        ax_kde_e.set_xlabel(x_label, fontsize=15)
-        ax_kde_e.set_ylabel('Probability Density', fontsize=15)
-        ax_kde_f.set_xlabel(x_label, fontsize=15)
-        plt.tight_layout(rect=[0, 0, 1, 0.96])
+        ax_scatter_e.set_ylabel(r'EISCAT UHF $\log_{10}\,(n_e)$', fontsize=16)
+        ax_scatter_f.tick_params(labelleft=False)
+        ax_scatter_e.set_title('(a) E-region Model vs EISCAT', fontsize=18)
+        ax_scatter_f.set_title('(b) F-region Model vs EISCAT', fontsize=18)
+        ax_kde_e.set_title('(c) E-region KDE', fontsize=18)
+        ax_kde_f.set_title('(d) F-region KDE', fontsize=18)
+        ax_kde_e.set_xlabel("Normalized Electron Density" if normalize else r"Electron Density $\log_{10}(n_e)$", fontsize=15)
+        ax_kde_e.set_ylabel('Probability Density', fontsize=16)
+        ax_kde_f.set_xlabel("Normalized Electron Density" if normalize else r"Electron Density $\log_{10}(n_e)$", fontsize=15)
         plt.show()
-        #endregion            
-    
-    # def plot_compare_all_peak_altitudes(self):
-    #     # Merge data dictionaries for all regions
-    #     X_eis = merge_nested_peak_dict(self.X_EIS)['All']
-    #     X_kian = merge_nested_peak_dict(self.X_KIAN)['All']
-    #     X_ion = merge_nested_peak_dict(self.X_ION)['All']
-    #     X_geo = merge_nested_peak_dict(self.X_GEO)['All']
-    #     X_art = merge_nested_peak_dict(self.X_ART)['All']
-    #     X_ech = merge_nested_peak_dict(self.X_ECH)['All']
-        
-    #     # Prepare peak height data
-    #     eis_h_peak = X_eis["r_h_peak"]
-    #     kian_h_peak = X_kian["r_h_peak"]
-    #     ion_h_peak = X_ion["r_h_peak"]
-    #     geo_h_peak = X_geo["r_h_peak"]
-    #     art_h_peak = X_art["r_h_peak"]
-    #     ech_h_peak = X_ech["r_h_peak"]
-        
-    #     # Define models with names, data, and colors
-    #     models = [
-    #         {"name": "KIAN-Net", "data": kian_h_peak, "color": "C1"},
-    #         {"name": "Iono-CNN", "data": ion_h_peak, "color": "C5"},
-    #         {"name": "Geo-DMLP", "data": geo_h_peak, "color": "C4"},
-    #         {"name": "Artist 5.0", "data": art_h_peak, "color": "C2"},
-    #         {"name": "E-CHAIM", "data": ech_h_peak, "color": "C3"},
-    #     ]
-        
-    #     # Set up the figure with two subplots
-    #     fig = plt.figure(figsize=(15, 7))
-    #     gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.2)
-    #     fig.suptitle('Peak Elecron Density Altitudes', fontsize=20, y=1)
-    #     with sns.axes_style("dark"):
-    #         ax_violin = fig.add_subplot(gs[0, 0])
-    #         ax_height = fig.add_subplot(gs[0, 1])
-           
-    #     # --- Original Violin Plot (Unchanged) ---
-    #     for region in [0, 1]:
-    #         # Collect data for all models and observed EISCAT data
-    #         data_list = []
-            
-    #         # Add observed EISCAT heights as a reference
-    #         eis_data = eis_h_peak[region, :]
-    #         valid_eis = ~np.isnan(eis_data)
-    #         df_obs = pd.DataFrame({'model': 'Observed', 'height': eis_data[valid_eis]})
-    #         data_list.append(df_obs)
-         
-    #         # Add predicted heights for each model
-    #         for model in models:
-    #             model_data = model["data"][region, :]
-    #             valid = ~np.isnan(model_data)
-    #             df = pd.DataFrame({'model': model["name"], 'height': model_data[valid]})
-    #             data_list.append(df)
-                    
-    #         # Combine all data into a single DataFrame
-    #         all_data = pd.concat(data_list)
-            
-    #         # Define color palette: 'Observed' in gray, models with their specified colors
-    #         palette = {'Observed': 'gray', **{m["name"]: m["color"] for m in models}}
-            
-    #         # Create a violin plot
-    #         sns.violinplot(
-    #             x='model',
-    #             y='height',
-    #             data=all_data,
-    #             ax=ax_violin,
-    #             hue='model',
-    #             palette=palette,
-    #             order=['Observed'] + [m["name"] for m in models],
-    #             # inner='quartile',
-    #             legend=False
-    #         )
-            
-    #         # Customize the plot
-    #         ax_violin.set_title('(a) Distribution Violin Plot', fontsize=17)
-    #         ax_violin.set_xlabel('Model', fontsize=15)
-    #         ax_violin.set_ylabel('Altitudes [km]', fontsize=15)
-    #         ax_violin.set_ylim(80, 350)
-    #         ax_violin.grid(True)
-        
-    #     # --- New RMSE Bar Plot for ax_height ---
-    #     rmse_data = []
-    #     for model in models:
-    #         for region, region_name in [(0, 'E'), (1, 'F')]:
-    #             eis_data = eis_h_peak[region, :]
-    #             model_data = model["data"][region, :]
-    #             valid = ~np.isnan(eis_data) & ~np.isnan(model_data)
-    #             if valid.any():
-    #                 rmse = np.sqrt(np.mean((eis_data[valid] - model_data[valid])**2))
-    #                 rmse_data.append({'Model': model["name"], 'Region': region_name, 'RMSE': rmse})
-    #     rmse_df = pd.DataFrame(rmse_data)
-    #     sns.barplot(
-    #         x='Model', y='RMSE', hue='Region', data=rmse_df, ax=ax_height,
-    #         palette=['C0', 'C1'], edgecolor='k'
-    #     )
+        #endregion
         
         
-    #     # Add RMSE values above each bar
-    #     for p in ax_height.patches:
-    #         height = p.get_height()
-    #         if not np.isnan(height) and height > 0.01:  # Only label non-NaN bars
-    #             ax_height.text(
-    #                 p.get_x() + p.get_width() / 2.,  # Center of the bar
-    #                 height + 0.5,  # Slightly above the bar
-    #                 f'{height:.2f}',  # Format to 2 decimal places
-    #                 ha='center', va='bottom',
-    #                 fontsize=11
-    #             )
-    #     ax_height.set_title('(b) RMSE Bar Plot', fontsize=17)
-    #     ax_height.set_xlabel('Model', fontsize=15)
-    #     ax_height.set_ylabel('RMSE [km]', fontsize=15)
-    #     ax_height.legend(title='Region')
-    #     ax_height.yaxis.grid(True)  # Add horizontal grid lines
-    #     ax_height.xaxis.grid(False)  # Ensure no vertical grid lines
-        
-    #     plt.setp(ax_violin.xaxis.get_majorticklabels(), rotation=45, ha='center')
-    #     plt.setp(ax_height.xaxis.get_majorticklabels(), rotation=45, ha='center')
-        
-    #     # Adjust layout and display
-    #     plt.tight_layout()
-    #     plt.show()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    # def plot_compare_all_peak_altitudes(self):
-    #     # Merge data dictionaries for all regions
-    #     X_eis = merge_nested_peak_dict(self.X_EIS)['All']
-    #     X_kian = merge_nested_peak_dict(self.X_KIAN)['All']
-    #     X_ion = merge_nested_peak_dict(self.X_ION)['All']
-    #     X_geo = merge_nested_peak_dict(self.X_GEO)['All']
-    #     X_art = merge_nested_peak_dict(self.X_ART)['All']
-    #     X_ech = merge_nested_peak_dict(self.X_ECH)['All']
-        
-    #     # Prepare peak height data
-    #     eis_h_peak = X_eis["r_h_peak"]
-    #     kian_h_peak = X_kian["r_h_peak"]
-    #     ion_h_peak = X_ion["r_h_peak"]
-    #     geo_h_peak = X_geo["r_h_peak"]
-    #     art_h_peak = X_art["r_h_peak"]
-    #     ech_h_peak = X_ech["r_h_peak"]
-        
-    #     # Define models with names, data, and colors
-    #     models = [
-    #         {"name": "KIAN-Net", "data": kian_h_peak, "color": "C1"},
-    #         {"name": "Geo-DMLP", "data": geo_h_peak, "color": "C4"},
-    #         {"name": "Iono-CNN", "data": ion_h_peak, "color": "C5"},
-    #         {"name": "Artist 5.0", "data": art_h_peak, "color": "C2"},
-    #         {"name": "E-CHAIM", "data": ech_h_peak, "color": "C3"},
-           
-    #         ]
-    
-    #     # Set up the figure with two subplots
-    #     fig = plt.figure(figsize=(14, 7))
-    #     gs = GridSpec(1, 2, width_ratios=[1, 1])
-    #     with sns.axes_style("dark"):
-    #         ax_violin = fig.add_subplot(gs[0, 0])
-    #         ax_height = fig.add_subplot(gs[0, 1], sharey=ax_violin)
-       
-       
 
-    #     for region in [0, 1]:
-    #         # Collect data for all models and observed EISCAT data
-    #         data_list = []
-            
-    #         # Add observed EISCAT heights as a reference
-    #         eis_data = eis_h_peak[region, :]
-    #         valid_eis = ~np.isnan(eis_data)
-    #         df_obs = pd.DataFrame({'model': 'Observed', 'height': eis_data[valid_eis]})
-    #         data_list.append(df_obs)
-     
-    #         # Add predicted heights for each model
-    #         for model in models:
-    #             model_data = model["data"][region, :]
-    #             valid = ~np.isnan(model_data)
-    #             df = pd.DataFrame({'model': model["name"], 'height': model_data[valid]})
-    #             data_list.append(df)
-                
-    #         # Combine all data into a single DataFrame
-    #         all_data = pd.concat(data_list)
-            
-    #         # Define color palette: 'Observed' in gray, models with their specified colors
-    #         palette = {'Observed': 'gray', **{m["name"]: m["color"] for m in models}}
-            
-    #         # Create a violin plot
-    #         sns.violinplot(
-    #             x='model',
-    #             y='height',
-    #             data=all_data,
-    #             ax=ax_violin,
-    #             hue='model',
-    #             palette=palette,
-    #             order=['Observed'] + [m["name"] for m in models],
-    #             # inner='quartile',
-    #             legend=False
-    #         )
-            
-    #         # Customize the plot
-    #         ax_violin.set_title('(a) Violin Plot', fontsize=15)
-    #         ax_violin.set_xlabel('Model', fontsize=13)
-    #         ax_violin.set_ylabel('Altitudes (km)', fontsize=13)
-    #         ax_violin.set_ylim(80, 350)
-    #         ax_violin.grid(True)
-                
-            
-            
-    #     # Adjust layout and display
-    #     plt.tight_layout()
-    #     plt.show()
-        
-        
-    
