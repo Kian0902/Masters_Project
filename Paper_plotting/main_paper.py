@@ -8,7 +8,7 @@ Created on Thu Nov 28 16:50:34 2024
 
 import numpy as np
 from paper_paper_plotting import PaperPlotter
-from paper_peaks_finder import IonosphericPeakFinder
+from paper_peaks_finder import IonosphericPeakFinder, IonosphericProfileInterpolator
 from paper_utils import save_dict, load_dict, inspect_dict, merge_nested_dict, merge_nested_pred_dict, align_artist_with_eiscat
 
 
@@ -98,7 +98,11 @@ X_eis, X_ion, X_geo, X_kian = align_X_eis(X_EISCAT, X_IONOCNN, X_GEODMLP, X_KIAN
 X_art = align_artist_with_eiscat(X_eis, X_ARTIST)
 
 plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
-plotter.plot_kde_altitude(350)
+plotter.plot_altitude_metrics()
+# plotter.plot_metrics_vs_altitude()
+# metrics = plotter.plot_kde_altitude(330, True)
+
+
 
 # plotter.plot_compare_all()
 # plotter.plot_compare_all_error()
@@ -113,48 +117,48 @@ plotter.plot_kde_altitude(350)
 
 # print(best_p, best_s)
 
-from paper_peaks_finder import IonosphericProfileInterpolator
-
-
-
-f_prom = 0.01
-e_prom = 0.01
-
-n_inter = 1
-
-eis_interpolate = IonosphericProfileInterpolator(X_eis)
-eis_peak_finder = IonosphericPeakFinder(eis_interpolate.interpolate_data(n=n_inter))
-X_eis = eis_peak_finder.get_peaks(e_prom, f_prom)
-
-kian_interpolate = IonosphericProfileInterpolator(X_kian)
-kian_peak_finder = IonosphericPeakFinder(kian_interpolate.interpolate_data(n=n_inter))
-X_kian = kian_peak_finder.get_peaks(e_prom, f_prom)
-
-ion_interpolate = IonosphericProfileInterpolator(X_ion)
-ion_peak_finder = IonosphericPeakFinder(ion_interpolate.interpolate_data(n=n_inter))
-X_ion = ion_peak_finder.get_peaks(e_prom, f_prom)
-
-geo_interpolate = IonosphericProfileInterpolator(X_geo)
-geo_peak_finder = IonosphericPeakFinder(geo_interpolate.interpolate_data(n=n_inter))
-X_geo = geo_peak_finder.get_peaks(e_prom, f_prom)
-
-art_interpolate = IonosphericProfileInterpolator(X_art)
-art_peak_finder = IonosphericPeakFinder(art_interpolate.interpolate_data(n=n_inter))
-X_art = art_peak_finder.get_peaks(e_prom, f_prom)
-
-ech_interpolate = IonosphericProfileInterpolator(X_ech)
-ech_peak_finder = IonosphericPeakFinder(ech_interpolate.interpolate_data(n=n_inter))
-X_ech = ech_peak_finder.get_peaks(e_prom, f_prom)
 
 
 
 
-peak_plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
+# f_prom = 0.01
+# e_prom = 0.01
+
+# n_inter = 1
+
+# eis_interpolate = IonosphericProfileInterpolator(X_eis)
+# eis_peak_finder = IonosphericPeakFinder(eis_interpolate.interpolate_data(n=n_inter))
+# X_eis = eis_peak_finder.get_peaks(e_prom, f_prom)
+
+# kian_interpolate = IonosphericProfileInterpolator(X_kian)
+# kian_peak_finder = IonosphericPeakFinder(kian_interpolate.interpolate_data(n=n_inter))
+# X_kian = kian_peak_finder.get_peaks(e_prom, f_prom)
+
+# ion_interpolate = IonosphericProfileInterpolator(X_ion)
+# ion_peak_finder = IonosphericPeakFinder(ion_interpolate.interpolate_data(n=n_inter))
+# X_ion = ion_peak_finder.get_peaks(e_prom, f_prom)
+
+# geo_interpolate = IonosphericProfileInterpolator(X_geo)
+# geo_peak_finder = IonosphericPeakFinder(geo_interpolate.interpolate_data(n=n_inter))
+# X_geo = geo_peak_finder.get_peaks(e_prom, f_prom)
+
+# art_interpolate = IonosphericProfileInterpolator(X_art)
+# art_peak_finder = IonosphericPeakFinder(art_interpolate.interpolate_data(n=n_inter))
+# X_art = art_peak_finder.get_peaks(e_prom, f_prom)
+
+# ech_interpolate = IonosphericProfileInterpolator(X_ech)
+# ech_peak_finder = IonosphericPeakFinder(ech_interpolate.interpolate_data(n=n_inter))
+# X_ech = ech_peak_finder.get_peaks(e_prom, f_prom)
+
+
+
+
+# peak_plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 # peak_plotter.plot_compare_all_error()
 # # peak_plotter.plot_peaks()
 # peak_plotter.plot_compare_all_peak_densities(True)
 # peak_plotter.plot_kde_comparison()
-peak_plotter.plot_combined_peak_densities()
+# peak_plotter.plot_combined_peak_densities()
 # peak_plotter.plot_compare_all_peak_altitudes(True)
 
 
