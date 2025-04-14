@@ -120,6 +120,10 @@ class PaperPlotter:
         
         plt.show()
     
+    
+
+        
+    
     def relative_error(self, X_true, X_pred):
         err =  (X_pred - X_true)/X_true
         return err
@@ -256,9 +260,6 @@ class PaperPlotter:
         plt.show()
         
         
-    
-        
-        
     def plot_best_model(self, model_colors=None):
     
         # Default colors if none are provided
@@ -384,7 +385,7 @@ class PaperPlotter:
         def calculate_r2_tot(ne_true_alt, ne_pred_alt):
             mask = ~np.isnan(ne_pred_alt)
             if np.sum(mask) < 2:  # Need at least 2 points for R²
-                return -1
+                return -2
             true_valid = normalize(ne_true_alt[mask])
             pred_valid = normalize(ne_pred_alt[mask])
             return r2_score(true_valid, pred_valid)
@@ -431,32 +432,200 @@ class PaperPlotter:
         
         # --- Plotting ---
         with sns.axes_style("dark"):
-            fig, axes = plt.subplots(2, 2, figsize=(8, 9), sharey=True)
+            fig, axes = plt.subplots(2, 2, figsize=(8.5, 10), sharey=True)
+        fig.suptitle("Calculated Metrics of Model Predictions\nfor each altitude (90-400 km) over\nall M number of timesteps", fontsize=20, y=1)
+        
         axes = axes.flatten()
         metric_names = ['R2', 'RMSE', 'Pearson', 'Distance Correlation']
-        
+        plot_names = ["(a) $R^2$-score", "(b) Root Mean Squared Error", "(c) Pearson's Correlation", "(d) Distance Correlation"]
+        plot_xlabels = ["$R^2$", "RMSE", "$r_p$", "$r_d$"]
         for i, metric_name in enumerate(metric_names):
             ax = axes[i]
+            
             for model_name in models:
                 if model_name == "E-Chaim":
                     m, ms = "o", 5
                 else:
                     m, ms = None, None
                 props = plot_props[model_name]
-                ax.plot(metrics[metric_name][model_name], r_h, label=model_name,
+                result = metrics[metric_name][model_name]
+                ax.plot(result, r_h, label=model_name,
                         color=props['color'], lw=props['lw'], zorder=props['zorder'], ls=props['ls'], marker=m, markersize=ms)
-            ax.set_title(metric_name, fontsize=15)
-            ax.set_xlabel(metric_name)
+            ax.set_title(plot_names[i], fontsize=17)
+            
+            ax.set_xlabel(plot_xlabels[i], fontsize=int(np.where(i <=1, 15, 19)))
+            
             if i % 2 == 0:  # Left column
-                ax.set_ylabel('Altitude [km]')
-            ax.legend()
+                ax.set_ylabel('Altitude [km]', fontsize=15)
+            ax.legend(frameon=True, framealpha=0.9, facecolor='white')
             ax.grid(True)
         
         plt.tight_layout()
         plt.show()
         
+    def plot_metrics_vs_time_compare_all(self):
+        # ___________ Getting Data ___________
+        x_eis = merge_nested_dict(self.X_EIS)['All']
+        x_kian = merge_nested_pred_dict(self.X_KIAN)['All']
+        x_ion = merge_nested_pred_dict(self.X_ION)['All']
+        x_geo = merge_nested_pred_dict(self.X_GEO)['All']
+        x_art = merge_nested_dict(self.X_ART)['All']
+        x_ech = merge_nested_dict(self.X_ECH)['All']
         
-                
+        r_time = from_array_to_datetime(x_eis['r_time'])
+        r_h = x_eis['r_h'].flatten()
+        
+        # Ne-profiles in linear scale for plotting
+        ne_eis  = x_eis["r_param"]
+        ne_kian = 10**x_kian["r_param"]
+        ne_ion  = 10**x_ion["r_param"]
+        ne_geo  = 10**x_geo["r_param"]
+        ne_art  = x_art["r_param"]
+        ne_ech  = x_ech["r_param"]
+        
+        # Log10 densities for metrics
+        log_ne_true = np.log10(x_eis["r_param"])
+        models_log = {
+            'KIAN-Net': x_kian["r_param"],  # already log10
+            'Iono-CNN': x_ion["r_param"],   # already log10
+            'Geo-DMLP': x_geo["r_param"],   # already log10
+            'Artist 5.0': np.log10(x_art["r_param"]),
+            'E-Chaim': np.log10(x_ech["r_param"]),
+        }
+        
+        M = log_ne_true.shape[1]  # number of timestamps
+        
+        # Identify valid measurements where all EISCAT UHF altitudes are non-NaN
+        valid_measurements = [m for m in range(M) if np.all(~np.isnan(log_ne_true[:, m]))]
+        
+        # Initialize temporal metrics
+        temporal_metrics = {
+            'R2': {model: np.full(M, np.nan) for model in models_log},
+        }
+        
+        # Define metric calculation function
+        def calculate_r2(ne_true, ne_pred):
+            mask = ~np.isnan(ne_true) & ~np.isnan(ne_pred)
+            if np.sum(mask) < 2:
+                return -100
+            return r2_score(ne_true[mask], ne_pred[mask])
+        
+        # Compute temporal metrics for valid measurements
+        for m in valid_measurements:
+            true_m = log_ne_true[:, m]
+            for model_name, log_ne_pred in models_log.items():
+                pred_m = log_ne_pred[:, m]
+                temporal_metrics['R2'][model_name][m] = calculate_r2(true_m, pred_m)
+        
+        # Find the best model (highest R2) for each timestamp
+        best_r2 = np.full(M, np.nan)
+        best_model = np.full(M, '', dtype=object)
+        for m in valid_measurements:
+            r2_values = [temporal_metrics['R2'][model][m] for model in models_log]
+            best_idx = np.argmax(r2_values)
+            best_r2[m] = r2_values[best_idx]
+            best_model[m] = list(models_log.keys())[best_idx]
+        
+        date_str = r_time[0].strftime('%b-%Y')
+        
+        # ___________ Defining Axes ___________
+        fig = plt.figure(figsize=(11, 12))  # Adjusted height for 7 rows
+        fig.suptitle(f'Comparison Between Prediction Models and Ground Truth\nDate: {date_str}', fontsize=17, y=0.95)
+        
+        gs = GridSpec(8, 2, width_ratios=[1, 0.015], wspace=0.1, hspace=0.35,
+                      height_ratios=[1,1,1,1,1,1,0.2,1])
+        ax0 = fig.add_subplot(gs[0, 0])
+        ax1 = fig.add_subplot(gs[1, 0], sharex=ax0)
+        ax2 = fig.add_subplot(gs[2, 0], sharex=ax0)
+        ax3 = fig.add_subplot(gs[3, 0], sharex=ax0)
+        ax4 = fig.add_subplot(gs[4, 0], sharex=ax0)
+        ax5 = fig.add_subplot(gs[5, 0], sharex=ax0)
+        cax = fig.add_subplot(gs[0:6, 1])  # Colorbar for first 6 rows
+        ax_space = fig.add_subplot(gs[6, :])
+        ax_space.axis('off')
+        ax6 = fig.add_subplot(gs[7, 0], sharex=ax5)
+        
+        # ___________ Creating Plots ___________
+        MIN, MAX = 1e10, 1e12
+        
+        ne = ax0.pcolormesh(r_time, r_h, ne_eis, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
+        ax1.pcolormesh(r_time, r_h, ne_kian, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
+        ax2.pcolormesh(r_time, r_h, ne_ion, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
+        ax3.pcolormesh(r_time, r_h, ne_geo, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
+        ax4.pcolormesh(r_time, r_h, ne_art, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
+        ax5.pcolormesh(r_time, r_h, ne_ech, shading='gouraud', cmap='turbo', norm=LogNorm(vmin=MIN, vmax=MAX))
+        
+        # Set titles and labels for density plots
+        ax0.set_title('(a) EISCAT UHF', fontsize=16)
+        ax1.set_title('(b) KIAN-Net', fontsize=16)
+        ax2.set_title('(c) Iono-CNN', fontsize=16)
+        ax3.set_title('(d) Geo-DMLP', fontsize=16)
+        ax4.set_title('(e) Artist 5.0', fontsize=16)
+        ax5.set_title('(f) E-Chaim', fontsize=16)
+        
+        # Y-labels
+        fig.supylabel('Altitude [km]', x=0.075)
+        
+        # Ticks
+        ax0.tick_params(labelbottom=False)
+        ax1.tick_params(labelbottom=False)
+        ax2.tick_params(labelbottom=False)
+        ax3.tick_params(labelbottom=False)
+        ax4.tick_params(labelbottom=False)
+        ax5.tick_params(labelbottom=False)  # Hide x-ticks on ax5
+        
+        # Add colorbar
+        cbar = fig.colorbar(ne, cax=cax, orientation='vertical')
+        cbar.set_label('$log_{10}$ $N_e$  (m$^{-3}$)', fontsize=13)
+        
+        # Define plotting properties for models
+        plot_props = {
+            'KIAN-Net': {'color': 'C1', 'lw': 2, 'zorder': 5, 'ls': '-'},
+            'Iono-CNN': {'color': 'C4', 'lw': 2, 'zorder': 4, 'ls': '-'},
+            'Geo-DMLP': {'color': 'C5', 'lw': 2, 'zorder': 1, 'ls': '-'},
+            'Artist 5.0': {'color': 'C2', 'lw': 2, 'zorder': 3, 'ls': '-'},
+            'E-Chaim': {'color': 'C3', 'lw': 2, 'zorder': 2, 'ls': '-'},
+        }
+        
+        # ___________ Plot Temporal R2 Scores with Background Colors ___________
+        ax6.set_title('(g) Best R2 Scores', fontsize=16)
+        
+        # Add background colors based on the best model
+        for m in range(M):
+            if not np.isnan(best_r2[m]):  # Check for valid R² score
+                model_name = best_model[m]
+                color = plot_props[model_name]['color']
+                if m < M - 1:
+                    # Span from current to next timestamp
+                    ax6.axvspan(r_time[m], r_time[m+1], color=color, alpha=0.3, zorder=1)
+                else:
+                    # For the last timestamp, extend using the previous interval
+                    ax6.axvspan(r_time[m], r_time[m], color=color, alpha=0.3, zorder=1)
+        
+        # Plot the R² curve on top
+        for m in range(1, M):
+            if not np.isnan(best_r2[m-1]) and not np.isnan(best_r2[m]):  # Valid consecutive points
+                model_name = best_model[m-1]  # Color based on the starting point
+                color = plot_props[model_name]['color']
+                ax6.plot(r_time[m-1:m+1], best_r2[m-1:m+1], color=color, lw=4, zorder=2)
+        
+        # Add labels and formatting
+        ax6.set_ylabel('Best R2 Score')
+        ax6.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+        plt.setp(ax6.xaxis.get_majorticklabels(), rotation=45, ha='center')
+        ax6.set_xlabel('UT [dd hh:mm]', fontsize=13)
+        ax6.set_ylim(ymin=0, ymax=1)
+        
+        # Add legend for models
+        legend_elements = [Line2D([0], [0], color=props['color'], lw=2, label=model_name) 
+                           for model_name, props in plot_props.items()]
+        legend = ax6.legend(handles=legend_elements, loc='upper right',
+                   bbox_to_anchor=(1.17, 1.06), facecolor='whitesmoke')
+        legend.get_frame().set_edgecolor('black')
+        legend.get_frame().set_linewidth(2)
+        plt.show()
+            
+    
     def plot_kde_altitude(self, altitude, return_metrics=False, show_plot=False, print_metrics=False):
         """
         Plot KDE comparison of electron density models at specified altitude and compute
