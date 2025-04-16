@@ -120,10 +120,6 @@ class PaperPlotter:
         
         plt.show()
     
-    
-
-        
-    
     def relative_error(self, X_true, X_pred):
         err =  (X_pred - X_true)/X_true
         return err
@@ -211,27 +207,32 @@ class PaperPlotter:
         ax3 = fig.add_subplot(gs[3, 0], sharex=ax0)
         ax4 = fig.add_subplot(gs[4, 0], sharex=ax0)
         ax5 = fig.add_subplot(gs[5, 0], sharex=ax0)
-        cax1 = fig.add_subplot(gs[0, 1])
-        cax2 = fig.add_subplot(gs[1:, 1])
+        # ax6 = fig.add_subplot(gs[6, 0], sharex=ax0)
+        
+        cax1 = fig.add_subplot(gs[:5, 1])
+        cax2 = fig.add_subplot(gs[5, 1])
+        
         
         # ___________ Creating Plots ___________
         CMAP, MIN, MAX = "RdBu_r", -0.15, 0.15
         
         # Use best_model_reversed instead of best_model_masked
-        err1 = ax0.pcolormesh(r_time, r_h, best_model_reversed, cmap=CMAP1, shading='gouraud')
-        err2 = ax1.pcolormesh(r_time, r_h, err_kian, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
-        ax2.pcolormesh(r_time, r_h, err_ion, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
-        ax3.pcolormesh(r_time, r_h, err_geo, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
-        ax4.pcolormesh(r_time, r_h, err_art, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
-        ax5.pcolormesh(r_time, r_h, err_ech, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        
+        err_Ne = ax0.pcolormesh(r_time, r_h, err_kian, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax1.pcolormesh(r_time, r_h, err_ion, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax2.pcolormesh(r_time, r_h, err_geo, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax3.pcolormesh(r_time, r_h, err_art, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax4.pcolormesh(r_time, r_h, err_ech, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        err_best = ax5.pcolormesh(r_time, r_h, best_model_reversed, cmap=CMAP1, shading='gouraud')
+        
         
         # Set titles and labels
-        ax0.set_title('(a) Best Model (Lowest Relative Absolute Error)', fontsize=16)
-        ax1.set_title('(b) KIAN-Net', fontsize=16)
-        ax2.set_title('(c) Iono-CNN', fontsize=16)
-        ax3.set_title('(d) Geo-DMLP', fontsize=16)
-        ax4.set_title('(e) Artist 5.0', fontsize=16)
-        ax5.set_title('(f) E-Chaim', fontsize=16)
+        ax0.set_title('(a) KIAN-Net', fontsize=16)
+        ax1.set_title('(b) Iono-CNN', fontsize=16)
+        ax2.set_title('(c) Geo-DMLP', fontsize=16)
+        ax3.set_title('(d) Artist 5.0', fontsize=16)
+        ax4.set_title('(e) E-Chaim', fontsize=16)
+        ax5.set_title('(f) Best Model (Lowest Relative Absolute Error)', fontsize=16)
         
         # y-labels
         fig.supylabel('Altitude [km]', x=0.075)
@@ -249,13 +250,14 @@ class PaperPlotter:
         
         plt.setp(ax5.xaxis.get_majorticklabels(), rotation=45, ha='center')
         
-        # Add colorbar
-        cbar1 = fig.colorbar(err1, cax=cax1, ticks=np.arange(5))
-        cbar1.ax.set_yticklabels(['E-Chaim', 'Artist 5.0', 'Geo-DMLP', 'Iono-CNN', 'KIAN-Net'])
+        
+        cbar1 = fig.colorbar(err_Ne, cax=cax1, orientation='vertical')
+        cbar1.set_label('Relative Error log10(m$^{-3}$)', fontsize=13)
         # cbar1.set_label('Best Model', fontsize=13)
         
-        cbar2 = fig.colorbar(err2, cax=cax2, orientation='vertical')
-        cbar2.set_label('Relative Error log10(m$^{-3}$)', fontsize=13)
+        # Add colorbar
+        cbar2 = fig.colorbar(err_best, cax=cax2, ticks=np.arange(5))
+        cbar2.ax.set_yticklabels(['E-Chaim', 'Artist 5.0', 'Geo-DMLP', 'Iono-CNN', 'KIAN-Net'])
         
         plt.show()
         
@@ -432,7 +434,7 @@ class PaperPlotter:
         
         # --- Plotting ---
         with sns.axes_style("dark"):
-            fig, axes = plt.subplots(2, 2, figsize=(8.5, 10), sharey=True)
+            fig, axes = plt.subplots(1, 3, figsize=(10, 10), sharey=True)
         fig.suptitle("Calculated Metrics of Model Predictions\nfor each altitude (90-400 km) over\nall M number of timesteps", fontsize=20, y=1)
         
         axes = axes.flatten()
@@ -455,7 +457,7 @@ class PaperPlotter:
             
             ax.set_xlabel(plot_xlabels[i], fontsize=int(np.where(i <=1, 15, 19)))
             
-            if i % 2 == 0:  # Left column
+            if i % 3 == 0:  # Left column
                 ax.set_ylabel('Altitude [km]', fontsize=15)
             ax.legend(frameon=True, framealpha=0.9, facecolor='white')
             ax.grid(True)
@@ -530,10 +532,9 @@ class PaperPlotter:
         
         # ___________ Defining Axes ___________
         fig = plt.figure(figsize=(11, 12))  # Adjusted height for 7 rows
-        fig.suptitle(f'Comparison Between Prediction Models and Ground Truth\nDate: {date_str}', fontsize=17, y=0.95)
+        fig.suptitle(f'Comparison Between Prediction Models and Ground Truth\nDate: {date_str}', fontsize=17, y=0.96)
         
-        gs = GridSpec(8, 2, width_ratios=[1, 0.015], wspace=0.1, hspace=0.35,
-                      height_ratios=[1,1,1,1,1,1,0.2,1])
+        gs = GridSpec(7, 2, width_ratios=[1, 0.015], wspace=0.1, hspace=0.4)
         ax0 = fig.add_subplot(gs[0, 0])
         ax1 = fig.add_subplot(gs[1, 0], sharex=ax0)
         ax2 = fig.add_subplot(gs[2, 0], sharex=ax0)
@@ -541,9 +542,9 @@ class PaperPlotter:
         ax4 = fig.add_subplot(gs[4, 0], sharex=ax0)
         ax5 = fig.add_subplot(gs[5, 0], sharex=ax0)
         cax = fig.add_subplot(gs[0:6, 1])  # Colorbar for first 6 rows
-        ax_space = fig.add_subplot(gs[6, :])
-        ax_space.axis('off')
-        ax6 = fig.add_subplot(gs[7, 0], sharex=ax5)
+        # ax_space = fig.add_subplot(gs[6, :])
+        # ax_space.axis('off')
+        ax6 = fig.add_subplot(gs[6, 0], sharex=ax5)
         
         # ___________ Creating Plots ___________
         MIN, MAX = 1e10, 1e12
@@ -610,7 +611,7 @@ class PaperPlotter:
                 ax6.plot(r_time[m-1:m+1], best_r2[m-1:m+1], color=color, lw=4, zorder=2)
         
         # Add labels and formatting
-        ax6.set_ylabel('Best R2 Score')
+        ax6.set_ylabel('R2', fontsize=12)
         ax6.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
         plt.setp(ax6.xaxis.get_majorticklabels(), rotation=45, ha='center')
         ax6.set_xlabel('UT [dd hh:mm]', fontsize=13)
@@ -620,12 +621,192 @@ class PaperPlotter:
         legend_elements = [Line2D([0], [0], color=props['color'], lw=2, label=model_name) 
                            for model_name, props in plot_props.items()]
         legend = ax6.legend(handles=legend_elements, loc='upper right',
-                   bbox_to_anchor=(1.17, 1.06), facecolor='whitesmoke')
-        legend.get_frame().set_edgecolor('black')
-        legend.get_frame().set_linewidth(2)
+                   bbox_to_anchor=(1.17, 1.1), facecolor='whitesmoke',frameon=False)
+        # legend.get_frame().set_edgecolor('black')
+        # legend.get_frame().set_linewidth(2)
         plt.show()
-            
     
+        
+    def plot_metrics_vs_time_compare_error_all(self, model_colors=None):
+        # Default colors if none provided
+        if model_colors is None:
+            model_colors = ['C1', 'C4', 'C5', 'C2', 'C3']
+    
+        # Validate number of colors
+        if len(model_colors) != 5:
+            raise ValueError("You must provide exactly 5 colors, one for each model.")
+    
+        # --- Data Retrieval ---
+        x_eis = merge_nested_dict(self.X_EIS)['All']
+        x_kian = merge_nested_pred_dict(self.X_KIAN)['All']
+        x_ion = merge_nested_pred_dict(self.X_ION)['All']
+        x_geo = merge_nested_pred_dict(self.X_GEO)['All']
+        x_art = merge_nested_dict(self.X_ART)['All']
+        x_ech = merge_nested_dict(self.X_ECH)['All']
+    
+        r_time = from_array_to_datetime(x_eis['r_time'])
+        r_h = x_eis['r_h'].flatten()
+    
+        # Log10 densities (keeping NaNs as is)
+        log_ne_true = np.log10(x_eis["r_param"])
+        log_ne_kian = x_kian["r_param"]  # Already log10
+        log_ne_ion = x_ion["r_param"]
+        log_ne_geo = x_geo["r_param"]
+        log_ne_art = np.log10(x_art["r_param"])
+        log_ne_ech = np.log10(x_ech["r_param"])
+    
+        # --- Calculate Relative Errors ---
+        err_kian = self.relative_error(log_ne_true, log_ne_kian)
+        err_ion = self.relative_error(log_ne_true, log_ne_ion)
+        err_geo = self.relative_error(log_ne_true, log_ne_geo)
+        err_art = self.relative_error(log_ne_true, log_ne_art)
+        err_ech = self.relative_error(log_ne_true, log_ne_ech)
+        
+
+        
+        # --- Calculate Absolute Relative Errors ---
+        abs_err_kian = self.absolute_relative_error(log_ne_true, log_ne_kian)
+        abs_err_ion = self.absolute_relative_error(log_ne_true, log_ne_ion)
+        abs_err_geo = self.absolute_relative_error(log_ne_true, log_ne_geo)
+        abs_err_art = self.absolute_relative_error(log_ne_true, log_ne_art)
+        abs_err_ech = self.absolute_relative_error(log_ne_true, log_ne_ech)
+    
+        # Stack absolute errors and determine best model
+        err_stack = np.stack([abs_err_kian, abs_err_ion, abs_err_geo, abs_err_art, abs_err_ech], axis=0)
+        best_model_masked = self.get_best_model(err_stack)
+        best_model_reversed = 4 - best_model_masked  # Reverse to match color order
+    
+        # --- Calculate Temporal RMSE ---
+        M = log_ne_true.shape[1]
+        valid_measurements = [m for m in range(M) if np.all(~np.isnan(log_ne_true[:, m]))]
+        
+        valid_mask = ~np.isnan(log_ne_true).any(axis=0)
+
+        # Replace NaNs with 10 only in those valid columns of err_art
+        err_art[:, valid_mask] = np.where(np.isnan(err_art[:, valid_mask]), -1, err_art[:, valid_mask])
+                
+        temporal_rmse = {
+            'KIAN-Net': np.full(M, np.nan),
+            'Iono-CNN': np.full(M, np.nan),
+            'Geo-DMLP': np.full(M, np.nan),
+            'Artist 5.0': np.full(M, np.nan),
+            'E-Chaim': np.full(M, np.nan),
+        }
+    
+        models_pred = [log_ne_kian, log_ne_ion, log_ne_geo, log_ne_art, log_ne_ech]
+        model_names = ['KIAN-Net', 'Iono-CNN', 'Geo-DMLP', 'Artist 5.0', 'E-Chaim']
+    
+        for m in valid_measurements:
+            true_m = log_ne_true[:, m]
+            for model_name, log_ne_pred in zip(model_names, models_pred):
+                pred_m = log_ne_pred[:, m]
+                mask = ~np.isnan(pred_m)
+                if np.sum(mask) > 0:
+                    rmse = np.sqrt(np.mean((pred_m[mask] - true_m[mask])**2))
+                    temporal_rmse[model_name][m] = rmse
+    
+        # Determine best model (lowest RMSE)
+        best_rmse = np.full(M, np.nan)
+        best_model = np.full(M, '', dtype=object)
+        for m in valid_measurements:
+            rmses = [temporal_rmse[model][m] for model in model_names]
+            valid_rmses = [r for r in rmses if not np.isnan(r)]
+            if valid_rmses:
+                min_rmse = min(valid_rmses)
+                best_idx = rmses.index(min_rmse)
+                best_rmse[m] = min_rmse
+                best_model[m] = model_names[best_idx]
+    
+        # --- Plotting ---
+        date_str = r_time[0].strftime('%b-%Y')
+        fig = plt.figure(figsize=(11, 12))
+        fig.suptitle(f'Comparison of Relative Errors, Losest Relative Absolute Error,\nand Temporal RMSE   Date: {date_str}', fontsize=17, y=0.97)
+    
+        gs = GridSpec(7, 2, width_ratios=[1, 0.015], wspace=0.1, hspace=0.35)
+        ax0 = fig.add_subplot(gs[0, 0])
+        ax1 = fig.add_subplot(gs[1, 0], sharex=ax0)
+        ax2 = fig.add_subplot(gs[2, 0], sharex=ax0)
+        ax3 = fig.add_subplot(gs[3, 0], sharex=ax0)
+        ax4 = fig.add_subplot(gs[4, 0], sharex=ax0)
+        ax5 = fig.add_subplot(gs[5, 0], sharex=ax0)  # Best model subplot
+        ax6 = fig.add_subplot(gs[6, 0], sharex=ax0)  # RMSE subplot
+        cax1 = fig.add_subplot(gs[0:5, 1])  # Colorbar for relative errors
+        cax2 = fig.add_subplot(gs[5, 1])    # Colorbar for best model
+    
+        # Plot relative errors
+        CMAP, MIN, MAX = "RdBu_r", -0.15, 0.15
+        ax0.pcolormesh(r_time, r_h, err_kian, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax1.pcolormesh(r_time, r_h, err_ion, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax2.pcolormesh(r_time, r_h, err_geo, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax3.pcolormesh(r_time, r_h, err_art, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+        ax4.pcolormesh(r_time, r_h, err_ech, shading='gouraud', cmap=CMAP, vmin=MIN, vmax=MAX)
+    
+        # Set titles for relative error plots
+        ax0.set_title('(a) KIAN-Net', fontsize=16)
+        ax1.set_title('(b) Iono-CNN', fontsize=16)
+        ax2.set_title('(c) Geo-DMLP', fontsize=16)
+        ax3.set_title('(d) Artist 5.0', fontsize=16)
+        ax4.set_title('(e) E-Chaim', fontsize=16)
+    
+        # Plot best model subplot
+        CMAP1 = ListedColormap(model_colors[::-1])
+        err_best = ax5.pcolormesh(r_time, r_h, best_model_reversed, cmap=CMAP1, shading='gouraud')
+        ax5.set_title('(f) Best Model (Lowest Relative Absolute Error)', fontsize=16)
+        ax5.tick_params(labelbottom=False)
+    
+        # Plot RMSE subplot
+        plot_props = {
+            'KIAN-Net': {'color': model_colors[0], 'lw': 2, 'zorder': 5, 'ls': '-'},
+            'Iono-CNN': {'color': model_colors[1], 'lw': 2, 'zorder': 4, 'ls': '-'},
+            'Geo-DMLP': {'color': model_colors[2], 'lw': 2, 'zorder': 1, 'ls': '-'},
+            'Artist 5.0': {'color': model_colors[3], 'lw': 2, 'zorder': 3, 'ls': '-'},
+            'E-Chaim': {'color': model_colors[4], 'lw': 2, 'zorder': 2, 'ls': '-'},
+        }
+    
+        ax6.set_title('(g) Best RMSE', fontsize=16)
+    
+        # Background colors for best model in RMSE plot
+        for m in range(M):
+            if best_model[m] != '':
+                color = plot_props[best_model[m]]['color']
+                if m < M - 1:
+                    ax6.axvspan(r_time[m], r_time[m+1], color=color, alpha=0.3, zorder=1)
+                else:
+                    ax6.axvspan(r_time[m], r_time[m], color=color, alpha=0.3, zorder=1)
+    
+        # Plot best RMSE curve
+        for m in range(1, M):
+            if best_model[m-1] != '' and best_model[m] != '':
+                color = plot_props[best_model[m-1]]['color']
+                ax6.plot(r_time[m-1:m+1], best_rmse[m-1:m+1], color=color, lw=4, zorder=2)
+    
+        # Labels and ticks
+        fig.supylabel('Altitude [km]', x=0.075)
+        ax6.set_xlabel('UT [dd hh:mm]', fontsize=13)
+        for ax in [ax0, ax1, ax2, ax3, ax4, ax5]:
+            ax.tick_params(labelbottom=False)
+        ax6.xaxis.set_major_formatter(DateFormatter('%d %H:%M'))
+        plt.setp(ax6.xaxis.get_majorticklabels(), rotation=45, ha='center')
+    
+        # Colorbar for relative errors
+        cbar1 = fig.colorbar(ax0.get_children()[0], cax=cax1, orientation='vertical')
+        cbar1.set_label('Relative Error', fontsize=13)
+    
+        # Colorbar for best model
+        cbar2 = fig.colorbar(err_best, cax=cax2, ticks=np.arange(5))
+        cbar2.ax.set_yticklabels(['E-Chaim', 'Artist 5.0', 'Geo-DMLP', 'Iono-CNN', 'KIAN-Net'])
+    
+        # RMSE plot formatting
+        ax6.set_ylabel('RMSE', fontsize=12)
+        ax6.set_ylim(ymin=0, ymax=1.1 * np.nanmax(best_rmse) if np.nanmax(best_rmse) > 0 else 1.0)
+    
+        # Legend for RMSE plot
+        legend_elements = [Line2D([0], [0], color=props['color'], lw=2, label=name) 
+                           for name, props in plot_props.items()]
+        ax6.legend(handles=legend_elements, loc='upper right', 
+                   bbox_to_anchor=(1.17, 1.1), facecolor='whitesmoke', frameon=False)
+        plt.show()
+        
     def plot_kde_altitude(self, altitude, return_metrics=False, show_plot=False, print_metrics=False):
         """
         Plot KDE comparison of electron density models at specified altitude and compute
