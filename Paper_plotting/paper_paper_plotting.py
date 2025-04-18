@@ -1778,222 +1778,6 @@ class PaperPlotter:
         return 1 - (ss_res / ss_tot)
     
     
-    # def plot_compare_all_peak_densities(self, show_marginal_kde=False):
-        
-    #     # Merge data dictionaries for all regions
-    #     X_eis = merge_nested_peak_dict(self.X_EIS)['All']
-    #     X_kian = merge_nested_peak_dict(self.X_KIAN)['All']
-    #     X_ion = merge_nested_peak_dict(self.X_ION)['All']
-    #     X_geo = merge_nested_peak_dict(self.X_GEO)['All']
-    #     X_art = merge_nested_peak_dict(self.X_ART)['All']
-    #     X_ech = merge_nested_peak_dict(self.X_ECH)['All']
-    
-    #     # Prepare peak density data (all in log10(ne))
-    #     eis_param_peak = np.log10(X_eis["r_param_peak"])
-    #     kian_param_peak = X_kian["r_param_peak"]
-    #     ion_param_peak = X_ion["r_param_peak"]
-    #     geo_param_peak = X_geo["r_param_peak"]
-    #     art_param_peak = np.log10(X_art["r_param_peak"])
-    #     ech_param_peak = np.log10(X_ech["r_param_peak"])
-    
-    #     # Define models with names, data, and colors
-    #     models = [
-    #         {"name": "EISCAT UHF", "data": eis_param_peak, "color": "C0", "Z_order":0},
-    #         {"name": "KIAN-Net", "data": kian_param_peak, "color": "C1", "Z_order":3},
-    #         {"name": "Artist 5.0", "data": art_param_peak, "color": "C2", "Z_order":4},
-    #         {"name": "E-CHAIM", "data": ech_param_peak, "color": "C3", "Z_order":5},
-    #         {"name": "Iono-CNN", "data": ion_param_peak, "color": "C4", "Z_order":2},
-    #         {"name": "Geo-DMLP", "data": geo_param_peak, "color": "C5", "Z_order":1},
-    #     ]
-    
-    #     # Convert time to datetime for title
-    #     r_time = from_array_to_datetime(X_eis["r_time"])
-    #     # date_str = r_time[0].strftime('%b-%Y')
-        
-        
-    #     fig = plt.figure(figsize=(14, 7))
-    
-    #     # Set up GridSpec based on whether marginal KDEs are requested
-    #     if show_marginal_kde:
-    #         gs = GridSpec(2, 5, height_ratios=[0.2, 1], width_ratios=[1, 0.2, 0.2, 1, 0.2], hspace=0, wspace=0)
-    #         with sns.axes_style("dark"):
-    #             ax_e = fig.add_subplot(gs[1, 0])
-    #             ax_f = fig.add_subplot(gs[1, 3])
-                
-    #         ax_e_top = fig.add_subplot(gs[0, 0], sharex=ax_e)
-    #         ax_f_top = fig.add_subplot(gs[0, 3], sharex=ax_f)
-
-            
-    #         # Turn off x-axis for ax_e_top only
-    #         ax_e_top.spines['bottom'].set_visible(False)
-    #         ax_e_top.spines['top'].set_visible(False)
-    #         ax_e_top.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-    #         ax_e_top.spines['left'].set_position('center')
-    #         ax_e_top.set_ylabel("PDF", rotation=0, ha='center', va='bottom', labelpad=15, fontsize=12)
-    #         ax_e_top.yaxis.set_label_coords(0.49, 1.1)  # Position at center (x=0.5) and top (y=1.0)
-    #         ax_e_top.set_ylim(0, 2)
-            
-    #         # Turn off x-axis for ax_f_top only
-    #         ax_f_top.spines['bottom'].set_visible(False)
-    #         ax_f_top.spines['top'].set_visible(False)
-    #         ax_f_top.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-    #         ax_f_top.spines['left'].set_position('center')
-    #         ax_f_top.set_ylabel("PDF", rotation=0, ha='center', va='bottom', labelpad=15, fontsize=12)
-    #         ax_f_top.yaxis.set_label_coords(0.49, 1.1)  # Position at center (x=0.5) and top (y=1.0)
-    #         ax_f_top.set_ylim(0, 2)
-            
-    #         # Spacing between e/f-reg plots
-    #         ax_spacing = fig.add_subplot(gs[:, 3])
-    #         ax_spacing.set_axis_off()
-            
-            
-    #         ax_e_right = fig.add_subplot(gs[1, 1], sharey=ax_e)
-    #         ax_f_right = fig.add_subplot(gs[1, 4], sharey=ax_f)
-            
-    #         # Turn off x-axis for ax_e_top only
-    #         ax_e_right.tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
-    #         ax_e_right.spines['bottom'].set_position('center')
-    #         ax_e_right.set_xlabel("PDF", rotation=-90, ha='center', va='bottom', labelpad=15, fontsize=12)
-    #         ax_e_right.xaxis.set_label_coords(1.1, 0.465)  # Position at center (x=0.5) and top (y=1.0)
-            
-    #         # Turn off x-axis for ax_f_top only
-    #         ax_f_right.tick_params(axis='y', which='both', left=False, right=False, labelleft=False)
-    #         ax_f_right.spines['bottom'].set_position('center')
-    #         ax_f_right.set_xlabel("PDF", rotation=-90, ha='center', va='bottom', labelpad=15, fontsize=12)
-    #         ax_f_right.xaxis.set_label_coords(1.1, 0.465)  # Position at center (x=0.5) and top (y=1.0)
-            
-    #     else:
-    #         gs = GridSpec(1, 2, width_ratios=[1, 1], wspace=0.1)
-    #         ax_e = fig.add_subplot(gs[0, 0])
-    #         ax_f = fig.add_subplot(gs[0, 1])
-    
-    #     fig.suptitle('Peak Elecron densities\n(EISCAT UHF vs Model)', fontsize=20, y=0.95)
-    
-    #     def plot_region(ax, region, Min, Max, title, ax_top=None, ax_right=None):
-    #         # Plot the diagonal line (perfect agreement)
-    #         diagonal_line = np.array([Min, Max])
-    #         ax.plot([Min, Max], diagonal_line, color="C0", 
-    #                 linewidth=3, zorder=1)
-    
-    #         # Loop over models to plot scatter, regression lines, metrics, and optional KDEs
-    #         for idx, model in enumerate(models):
-    #             # Extract valid data for the region
-    #             model_data = model["data"][region, :]
-    #             valid = ~np.isnan(model_data) & ~np.isnan(eis_param_peak[region, :])
-    #             x = model_data[valid]  # Predicted values (model)
-    #             y = eis_param_peak[region, valid]  # Observed values (EISCAT)
-                
-                
-    #             # Plot scatter points
-    #             if model["name"] == "EISCAT UHF":
-    #                 ax.plot(x, y, color=model["color"], label=model["name"], 
-    #                             linestyle="-", marker='o', mec = 'black', zorder=model["Z_order"])
-    #             else:
-    #                 ax.scatter(x, y, s=40, color=model["color"], label=model["name"], 
-    #                            edgecolors="black", zorder=model["Z_order"])
-                    
-    #             # Subplots titles
-    #             ax.text(0.3, 0.9, s=f'{title} Peaks', color='black',
-    #                     fontsize=15, transform=ax.transAxes)
-                
-    #             # Check if there are any valid predictions
-    #             if valid.any():
-                    
-    #                 r_corr, _ = pearsonr(x, y)
-    #                 r2 = self.compute_r2_score(y, x)
-    #                 rmse = np.sqrt(np.mean((y - x) ** 2))
-                    
-    #                 if model["name"] != "EISCAT UHF":
-    #                     # Annotate R² and RMSE with model name
-    #                     ax.text(0.6, 0.235 - (0.04 * idx), 
-    #                             s=rf"$\mathbf{{({r2:.2f},\ {rmse:.2f},\ {r_corr:.2f})}}$", 
-    #                             color=model["color"], fontsize=10, transform=ax.transAxes)
-    #                 else:
-    #                     pass
-                    
-    #                 # Plot marginal KDEs if axes are provided
-    #                 if ax_top is not None and ax_right is not None:
-    #                     # KDE for x (predicted densities)
-    #                     kde_x = gaussian_kde(x)
-    #                     x_grid = np.linspace(Min, Max, 100)
-    #                     kde_x_values = kde_x(x_grid)
-    #                     if model["name"] == "EISCAT UHF":
-    #                         lw, ls, zo = 3, "--", 5
-                        
-    #                     elif model["name"] == "KIAN-Net":
-    #                         ls, zo = "-", 4
-                            
-    #                     else:
-    #                         lw, ls, zo = 2, "-", 1
-                        
-    #                     ax_top.plot(x_grid, kde_x_values, color=model["color"], linewidth=lw, linestyle=ls, zorder=zo)
-                            
-                        
-    #                     # KDE for y (observed densities)
-    #                     kde_y = gaussian_kde(y)
-    #                     y_grid = np.linspace(Min, Max, 100)
-    #                     kde_y_values = kde_y(y_grid)
-    #                     if model["name"] == "EISCAT UHF":
-    #                         lw, ls, zo = 3, "--", 5
-                        
-    #                     elif model["name"] == "KIAN-Net":
-    #                         ls, zo = "-", 4
-                        
-    #                     else:
-    #                         lw, ls, zo = 2, "-", 1
-    #                     ax_right.plot(kde_y_values, y_grid, color=model["color"], linewidth=lw, linestyle=ls, zorder=zo)
-    #             else:
-    #                 # If no valid data, display "N/A"
-    #                 ax.text(0.6, 0.2 - (0.04 * idx), 
-    #                         s=rf"$\mathbf{{(N/A,\ N/A,\ N/A)}}$", 
-    #                         color=model["color"], fontsize=10, transform=ax.transAxes)
-                
-    #             if idx == 4:
-    #                 ax.text(0.6, 0.2 - (0.04 * (-1)), 
-    #                         s=rf"$\mathbf{{(R^{2},\ RMSE, \, r)}}$", 
-    #                         color="black", fontsize=10, transform=ax.transAxes)
-                    
-    #         # Set plot aesthetics
-    #         ax.set_xlim(Min, Max)
-    #         ax.set_ylim(Min, Max)
-    #         ax.grid(True)
-            
-    #         # Configure marginal axes if they exist
-    #         if ax_top is not None and ax_right is not None:
-    #             # Set limits to start at 0, with automatic upper bounds
-    #             ax_top.set_ylim([0, None])
-    #             ax_right.set_xlim([0, None])
-                
-    #             # Hide ticks that overlap with main plot
-    #             ax_top.tick_params(labelbottom=False)
-    #             ax_right.tick_params(labelleft=False)
-                
-    #             # Remove unnecessary spines for a cleaner look
-    #             ax_top.spines['bottom'].set_visible(False)
-    #             ax_top.spines['top'].set_visible(False)
-    #             ax_top.spines['right'].set_visible(False)
-    #             ax_right.spines['left'].set_visible(False)
-    #             ax_right.spines['top'].set_visible(False)
-    #             ax_right.spines['right'].set_visible(False)
-    
-    #     # Plot E-region and F-region with appropriate parameters
-    #     if show_marginal_kde:
-    #         plot_region(ax_e, region=0, Min=8.5, Max=12.5, title=' (a) E-region', ax_top=ax_e_top, ax_right=ax_e_right)
-    #         plot_region(ax_f, region=1, Min=9.5, Max=12.5, title=' (b) F-region', ax_top=ax_f_top, ax_right=ax_f_right)
-    #     else:
-    #         plot_region(ax_e, region=0, Min=8.5, Max=12, title='E-region')
-    #         plot_region(ax_f, region=1, Min=9.5, Max=12.5, title='F-region')
-    
-    #     # Set axis labels
-    #     ax_e.set_xlabel(r'Prediction  $log_{10}\,(n_e)$', fontsize=15)
-    #     ax_e.set_ylabel(r'EISCAT UHF  $log_{10}\,(n_e)$', fontsize=15)
-    #     ax_f.set_xlabel(r'Model  $log_{10}\,(n_e)$', fontsize=15)
-    
-    #     # Add legend to F-region plot with white background
-    #     ax_e.legend(fontsize=9, facecolor='white', loc='upper left')
-    #     ax_f.legend(fontsize=9, facecolor='white', loc='upper left')
-    
-    #     plt.show()
     
     def plot_compare_all_peak_densities(self, show_marginal_kde=False):
         """Compare model peak densities with EISCAT UHF measurements."""
@@ -2258,7 +2042,7 @@ class PaperPlotter:
         X_geo = merge_nested_peak_dict(self.X_GEO)['All']
         X_art = merge_nested_peak_dict(self.X_ART)['All']
         X_ech = merge_nested_peak_dict(self.X_ECH)['All']
-    
+
         # Prepare peak density data
         eis_param_peak  = np.log10(X_eis["r_param_peak"])
         kian_param_peak = X_kian["r_param_peak"]
@@ -2266,17 +2050,33 @@ class PaperPlotter:
         geo_param_peak  = X_geo["r_param_peak"]
         art_param_peak  = np.log10(X_art["r_param_peak"])
         ech_param_peak  = np.log10(X_ech["r_param_peak"])
-    
-        # Define models with names, data, and colors
+
+        # Define plotting properties for each model
+        plot_props = {
+            'EISCAT UHF': {'color': 'C0', 'lw': 2.5,   'zorder': 4, 'ls': '-'},
+            'KIAN-Net':    {'color': 'C1', 'lw': 4,   'zorder': 5, 'ls': (2, (4, 1))},
+            'Iono-CNN':    {'color': 'C4', 'lw': 4, 'zorder': 6, 'ls': (5, (10, 3))},
+            'Geo-DMLP':    {'color': 'C5', 'lw': 4,   'zorder': 1, 'ls': (0, (1, 1))},
+            'Artist 5.0':  {'color': 'C2', 'lw': 3,   'zorder': 3, 'ls': (1, (3, 1, 1, 1))},
+            'E-Chaim':     {'color': 'C3', 'lw': 3,   'zorder': 3, 'ls': (1, (3, 1, 1, 1, 1, 1))},
+        }
+
+        # Map names → data arrays
+        data_mapping = {
+            'EISCAT UHF': eis_param_peak,
+            'KIAN-Net':    kian_param_peak,
+            'Artist 5.0':  art_param_peak,
+            'E-Chaim':     ech_param_peak,
+            'Iono-CNN':    ion_param_peak,
+            'Geo-DMLP':    geo_param_peak,
+        }
+
+        # Build models list by unpacking props
         models = [
-            {"name": "EISCAT UHF", "data": eis_param_peak,  "color": "C0", "Z_order": 4, "ls": "--"},
-            {"name": "KIAN-Net",    "data": kian_param_peak, "color": "C1", "Z_order": 5, "ls": "-"},
-            {"name": "Artist 5.0",  "data": art_param_peak,  "color": "C2", "Z_order": 3, "ls": "-"},
-            {"name": "E-CHAIM",     "data": ech_param_peak,  "color": "C3", "Z_order": 1, "ls": "-"},
-            {"name": "Iono-CNN",    "data": ion_param_peak,  "color": "C4", "Z_order": 6, "ls": "-"},
-            {"name": "Geo-DMLP",    "data": geo_param_peak,  "color": "C5", "Z_order": 2, "ls": "-"},
+            {'name': name, 'data': data, **plot_props[name]}
+            for name, data in data_mapping.items()
         ]
-    
+
         # Create figure and subplots using gridspec
         with sns.axes_style("dark"):
             fig = plt.figure(figsize=(12, 7))
@@ -2284,9 +2084,9 @@ class PaperPlotter:
             ax_e = fig.add_subplot(gs[0])
             ax_f = fig.add_subplot(gs[1], sharey=ax_e)
             ax_f.tick_params(labelleft=False)
-    
-        fig.suptitle('Peak Electron Density Distribution Comparison', fontsize=20, y=0.95)
-    
+
+        fig.suptitle('Comparison of Peak Electron Density PDFs', fontsize=20, y=0.94)
+
         # Set x-axis limits based on normalization
         if normalize:
             Min_e, Max_e = 0, 1
@@ -2296,11 +2096,13 @@ class PaperPlotter:
             Min_e, Max_e = 8.5, 12.5
             Min_f, Max_f = 9.5, 13
             x_label = r"Electron Density $\log_{10}(n_e)$"
-    
+
         # Plot KDEs for E- and F-regions
-        self._plot_region_kde(ax_e, models, region=0, Min=Min_e, Max=Max_e, title='(a) E-region', normalize=normalize)
-        self._plot_region_kde(ax_f, models, region=1, Min=Min_f, Max=Max_f, title='(b) F-region', normalize=normalize)
-    
+        self._plot_region_kde(ax_e, models, region=0, Min=Min_e, Max=Max_e,
+                              title='(a) E-region', normalize=normalize)
+        self._plot_region_kde(ax_f, models, region=1, Min=Min_f, Max=Max_f,
+                              title='(b) F-region', normalize=normalize)
+
         # Formatting
         ax_e.set_ylabel('Probability Density', fontsize=15)
         ax_e.set_xlabel(x_label, fontsize=15)
@@ -2308,118 +2110,95 @@ class PaperPlotter:
         for ax in (ax_e, ax_f):
             ax.grid(True)
             ax.legend(fontsize=11, loc='upper left')
-    
+
         plt.tight_layout(rect=[0, 0, 1, 0.93])
         plt.show()
-    
+
+
     def _plot_region_kde(self, ax, models, region, Min, Max, title, normalize=False):
         """Helper function to plot KDEs for a single region, compute metrics, and display them as text."""
         x_grid = np.linspace(Min, Max, 1000)
         metrics_list = []
-    
+
         # If normalizing, compute global min and max for this region across all models
         if normalize:
-            all_data = np.concatenate([model["data"][region, ~np.isnan(model["data"][region, :])] for model in models])
-            global_min = np.min(all_data)
-            global_max = np.max(all_data)
+            all_data = np.concatenate([
+                model["data"][region, ~np.isnan(model["data"][region, :])]
+                for model in models
+            ])
+            global_min, global_max = np.min(all_data), np.max(all_data)
         else:
-            global_min = None
-            global_max = None
-    
-        # Compute the KDE for the reference model (EISCAT UHF)
-        ref_pdf = None
-        for model in models:
-            if model["name"] == "EISCAT UHF":
-                data_ref = model["data"][region, :]
-                valid = ~np.isnan(data_ref)
-                data_ref = data_ref[valid]
-                if normalize and data_ref.size > 0:
-                    data_ref = (data_ref - global_min) / (global_max - global_min)
-                if len(data_ref) > 0:
-                    kde_ref = gaussian_kde(data_ref, bw_method=0.3)
-                    ref_pdf = kde_ref.evaluate(x_grid)
-                else:
-                    ref_pdf = np.zeros_like(x_grid)
-                ax.plot(x_grid, ref_pdf,
-                        color=model["color"],
-                        linestyle=model["ls"],
-                        linewidth=3,
-                        alpha=1,
-                        zorder=model["Z_order"],
-                        label=model["name"])
-                break
-    
-        if ref_pdf is None:
-            raise ValueError(f"Reference (EISCAT UHF) data is missing for region {region}")
-    
-        # Compute KDE and metrics for each candidate model
+            global_min = global_max = None
+
+        # First plot the reference (EISCAT UHF) and get its PDF
+        ref = next(m for m in models if m["name"] == "EISCAT UHF")
+        data_ref = ref["data"][region, :]
+        valid = ~np.isnan(data_ref)
+        data_ref = data_ref[valid]
+        if normalize:
+            data_ref = (data_ref - global_min) / (global_max - global_min)
+        kde_ref = gaussian_kde(data_ref, bw_method=0.3) if len(data_ref) else None
+        ref_pdf = kde_ref.evaluate(x_grid) if kde_ref else np.zeros_like(x_grid)
+
+        ax.plot(x_grid, ref_pdf,
+                color=ref["color"],
+                linestyle=ref["ls"],
+                linewidth=ref["lw"],
+                zorder=ref["zorder"],
+                label=ref["name"])
+
+        # Now each candidate model
         for model in models:
             if model["name"] == "EISCAT UHF":
                 continue
             data = model["data"][region, :]
             valid = ~np.isnan(data)
             data = data[valid]
-            if len(data) == 0:
-                continue
             if normalize:
                 data = (data - global_min) / (global_max - global_min)
-            kde = gaussian_kde(data, bw_method=0.3)
-            pdf = kde.evaluate(x_grid)
-    
-            # Bhattacharyya Coefficient
+            kde = gaussian_kde(data, bw_method=0.3) if len(data) else None
+            pdf = kde.evaluate(x_grid) if kde else np.zeros_like(x_grid)
+
+            # Metrics
             bc = np.trapz(np.sqrt(ref_pdf * pdf), x_grid)
-    
-            # KL-Divergence
-            epsilon = 1e-10
-            kl = np.trapz(pdf * np.log((pdf + epsilon) / (ref_pdf + epsilon)), x_grid)
-    
-            # Wasserstein Distance
+            eps = 1e-10
+            kl = np.trapz(pdf * np.log((pdf + eps) / (ref_pdf + eps)), x_grid)
             dx = x_grid[1] - x_grid[0]
             cdf_ref = np.cumsum(ref_pdf) * dx
             cdf_model = np.cumsum(pdf) * dx
-            wasserstein = np.trapz(np.abs(cdf_ref - cdf_model), x_grid)
-    
-            # Store metrics
+            wass = np.trapz(np.abs(cdf_ref - cdf_model), x_grid)
+
             metrics_list.append({
-                "color": model["color"],
-                "bc": bc,
-                "kl": kl,
-                "wasserstein": wasserstein
+                "color":   model["color"],
+                "bc":      bc,
+                "kl":      kl,
+                "wasser":  wass
             })
-    
-            # Plot the model PDF
+
             ax.plot(x_grid, pdf,
                     color=model["color"],
                     linestyle=model["ls"],
-                    linewidth=3,
-                    alpha=1,
-                    zorder=model["Z_order"],
+                    linewidth=model["lw"],
+                    zorder=model["zorder"],
                     label=model["name"])
-    
-        # Add header and metrics as text in the top right
-        ax.text(0.64, 0.98, "(BC, KL, W)",
+
+        # Annotate metrics
+        ax.text(0.64, 0.95, "(BC, KL, W)",
                 transform=ax.transAxes,
-                color='black',
-                fontsize=13,
-                fontweight='bold',
-                horizontalalignment='left',
-                verticalalignment='top')
-        
-        ls = 0.045
-        for i, metric in enumerate(metrics_list):
-            y_pos = 0.98 - ls * (i + 1)
-            ax.text(0.64, y_pos, f"({metric['bc']:.2f}, {metric['kl']:.2f}, {metric['wasserstein']:.2f})",
+                fontsize=13, fontweight='bold')
+        offset = 0.045
+        for i, m in enumerate(metrics_list, start=1):
+            y = 0.95 - offset * i
+            ax.text(0.64, y,
+                    f"({m['bc']:.2f}, {m['kl']:.2f}, {m['wasser']:.2f})",
                     transform=ax.transAxes,
-                    color=metric['color'],
-                    fontsize=13,
-                    fontweight='bold',
-                    horizontalalignment='left',
-                    verticalalignment='top')
-    
-        # Set plot limits and title
+                    color=m["color"],
+                    fontsize=13, fontweight='bold')
+
         ax.set_xlim(Min, Max)
         ax.set_ylim(0, 2)
         ax.set_title(title, fontsize=17, pad=12)
+
         
     def plot_combined_peak_densities(self, normalize=False):
         """Plot a 2x2 grid comparing peak electron densities scatter and KDE distributions."""
