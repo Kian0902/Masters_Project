@@ -39,7 +39,7 @@ def execute_data_merging(file_path:str = None, save_to_file=True, show_plot=Fals
     f = file_path or "processed_steps/artist_merged_sorted_data.pkl"
         
     X_artist = load_data(f)
-    X_EISCAT = load_data(file_name="X_eiscat_control.pkl")
+    X_EISCAT = load_data(file_name="X_eiscat_test_data.pkl")
     
     combined_artist_data = {}
     for day in X_artist:
@@ -56,7 +56,7 @@ def execute_data_interpolating(file_path:str = None, save_to_file=True, show_plo
     f = file_path or "processed_steps/artist_sorted_combined_data.pkl"
     
     X_artist = load_data(f)
-    X_EISCAT = load_data(file_name="X_kian")
+    X_EISCAT = load_data(file_name="X_eiscat_test_data.pkl")
     
     artist_processed = {}
     for day in X_EISCAT:
