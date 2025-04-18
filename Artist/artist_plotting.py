@@ -141,6 +141,7 @@ class ArtistPlotting:
         r_param2 = X_artist['r_param']
         
         
+        
         # Date
         date_str = r_time1[0].strftime('%Y-%m-%d')
         
@@ -166,7 +167,7 @@ class ArtistPlotting:
         
     
         # Plotting original data
-        ne_EISCAT = ax0.pcolormesh(r_time1, r_h1.flatten(), np.log10(r_param1), shading='auto', cmap='turbo', vmin=10, vmax=12)
+        ne_EISCAT = ax0.pcolormesh(r_time1, r_h1.flatten(), r_param1, shading='auto', cmap='turbo', vmin=10, vmax=12)
         ax0.set_title('EISCAT UHF', fontsize=17)
         ax0.set_xlabel('Time [hh:mm]', fontsize=13)
         ax0.set_ylabel('Altitude [km]', fontsize=15)

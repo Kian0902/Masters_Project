@@ -10,98 +10,85 @@ import pickle
 import pandas as pd
 
 from artist_sorting import ArtistSorter
-from artist_utils import save_data_dict, load_data_dict, merge_files
+from artist_utils import save_data, load_data, merge_files
 from artist_plotting import ArtistPlotting
 from artist_interpolate import filter_range, interpolate_data
 
 
 
+def execute_merge_files(folder_path:str):
+    f = folder_path or "artist_data_folder"
+    merge_files(f)
+    
+
+def execute_data_sorting(file_path:str, save_to_file=True):
+    
+    radar_processor = ArtistSorter(file_path)
+    radar_processor.load_data()
+    
+    radar_processor.process_data()
+    
+    X_artist = radar_processor.processed_data
+    
+    if save_to_file:
+        save_data(X_artist, file_name="processed_steps/artist_merged_sorted_data")
+    return X_artist
+
+
+def execute_data_merging(file_path:str = None, save_to_file=True, show_plot=False):
+    f = file_path or "processed_steps/artist_merged_sorted_data.pkl"
+        
+    X_artist = load_data(f)
+    X_EISCAT = load_data(file_name="X_eiscat_control.pkl")
+    
+    combined_artist_data = {}
+    for day in X_artist:
+        combined_artist_data[day] = X_artist[day]  # Add data for the current day to the dictionary
+        
+        if show_plot:
+            ArtistPlotting(X_EISCAT[day], X_artist[day]).plot_eiscat_vs_artist()
+    if save_to_file:
+        save_data(combined_artist_data, file_name="processed_steps/artist_sorted_combined_data")
+    return combined_artist_data
+
+
+def execute_data_interpolating(file_path:str = None, save_to_file=True, show_plot=False):
+    f = file_path or "processed_steps/artist_sorted_combined_data.pkl"
+    
+    X_artist = load_data(f)
+    X_EISCAT = load_data(file_name="X_kian")
+    
+    artist_processed = {}
+    for day in X_EISCAT:
+        X_uhf = X_EISCAT[day]
+        X_art = X_artist[day]
+        
+        r_uhf = X_uhf['r_h']
+        X_filt = filter_range(X_art, 'r_h', 90, 400)
+        X_inter = interpolate_data(X_filt, r_uhf)
+        
+        artist_processed[day] = X_inter
+        if show_plot:
+            ArtistPlotting(X_uhf, X_inter).plot_eiscat_vs_artist()
+    
+    if save_to_file:
+        save_data(artist_processed, file_name="processed_steps/artist_sorted_combined_interpolated_data")
+    return artist_processed
+
+
 if __name__ == "__main__":
     
-    # --- Uncomment for merging artist files---
-    # merge_files(folder_path="Artist_folder")
-    # -----------------------------------------
+    # # --- Uncomment for merging yearly artist files---
+    # folder_path = "artist_data_folder"
+    # execute_merge_files(folder_path)
+    # # -----------------------------------------
     
+    file = 'artist_merged.csv'
+    execute_data_sorting(file)
+    execute_data_merging()
+    final_data_version = execute_data_interpolating()
+    save_data(final_data_version, file_name="processed_artist_data")
     
-    # --- Uncomment for processing artist file ---
-    # file_path = 'Artist_folder/artist_merged.csv'
-    # radar_processor = ArtistSorter(file_path)
-    # radar_processor.load_data()
-    
-    # print("processing data")
-    # radar_processor.process_data()
-    # print("processing done!")
-    
-    # X_artist = radar_processor.processed_data
-    # save_data(X_artist, file_name="artist_processed_data")
-    # ------------------------------------------------------
-    
-
-    
-    # --- Uncomment for processing all artist file ---
-    # X_artist = load_data_dict("artist_processed_data")
-    # X_EISCAT = load_data_dict(file_name="X_avg_test_data")
-    
-    
-    # combined_artist_data = {}  # Dictionary to store all corresponding X_artist data
-
-    # for day in X_EISCAT:
-    #     plot_eiscat_vs_artist(X_EISCAT[day], X_artist[day])  # Optional, if visualization is required
-    #     combined_artist_data[day] = X_artist[day]  # Add data for the current day to the dictionary
-    
-    # # Save the combined data to a single file
-    # save_data_dict(combined_artist_data, file_name="artist_test_days.pkl")
-
-    # print("All artist data saved to combined_artist_data.pkl")
-    # ------------------------------------------------------
-    
-    
-    
-    
-    # --- Uncomment for interpolating and saving the data ---
-    # X_artist = load_data_dict("artist_test_days.pkl")
-    X_EISCAT = load_data_dict(file_name="X_avg_test_data")
-
-
-    # artist_processed = {}
-
-    # for day in X_artist:
-    #     X_uhf = X_EISCAT[day]
-    #     X_art = X_artist[day]
-    #     # plot_data(X)
-    #     r_uhf = X_uhf['r_h']
-    #     # plot_eiscat_vs_artist(X_uhf, X_art)
-        
-    #     X_filt = filter_range(X_art, 'r_h', 90, 400)
-    #     # plot_eiscat_vs_artist(X_uhf, X_filt)
-        
-        
-    #     X_inter = interpolate_data(X_filt, r_uhf)
-    #     plot_eiscat_vs_artist(X_uhf, X_inter)
-    #     artist_processed[day] = X_inter
-    
-    # save_data_dict(artist_processed, file_name="processed_artist_test_days.pkl")
-    # ------------------------------------------------------
-    
-    
-    
-    X_Artist = load_data_dict("processed_artist_test_days.pkl")
-    
-    day = "2019-1-5"
-    X_art = X_Artist[day]
-    X_eis = X_EISCAT[day]
-    
-    
-    plotting = ArtistPlotting(X_eis, X_art)
-    
-    plotting.plot_profiles()
-    plotting.plot_eiscat_vs_artist()
-    
-    
-
-
-
-
 
 
 

@@ -56,7 +56,7 @@ class ArtistSorter:
 
             # Extract the 'r_param' array (electron densities)
             r_param = ((daily_data[altitude_columns].to_numpy()*1e6)**2)/9**2
-
+            
             # Assign the arrays to the nested dictionary
             self.processed_data[formatted_date] = {
                 "r_time": r_time,
