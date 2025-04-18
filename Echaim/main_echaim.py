@@ -54,10 +54,10 @@ def execute_data_interpolating(file_path:str = None, save_to_file=True, show_plo
     echaim_processed = {}
     for day in X_echaim:
         X_uhf = X_EISCAT[day]
-        X_art = X_echaim[day]
+        X_ech = X_echaim[day]
         
         r_uhf = X_uhf['r_h']
-        X_filt = filter_range(X_art, 'r_h', 90, 400)
+        X_filt = filter_range(X_ech, 'r_h', 90, 400)
         X_inter = interpolate_data(X_filt, r_uhf)
         
         echaim_processed[day] = X_inter
