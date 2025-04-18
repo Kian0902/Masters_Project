@@ -137,7 +137,7 @@ class EChaimPlotting:
                                 for year, month, day, hour, minute, second in X_echaim['r_time']])
         r_h1 = X_eiscat['r_h']
         r_h2 = X_echaim['r_h']
-        r_param1 = X_eiscat['r_param']
+        r_param1 = np.log10(X_eiscat['r_param'])
         r_param2 = X_echaim['r_param']
         
         

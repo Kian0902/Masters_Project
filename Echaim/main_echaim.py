@@ -31,7 +31,7 @@ def execute_data_merging(file_path:str = None, save_to_file=True, show_plot=Fals
         
     
     X_echaim = load_data(f)
-    X_EISCAT = load_data(file_name="X_eiscat_control.pkl")
+    X_EISCAT = load_data(file_name="X_eiscat_test_data.pkl")
     
     combined_echaim_data = {}  # Dictionary to store all corresponding X_echaim data
     
@@ -49,10 +49,10 @@ def execute_data_interpolating(file_path:str = None, save_to_file=True, show_plo
     f = file_path or "processed_steps/echaim_sorted_combined_data.pkl"
     
     X_echaim = load_data(f)
-    X_EISCAT = load_data(file_name="X_kian")
+    X_EISCAT = load_data(file_name="X_eiscat_test_data.pkl")
     
     echaim_processed = {}
-    for day in X_echaim:
+    for day in X_EISCAT:
         X_uhf = X_EISCAT[day]
         X_ech = X_echaim[day]
         
@@ -76,7 +76,7 @@ if __name__ == "__main__":
     file = 'echaim_data.csv'
     execute_data_sorting(file)
     execute_data_merging()
-    final_data_version = execute_data_interpolating()
+    final_data_version = execute_data_interpolating(show_plot=True)
     save_data(final_data_version, file_name="processed_echaim_data")
 
 
