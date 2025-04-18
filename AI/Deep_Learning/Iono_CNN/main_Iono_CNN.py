@@ -157,7 +157,7 @@ for epoch in range(num_epochs):
 
 
 # Save the best model to a file
-torch.save(best_model_weights, 'Iono_CNN_v3.pth')
+torch.save(best_model_weights, 'Iono_CNNv1.pth')
 plot_losses(train_losses, val_losses)
 
 

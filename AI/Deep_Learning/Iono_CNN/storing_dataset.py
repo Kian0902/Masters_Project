@@ -36,40 +36,17 @@ class StoreDataset(Dataset):
         return self.transform(self.data[idx]), self.targets[idx]
         
     
-    def plot_sample_pair(self, idx):
-        """
-        Plots a single pair of ionogram image and radar data.
+class StoreIonoDataset(Dataset):
+    def __init__(self, data, transform=transforms.Compose([transforms.ToTensor()])):
+        self.data = np.array(data)
+        self.transform = transform
         
-        Args:
-            idx (int): Index of the sample pair to plot.
-        """
-        
-        r_h = np.array([[ 91.5687711 ],[ 94.57444598],[ 97.57964223],[100.57010953],
-               [103.57141624],[106.57728701],[110.08393175],[114.60422289],
-               [120.1185208 ],[126.61221111],[134.1346149 ],[142.53945817],
-               [152.05174717],[162.57986185],[174.09833378],[186.65837945],
-               [200.15192581],[214.62769852],[230.12198695],[246.64398082],
-               [264.11728204],[282.62750673],[302.15668686],[322.70723831],
-               [344.19596481],[366.64409299],[390.113117  ]])
-        
-        # Retrieve the specified sample
-        ionogram_image, radar_values = self.__getitem__(idx)
+    def __len__(self):
+        return len(self.data)
 
-        # Convert image tensor back to a PIL Image for plotting
-        if isinstance(ionogram_image, torch.Tensor):
-            ionogram_image = transforms.ToPILImage()(ionogram_image)
-
-        # Create a figure with 2 subplots (1x2 layout)
-        fig, ax = plt.subplots(1, 2, figsize=(12, 6))
+    def __getitem__(self, idx):
         
-        ax[0].imshow(ionogram_image)
-        ax[0].axis("off")
-        
-        ax[1].plot(radar_values.squeeze().numpy(), r_h, color='skyblue')
-        ax[1].set_xlabel("Measurement Index")
-        ax[1].set_ylabel("Value")
-        plt.show()
-
+        return self.transform(self.data[idx])
 
 
 
@@ -124,7 +101,45 @@ class Store3Dataset(Dataset):
         plt.show()
 
 
+class MatchingIonoPair:
+    def __init__(self, ionogram_folder):
+        self.ionogram_folder = ionogram_folder
+    
+    def list_png_files(self):
+        return [f for f in os.listdir(self.ionogram_folder) if f.endswith('.png')]
 
+
+    def get_filename_without_extension(self, filename):
+        return os.path.splitext(filename)[0]
+    
+    
+    def get_matching_filenames(self):
+        ionogram_names = self.list_png_files()
+        
+        ionogram_filenames = set(self.get_filename_without_extension(f) for f in ionogram_names)
+        
+        return sorted(list(ionogram_filenames))
+        
+        
+    def find_pairs(self, return_date:bool = False):
+        i=0
+        
+        ION = []
+        
+        matching_filenames = self.get_matching_filenames()
+        for filename in matching_filenames:
+            ionogram_path = os.path.join(self.ionogram_folder, f"{filename}.png")
+            ionogram_image = Image.open(ionogram_path)
+            ionogram_array = np.array(ionogram_image)
+            
+            ION.append(ionogram_array)
+            i+=1
+            
+        if return_date is True:
+            return ION, matching_filenames
+        
+        else:
+            return ION
 
 
 

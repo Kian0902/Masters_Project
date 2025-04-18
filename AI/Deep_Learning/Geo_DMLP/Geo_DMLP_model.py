@@ -19,7 +19,7 @@ class GeoDMLP(nn.Module):
         super(GeoDMLP, self).__init__()
         
         self.fc1 = nn.Sequential(
-            nn.Linear(19, 64),
+            nn.Linear(25, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Dropout(0.3),

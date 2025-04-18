@@ -404,12 +404,12 @@ class Matching3ErrorPairs:
 # Example usage
 if __name__ == "__main__":
     ionogram_folder = "Good_Ionograms_Images"
-    radar_folder = "EISCAT_test_samples"
+    radar_folder = "EISCAT_test_samples_new_errors"
     sp19_folder = "SP19_samples"
 
-    new_ionogram_folder = "test_ionogram_folder"
-    new_radar_folder = "test_eiscat_folder"
-    new_sp19_folder = "test_geophys_folder"
+    new_ionogram_folder = "testing_data/test_ionogram_folder"
+    new_radar_folder = "testing_data/test_eiscat_folder_new_errors"
+    new_sp19_folder = "testing_data/test_geophys_folder"
 
     matcher = Matching3Pairs(ionogram_folder, radar_folder, sp19_folder)
     matcher.save_matching_files(new_ionogram_folder, new_radar_folder, new_sp19_folder)

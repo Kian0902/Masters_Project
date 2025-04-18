@@ -68,11 +68,11 @@ class KIANNet(nn.Module):
         self.fu_dmlp = fu_dmlp
         
         
-        # Freeze the pre-trained features
-        for param in self.iono_conv.parameters():
-            param.requires_grad = False
-        for param in self.geo_fc1.parameters():
-            param.requires_grad = False
+        # # Freeze the pre-trained features
+        # for param in self.iono_conv.parameters():
+        #     param.requires_grad = False
+        # for param in self.geo_fc1.parameters():
+        #     param.requires_grad = False
     
     
     def forward(self, image, tabular):

@@ -95,12 +95,13 @@ def model_predict(stored_dataset, model_weights):
     test_loader = DataLoader(A, batch_size=batch_size, shuffle=False)
     
     iono_cnn = IonoCNN()
-    iono_cnn.load_state_dict(torch.load("Iono_CNNv2.pth", weights_only=True))  # Pre-trained weights
+    iono_cnn.load_state_dict(torch.load("IonoCNN_best_weights.pth", weights_only=True))  # Pre-trained weights
 
     geo_dmlp = GeoDMLP()
-    geo_dmlp.load_state_dict(torch.load("Geo_DMLPv7.pth", weights_only=True))
+    geo_dmlp.load_state_dict(torch.load("GeoDMLP_best_weights.pth", weights_only=True))
 
     fu_dmlp = FuDMLP(input_size=14848)  # Fusion 
+    fu_dmlp.load_state_dict(torch.load("FuDMLP_best_weights.pth", weights_only=True))
     
     model = KIANNet(iono_cnn.conv, geo_dmlp.fc1, fu_dmlp).to(device)
     criterion = nn.HuberLoss()
@@ -161,7 +162,7 @@ if __name__ == "__main__":
     A = Store3Dataset(ion, geo, np.log10(rad), transforms.Compose([transforms.ToTensor()]))
     
     # Path to trained weights
-    weights_path = 'KIAN_Net_v1_NoPrevGrad.pth'
+    weights_path = 'KIANNet_best_weights.pth'
     
     
     X_pred = model_predict(A, weights_path)

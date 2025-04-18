@@ -22,6 +22,80 @@ from torchvision import transforms
 
 
 
+class StoreGeoDataset(Dataset):
+    def __init__(self, data):
+        self.data = torch.tensor(np.array(data), dtype=torch.float32)
+
+        
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        return self.data[idx]
+
+
+
+
+
+
+
+class MatchingGeoPair:
+    def __init__(self, geophys_folder):
+        self.geophys_folder = geophys_folder
+    
+    
+    def list_geo_csv_files(self):
+        return [f for f in os.listdir(self.geophys_folder) if f.endswith('.csv')]
+
+
+    def get_filename_without_extension(self, filename):
+        return os.path.splitext(filename)[0]
+    
+    
+    def get_matching_filenames(self):
+
+        geophys_names = self.list_geo_csv_files()
+        
+        geophys_filenames = set(self.get_filename_without_extension(f) for f in geophys_names)
+        
+        return sorted(list(geophys_filenames))
+        
+        
+    def find_pairs(self, return_date:bool = False):
+        i=0
+        
+        GEO = []
+        
+        matching_filenames = self.get_matching_filenames()
+        for filename in matching_filenames:
+            geophys_path = os.path.join(self.geophys_folder, f"{filename}.csv")
+            geophys_data = np.genfromtxt(geophys_path, dtype=np.float64, delimiter=",")
+            
+            GEO.append(geophys_data)
+            
+            i+=1
+            
+        if return_date is True:
+            return GEO, matching_filenames
+        
+        else:
+            return GEO
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class StoreDataset(Dataset):
     def __init__(self, data, targets):
         self.data = torch.tensor(np.array(data), dtype=torch.float32)

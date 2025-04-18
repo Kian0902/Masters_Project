@@ -83,7 +83,7 @@ model.apply(he_initialization)
 
 
 # criterion = nn.L1Loss()
-criterion = nn.MSELoss()
+# criterion = nn.MSELoss()
 criterion = nn.HuberLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
@@ -160,7 +160,7 @@ for epoch in range(num_epochs):
 
 
 # Save the best model to a file
-torch.save(best_model_weights, 'Geo_DMLPv1_very_long_dropout02.pth')
+torch.save(best_model_weights, 'Geo_DMLPv2_Dropout.pth')
 plot_losses(train_losses, val_losses)
 
 
