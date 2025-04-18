@@ -15,7 +15,10 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.patches import Patch
 from matplotlib.dates import DateFormatter
 import matplotlib.colors as colors
+from tqdm import tqdm
+
 import seaborn as sns
+
 
 def load_dict(file_name):
     with open(file_name, 'rb') as f:
@@ -23,27 +26,10 @@ def load_dict(file_name):
     return dataset
 
 def save_dict(dataset: dict, file_name: str):
-    with open(file_name, 'wb') as file:
+    with open(file_name + ".pkl", 'wb') as file:
         pickle.dump(dataset, file)
 
 
-
-# def plot_day(data):
-#     r_time = from_array_to_datetime(data['r_time'])
-#     r_h = data['r_h'].flatten()
-#     r_param = data['r_param']
-#     r_error = data['r_error'] 
-    
-    
-#     fig, ax = plt.subplots()
-    
-#     ne=ax.pcolormesh(r_time, r_h, r_param, shading="auto", cmap="turbo", norm=colors.LogNorm(vmin=1e10, vmax=1e11))
-#     ax.set_xlabel("Time (UT)")
-#     ax.set_ylabel("Altitudes (km)")
-#     ax.xaxis.set_major_formatter(DateFormatter('%H:%M'))
-#     fig.colorbar(ne, ax=ax, orientation='vertical')
-#     plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='center')
-#     plt.show()
 
 
 
@@ -98,7 +84,17 @@ def from_strings_to_array(date_strings):
 
 
 
-
+def conv_folder_to_list(folder):
+    
+    data = []
+    
+    files = [f for f in os.listdir(folder) if f.endswith('.csv')]
+    for filename in tqdm(files):
+    
+        path = os.path.join(folder, f"{filename}")
+        x = np.genfromtxt(path, dtype=np.float64, delimiter=",")
+        data.append(x)
+    return data
 
 
 def inspect_dict(d, indent=0):
@@ -135,6 +131,43 @@ def inspect_dict(d, indent=0):
 
 
 
+
+def save(dataset, save_param, output_dir):
+    for date, data in dataset.items():
+        r_time = data['r_time']
+        r_rad = data[save_param]
+        
+        # iterate over each 15 min time
+        for i in range(r_time.shape[0]):
+            
+            sample_r_rad = r_rad[:, i]
+            
+            
+            sample_df = pd.DataFrame({
+                save_param: sample_r_rad
+                }).T
+            
+            time_str = f"{r_time[i, 0]:04d}{r_time[i, 1]:02d}{r_time[i, 2]:02d}_{r_time[i, 3]:02d}{r_time[i, 4]:02d}"
+            csv_filename = os.path.join(output_dir, f"{time_str}.csv")
+            sample_df.to_csv(csv_filename, index=False, header=False)
+        
+
+
+
+
+
+
+# filename = "X_2012_one_week"
+
+# out_dir = "EISCAT_2012_one_week"
+
+# # Opening file
+# with open(filename, 'rb') as f:
+#     dataset = pickle.load(f)  # Loading dictionary
+
+
+
+# save(dataset, 'r_param', out_dir)
 
 
 

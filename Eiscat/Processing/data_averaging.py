@@ -94,8 +94,8 @@ class EISCATAverager:
                 
                 # Append the averaged data
                 averaged_r_time.append([
-                    bin_end.year, bin_end.month, bin_end.day,
-                    bin_end.hour, bin_end.minute, bin_end.second
+                    bin_start.year, bin_start.month, bin_start.day,
+                    bin_start.hour, bin_start.minute, bin_start.second
                 ])
                 
                 averaged_r_param.append(avg_param)
