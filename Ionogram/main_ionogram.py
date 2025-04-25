@@ -53,11 +53,11 @@ for file in tqdm(os.listdir(datapath_folder)):
     
     print("-Sorting Complete!\n")
     # break
-    
 
     
+    
     B = IonogramProcessing()
-    B.process_and_plot(data, times, apply_amplitude_filter=True)
+    B.process_and_plot(data, times, result_path="Ionogram_Resampling_Filtering.pdf", apply_amplitude_filter=True)
     # B.process_ionogram(data, times, plot=True, apply_amplitude_filter=True)
     break
     

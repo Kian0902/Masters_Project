@@ -342,14 +342,14 @@ class IonogramProcessing:
             time_display = datetime.strptime(time_str_raw, "%Y.%m.%d_%H-%M-%S").strftime("%Y-%m-%d %H:%M")
             fig.suptitle(time_display, fontsize=18)
             
-            plt.tight_layout()
+            # plt.tight_layout()
             plt.show()
             
             # Optionally, save the figure if a result path is provided
             if result_path:
                 time_file = datetime.strptime(time_str_raw, "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
-                fig.savefig(os.path.join(result_path, f"{time_file}_combined.png"))
-
+                # fig.savefig(os.path.join(result_path, f"{time_file}_combined.png"))
+                fig.savefig(result_path, format="pdf", bbox_inches="tight")
 
 
 # class IonogramProcessing:
