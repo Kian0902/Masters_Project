@@ -15,6 +15,7 @@ from matplotlib.lines import Line2D
 import matplotlib.dates as mdates
 from matplotlib.gridspec import GridSpec
 from matplotlib.widgets import Cursor
+from matplotlib.collections import LineCollection
 from datetime import datetime
 from scipy.stats import linregress, gaussian_kde, pearsonr, spearmanr
 from paper_utils import from_array_to_datetime, merge_nested_dict, merge_nested_pred_dict, merge_nested_peak_dict, merge_nested_peak_pred_dict, merge_nested_peak_dict, get_altitude_r2_score_nans, get_measurements_r2_score_nans, inspect_dict
@@ -357,13 +358,14 @@ class PaperPlotter:
             'E-Chaim': ne_ech
         }
         
+        
         # Define plotting properties for each model
         plot_props = {
-            'KIAN-Net': {'color': 'C1', 'lw': 3, 'zorder': 5, 'ls': '-'},
-            'Iono-CNN': {'color': 'C4', 'lw': 3.5, 'zorder': 4, 'ls': (2, (4.5, 1))},
-            'Geo-DMLP': {'color': 'C5', 'lw': 4, 'zorder': 1, 'ls': (0, (1, 1))},
-            'Artist 5.0': {'color': 'C2', 'lw': 3, 'zorder': 3, 'ls': (1, (3, 1, 1, 1))},
-            'E-Chaim': {'color': 'C3', 'lw': 2, 'zorder': 2, 'ls': '-'}
+            'KIAN-Net': {'color': 'darkblue', 'lw': 3, 'zorder': 5, 'ls': '-'},
+            'Iono-CNN': {'color': 'royalblue', 'lw': 3.5, 'zorder': 4, 'ls': (2, (4.5, 1))},
+            'Geo-DMLP': {'color': 'lightseagreen', 'lw': 4, 'zorder': 1, 'ls': (0, (1, 1))},
+            'Artist 5.0': {'color': 'orange', 'lw': 3, 'zorder': 3, 'ls': (1, (3, 1, 1, 1))},
+            'E-Chaim': {'color': 'red', 'lw': 2, 'zorder': 2, 'ls': '-'}
         }
         
         # Identify valid measurements where all EISCAT UHF altitudes are non-NaN
@@ -434,7 +436,7 @@ class PaperPlotter:
         
         # --- Plotting ---
         with sns.axes_style("dark"):
-            fig, axes = plt.subplots(1, 3, figsize=(10, 10), sharey=True)
+            fig, axes = plt.subplots(2, 2, figsize=(9, 11), sharey=True)
         fig.suptitle("Calculated Metrics of Model Predictions\nfor each altitude (90-400 km) over\nall M number of timesteps", fontsize=20, y=1)
         
         axes = axes.flatten()
@@ -457,13 +459,15 @@ class PaperPlotter:
             
             ax.set_xlabel(plot_xlabels[i], fontsize=int(np.where(i <=1, 15, 19)))
             
-            if i % 3 == 0:  # Left column
+            if i % 2 == 0:  # Left column
                 ax.set_ylabel('Altitude [km]', fontsize=15)
             ax.legend(frameon=True, framealpha=0.9, facecolor='white')
             ax.grid(True)
         
         plt.tight_layout()
         plt.show()
+        
+        fig.savefig("eval_metrics_altitudes.pdf", format="pdf", bbox_inches="tight")
         
     def plot_metrics_vs_time_compare_all(self):
         # ___________ Getting Data ___________
@@ -580,35 +584,58 @@ class PaperPlotter:
         cbar.set_label('$log_{10}$ $N_e$  (m$^{-3}$)', fontsize=13)
         
         # Define plotting properties for models
+        liwi = 3
         plot_props = {
-            'KIAN-Net': {'color': 'C1', 'lw': 2, 'zorder': 5, 'ls': '-'},
-            'Iono-CNN': {'color': 'C4', 'lw': 2, 'zorder': 4, 'ls': '-'},
-            'Geo-DMLP': {'color': 'C5', 'lw': 2, 'zorder': 1, 'ls': '-'},
-            'Artist 5.0': {'color': 'C2', 'lw': 2, 'zorder': 3, 'ls': '-'},
-            'E-Chaim': {'color': 'C3', 'lw': 2, 'zorder': 2, 'ls': '-'},
+            'KIAN-Net': {'color': 'darkblue', 'lw': liwi, 'zorder': 5, 'ls': '-'},
+            'Iono-CNN': {'color': 'royalblue', 'lw': liwi, 'zorder': 4, 'ls': '-'},
+            'Geo-DMLP': {'color': 'lightseagreen', 'lw': liwi, 'zorder': 1, 'ls': '-'},
+            'Artist 5.0': {'color': 'orange', 'lw': liwi, 'zorder': 3, 'ls': '-'},
+            'E-Chaim': {'color': 'red', 'lw': liwi, 'zorder': 2, 'ls': '-'},
         }
         
         # ___________ Plot Temporal R2 Scores with Background Colors ___________
         ax6.set_title('(g) Best R2 Scores', fontsize=16)
         
-        # Add background colors based on the best model
-        for m in range(M):
-            if not np.isnan(best_r2[m]):  # Check for valid R² score
-                model_name = best_model[m]
-                color = plot_props[model_name]['color']
-                if m < M - 1:
-                    # Span from current to next timestamp
-                    ax6.axvspan(r_time[m], r_time[m+1], color=color, alpha=0.3, zorder=1)
-                else:
-                    # For the last timestamp, extend using the previous interval
-                    ax6.axvspan(r_time[m], r_time[m], color=color, alpha=0.3, zorder=1)
+        # # Add background colors based on the best model
+        # for m in range(M):
+        #     if not np.isnan(best_r2[m]):  # Check for valid R² score
+        #         model_name = best_model[m]
+        #         color = plot_props[model_name]['color']
+        #         if m < M - 1:
+        #             # Span from current to next timestamp
+        #             ax6.axvspan(r_time[m], r_time[m+1], color=color, alpha=0.3, zorder=1)
+        #         else:
+        #             # For the last timestamp, extend using the previous interval
+        #             ax6.axvspan(r_time[m], r_time[m], color=color, alpha=0.3, zorder=1)
         
-        # Plot the R² curve on top
+                
+        
+        r_time = mdates.date2num(r_time)
+        # Prepare segments and colors for LineCollection
+        segments = []
+        colors = []
+        LW = []
         for m in range(1, M):
-            if not np.isnan(best_r2[m-1]) and not np.isnan(best_r2[m]):  # Valid consecutive points
-                model_name = best_model[m-1]  # Color based on the starting point
-                color = plot_props[model_name]['color']
-                ax6.plot(r_time[m-1:m+1], best_r2[m-1:m+1], color=color, lw=4, zorder=2)
+            if not np.isnan(best_r2[m-1]) and not np.isnan(best_r2[m]):
+                # Start and end points of the segment
+                x0, x1 = r_time[m-1], r_time[m]
+                y0, y1 = best_r2[m-1], best_r2[m]
+                segments.append([(x0, y0), (x1, y1)])
+                # Color based on the model at the start of the segment
+                model_name = best_model[m-1]
+                colors.append(plot_props[model_name]['color'])
+                LW.append(plot_props[model_name]['lw'])
+                
+        # Create and add LineCollection to the plot
+        lc = LineCollection(
+            segments,
+            colors=colors,
+            linewidths=LW,
+            zorder=2,
+            capstyle='round',  # Smooth line endings
+            joinstyle='round'  # Smooth segment joints
+        )
+        ax6.add_collection(lc)
         
         # Add labels and formatting
         ax6.set_ylabel('R2', fontsize=12)
@@ -625,13 +652,17 @@ class PaperPlotter:
         # legend.get_frame().set_edgecolor('black')
         # legend.get_frame().set_linewidth(2)
         plt.show()
-    
+        
+        fig.savefig("eis_vs_all.pdf", format="pdf", bbox_inches="tight")
+
+        
         
     def plot_metrics_vs_time_compare_error_all(self, model_colors=None):
         # Default colors if none provided
         if model_colors is None:
-            model_colors = ['C1', 'C4', 'C5', 'C2', 'C3']
-    
+            model_colors = ['darkblue', 'royalblue', 'lightseagreen', 'orange', 'red']
+        
+        
         # Validate number of colors
         if len(model_colors) != 5:
             raise ValueError("You must provide exactly 5 colors, one for each model.")
@@ -753,32 +784,60 @@ class PaperPlotter:
         err_best = ax5.pcolormesh(r_time, r_h, best_model_reversed, cmap=CMAP1, shading='gouraud')
         ax5.set_title('(f) Best Model (Lowest Relative Absolute Error)', fontsize=16)
         ax5.tick_params(labelbottom=False)
-    
-        # Plot RMSE subplot
+        
+        
+        
         plot_props = {
-            'KIAN-Net': {'color': model_colors[0], 'lw': 2, 'zorder': 5, 'ls': '-'},
-            'Iono-CNN': {'color': model_colors[1], 'lw': 2, 'zorder': 4, 'ls': '-'},
-            'Geo-DMLP': {'color': model_colors[2], 'lw': 2, 'zorder': 1, 'ls': '-'},
-            'Artist 5.0': {'color': model_colors[3], 'lw': 2, 'zorder': 3, 'ls': '-'},
-            'E-Chaim': {'color': model_colors[4], 'lw': 2, 'zorder': 2, 'ls': '-'},
+            'KIAN-Net': {'color': model_colors[0], 'lw': 3, 'zorder': 5, 'ls': '-'},
+            'Iono-CNN': {'color': model_colors[1], 'lw': 3, 'zorder': 4, 'ls': '-'},
+            'Geo-DMLP': {'color': model_colors[2], 'lw': 3, 'zorder': 1, 'ls': '-'},
+            'Artist 5.0': {'color': model_colors[3], 'lw': 3, 'zorder': 3, 'ls': '-'},
+            'E-Chaim': {'color': model_colors[4], 'lw': 3, 'zorder': 2, 'ls': '-'},
         }
-    
+        
         ax6.set_title('(g) Best RMSE', fontsize=16)
-    
-        # Background colors for best model in RMSE plot
-        for m in range(M):
-            if best_model[m] != '':
-                color = plot_props[best_model[m]]['color']
-                if m < M - 1:
-                    ax6.axvspan(r_time[m], r_time[m+1], color=color, alpha=0.3, zorder=1)
-                else:
-                    ax6.axvspan(r_time[m], r_time[m], color=color, alpha=0.3, zorder=1)
-    
-        # Plot best RMSE curve
+        
+        # # Background colors for best model in RMSE plot (keep this as is)
+        # for m in range(M):
+        #     if best_model[m] != '':
+        #         color = plot_props[best_model[m]]['color']
+        #         if m < M - 1:
+        #             ax6.axvspan(r_time[m], r_time[m+1], color=color, alpha=0.3, zorder=1)
+        #         else:
+        #             ax6.axvspan(r_time[m], r_time[m], color=color, alpha=0.3, zorder=1)
+        
+        # --- Modified RMSE curve plotting using LineCollection ---
+        
+        # Convert datetime objects to numeric values
+        r_times = mdates.date2num(r_time)
+        
+        # Prepare segments and colors
+        segments = []
+        colors = []
+        LW = []
         for m in range(1, M):
-            if best_model[m-1] != '' and best_model[m] != '':
-                color = plot_props[best_model[m-1]]['color']
-                ax6.plot(r_time[m-1:m+1], best_rmse[m-1:m+1], color=color, lw=4, zorder=2)
+            if (best_model[m-1] != '' and best_model[m] != '' and 
+                not np.isnan(best_rmse[m-1]) and not np.isnan(best_rmse[m])):
+                # Create segment with numeric x-values
+                x0 = r_times[m-1]
+                x1 = r_times[m]
+                y0 = best_rmse[m-1]
+                y1 = best_rmse[m]
+                segments.append([(x0, y0), (x1, y1)])
+                # Get color from previous time point
+                colors.append(plot_props[best_model[m-1]]['color'])
+                LW.append(plot_props[best_model[m-1]]['lw'])
+        
+        # Create LineCollection
+        lc = LineCollection(
+            segments,
+            colors=colors,
+            linewidths=LW,
+            zorder=2,
+            capstyle='round',
+            joinstyle='round'
+        )
+        ax6.add_collection(lc)
     
         # Labels and ticks
         fig.supylabel('Altitude [km]', x=0.075)
@@ -806,6 +865,7 @@ class PaperPlotter:
         ax6.legend(handles=legend_elements, loc='upper right', 
                    bbox_to_anchor=(1.17, 1.1), facecolor='whitesmoke', frameon=False)
         plt.show()
+        fig.savefig("eis_vs_all_error.pdf", format="pdf", bbox_inches="tight")
         
     def plot_kde_altitude(self, altitude, return_metrics=False, show_plot=False, print_metrics=False):
         """
@@ -2031,7 +2091,7 @@ class PaperPlotter:
         axes['f'][0].set_xlabel(r'Prediction  $\log_{10}\,(n_e)$', fontsize=15)
         
         plt.show()
-        
+        fig.savefig("peak_plot.pdf", format="pdf", bbox_inches="tight")
     
     def plot_kde_comparison(self, normalize=False):
         """Plot KDE comparisons between models and EISCAT UHF for both regions with optional normalization."""

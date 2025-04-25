@@ -99,6 +99,7 @@ X_art = align_artist_with_eiscat(X_eis, X_ARTIST)
 
 plotter = PaperPlotter(X_eis, X_kian, X_ion, X_geo, X_art, X_ech)
 # plotter.plot_altitude_metrics()
+
 # plotter.plot_metrics_vs_time_compare_all()
 # plotter.plot_metrics_vs_time_compare_error_all()
 # plotter.plot_metrics_vs_altitude()
