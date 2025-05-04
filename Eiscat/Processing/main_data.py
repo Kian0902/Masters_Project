@@ -18,7 +18,7 @@ from data_utils import save_dict, load_dict, inspect_dict
 
 # Use the local folder name containing data
 # folder_name_in  = "EISCAT_Madrigal/2012"
-folder_name_out = "EISCAT_MAT/test_data"
+folder_name_out = "EISCAT_MAT/2018"
 
 # # Extract info from hdf5 files
 # madrigal_processor = EISCATDataProcessor(folder_name_in, folder_name_out)
@@ -61,12 +61,12 @@ X_outliers_filtered = outlier_filter.return_data()
 
 
 # __________  Averaging data __________ 
-AVG = EISCATAverager(X_outliers_filtered, plot_result=False)
+AVG = EISCATAverager(X_outliers_filtered, plot_result=True)
 AVG.average_15min()
 X_avg = AVG.return_data()
 
 
 
-save_dict(X_avg, file_name="X_eiscat_test_data")
+# save_dict(X_avg, file_name="X_eiscat_test_data")
 
 
