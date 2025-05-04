@@ -32,17 +32,21 @@ from tqdm import tqdm
 # B.plot_single_ionogram(X_res)
 
 
-datapath_folder = "Temp"
+datapath_folder = "Ionogram_test_TXT"
 
 
 for file in tqdm(os.listdir(datapath_folder)):
     
-    print(f"Processing data from {file[6:12]}\n")
-    
+    print(f"Processing data from {file[8:16]}\n")
+    # file_name = file[2:] if file.startswith("._") else file
+    # print(file_name)
+    # file_path  = os.path.join(datapath_folder, clean_name)
     file_path = os.path.join(datapath_folder, file)
     
+    # print(file_path)
+    
     A = IonogramSorting()
-    print("-Sorting Mothly file into 15 min ionogram samples...")
+    print("-Sorting file into 15 min ionogram samples...")
     A.import_data(file_path)
     # A.save_as_dict(folder_path="sorted_ionogram_dicts")
     # A.save_dataset()
@@ -57,9 +61,9 @@ for file in tqdm(os.listdir(datapath_folder)):
     
     
     B = IonogramProcessing()
-    B.process_and_plot(data, times, result_path="Ionogram_Resampling_Filtering.pdf", apply_amplitude_filter=True)
+    B.process_and_plot(data, times, result_path="Ionogram_Images_test", apply_amplitude_filter=True)
     # B.process_ionogram(data, times, plot=True, apply_amplitude_filter=True)
-    break
+    # break
     
     # print("-Making Ionogram images...")
     # # B.process_ionogram(data, times, plot=False, result_path="Ionogram_Images")

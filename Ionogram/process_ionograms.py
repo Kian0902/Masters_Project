@@ -222,134 +222,143 @@ class IonogramProcessing:
             iono_org = self.reconstruct_ionogram(data_i, apply_amplitude_filter=apply_amplitude_filter)
             iono_resampled = self.resample_ionogram(iono_org, Frange, Zrange, output_size)
             
-            # --- Prepare filtering data ---
-            freq = np.around(data_i[:, 0], decimals=2)
-            rang = np.around(data_i[:, 1], decimals=2)
-            pol = np.round(data_i[:, 2])
-            amp = data_i[:, 4]
-            ang = np.round(data_i[:, 7])
-            
-            # Create amplitude filter mask
-            mask_amp = np.zeros_like(freq, dtype=bool)
-            unique_freqs = np.unique(freq)
-            for f in unique_freqs:
-                indices = np.where(freq == f)[0]
-                if len(indices) == 0:
-                    continue
-                current_amps = amp[indices]
-                max_amp_f = np.max(current_amps)
-                threshold = 0.75 * max_amp_f
-                mask_amp[indices] = current_amps >= threshold
-            
-            # Masks for scatter plots
-            mask_O = (pol == 90) & (ang == 0) & mask_amp
-            mask_X = (pol == -90) & (ang == 0) & mask_amp
-            org_mask_O = (pol == 90) & (ang == 0)
-            org_mask_X = (pol == -90) & (ang == 0)
-            
-            
-            
-            # --- Create figure ---
-            fig = plt.figure(figsize=(15, 10))
-            gs = GridSpec(2, 5, height_ratios=[1.2, 1], width_ratios=[1, 1, 1, -0.35, 0.05], hspace=0.3, wspace=0.4)
-            
-            # Top row plots (using default style)
-            ax_top_org = fig.add_subplot(gs[0, :2])  # Original ionogram spans columns 0 and 1
-            ax_top_res = fig.add_subplot(gs[0, 2])     # Resampled ionogram in column 2
-            
-            # Plot the original ionogram (flip vertically for proper display)
-            iono_org_disp = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
-            ax_top_org.imshow(
-                iono_org_disp,
-                extent=[self.freq_org[0], self.freq_org[-1],
-                        self.rang_org[0], self.rang_org[-1]],
-                aspect='auto'
-            )
-            ax_top_org.set_title("Filtered Ionogram", fontsize=17)
-            ax_top_org.set_xlabel("Frequency (MHz)", fontsize=13)
-            ax_top_org.set_ylabel("Virtual Altitude (km)", fontsize=13)
-            ax_top_org.legend(handles=[Patch(color='red', label='O-mode'),
-                                       Patch(color='green', label='X-mode')],
-                              loc='upper right')
-            
-            # Plot the resampled ionogram
-            ax_top_res.imshow(
-                iono_resampled,
-                extent=[Frange[0], Frange[1], Zrange[0], Zrange[1]],
-                aspect='auto'
-            )
-            ax_top_res.set_title("Resampled Ionogram", fontsize=17)
-            ax_top_res.set_xlabel("Frequency (MHz)", fontsize=13)
-            ax_top_res.set_ylabel("Virtual Altitude (km)", fontsize=13)
-            ax_top_res.legend(handles=[Patch(color='red', label='O-mode'),
-                                       Patch(color='green', label='X-mode')],
-                              loc='upper right')
-            
-            # --- Bottom row: Filtering scatter plots with Seaborn dark style ---
-            # Use a context manager so that only these axes get the dark style.
-            with sns.axes_style("dark"):
-                ax_filt0 = fig.add_subplot(gs[1, 0])
-                ax_filt1 = fig.add_subplot(gs[1, 1])
-                ax_filt2 = fig.add_subplot(gs[1, 2])
-                ax_space = fig.add_subplot(gs[1, 3])
-                ax_space.set_visible(False)
-                
-                cax      = fig.add_subplot(gs[1, 4])
-                
-                
-                # Plot 1: Original (non-filtered) data
-                scatter0 = ax_filt0.scatter(freq[org_mask_O], rang[org_mask_O], s=1, 
-                                            c=amp[org_mask_O], cmap="turbo", zorder=2)
-                ax_filt0.scatter(freq[org_mask_X], rang[org_mask_X], s=1, 
-                                 c=amp[org_mask_X], cmap="turbo", zorder=2)
-                ax_filt0.set_title("Original", fontsize=15)
-                ax_filt0.set_xlabel("Frequency (MHz)", fontsize=13)
-                ax_filt0.set_ylabel("Virtual Altitude (km)", fontsize=13)
-                ax_filt0.set_xlim(0.9, 9.1)
-                ax_filt0.set_ylim(78, 645)
-                ax_filt0.grid(True)
-                
-                # Plot 2: Outlined Noise
-                scatter1 = ax_filt1.scatter(freq[mask_O], rang[mask_O], s=1, 
-                                            c=amp[mask_O], cmap="turbo", zorder=2)
-                ax_filt1.scatter(freq[mask_X], rang[mask_X], s=1, 
-                                 c=amp[mask_X], cmap="turbo", zorder=2)
-                # Overlay original (non-filtered) points in black for context
-                ax_filt1.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=1)
-                ax_filt1.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=1)
-                ax_filt1.set_title("Outlined Noise", fontsize=15)
-                ax_filt1.set_xlabel("Frequency (MHz)", fontsize=13)
-                ax_filt1.set_xlim(0.9, 9.1)
-                ax_filt1.set_ylim(78, 645)
-                ax_filt1.grid(True)
-                
-                # Plot 3: Filtered data
-                scatter2 = ax_filt2.scatter(freq[mask_O], rang[mask_O], s=1, 
-                                            c=amp[mask_O], cmap="turbo", zorder=2)
-                ax_filt2.scatter(freq[mask_X], rang[mask_X], s=1, 
-                                 c=amp[mask_X], cmap="turbo", zorder=2)
-                ax_filt2.set_title("Filtered", fontsize=15)
-                ax_filt2.set_xlabel("Frequency (MHz)", fontsize=13)
-                ax_filt2.set_xlim(0.9, 9.1)
-                ax_filt2.set_ylim(78, 645)
-                ax_filt2.grid(True)
-                
-                cbar = fig.colorbar(scatter0, cax=cax, orientation='vertical')
-                cbar.set_label('Amplitude', fontsize=13)
-                
-            
-            # Set the overall title using the timestamp
-            time_display = datetime.strptime(time_str_raw, "%Y.%m.%d_%H-%M-%S").strftime("%Y-%m-%d %H:%M")
-            fig.suptitle(time_display, fontsize=18)
-            
-            # plt.tight_layout()
-            plt.show()
-            
-            # Optionally, save the figure if a result path is provided
+
+            # Handle image saving
             if result_path:
-                time_file = datetime.strptime(time_str_raw, "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
-                # fig.savefig(os.path.join(result_path, f"{time_file}_combined.png"))
-                fig.savefig(result_path, format="pdf", bbox_inches="tight")
+                iono_resampled_image = Image.fromarray(iono_resampled)
+                time_str = datetime.strptime(time_str_raw , "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
+                save_path = os.path.join(result_path, f"{time_str}.png")
+                iono_resampled_image.save(save_path)
+            
+            
+            # # --- Prepare filtering data ---
+            # freq = np.around(data_i[:, 0], decimals=2)
+            # rang = np.around(data_i[:, 1], decimals=2)
+            # pol = np.round(data_i[:, 2])
+            # amp = data_i[:, 4]
+            # ang = np.round(data_i[:, 7])
+            
+            # # Create amplitude filter mask
+            # mask_amp = np.zeros_like(freq, dtype=bool)
+            # unique_freqs = np.unique(freq)
+            # for f in unique_freqs:
+            #     indices = np.where(freq == f)[0]
+            #     if len(indices) == 0:
+            #         continue
+            #     current_amps = amp[indices]
+            #     max_amp_f = np.max(current_amps)
+            #     threshold = 0.75 * max_amp_f
+            #     mask_amp[indices] = current_amps >= threshold
+            
+            # # Masks for scatter plots
+            # mask_O = (pol == 90) & (ang == 0) & mask_amp
+            # mask_X = (pol == -90) & (ang == 0) & mask_amp
+            # org_mask_O = (pol == 90) & (ang == 0)
+            # org_mask_X = (pol == -90) & (ang == 0)
+            
+            
+            
+            # # --- Create figure ---
+            # fig = plt.figure(figsize=(15, 10))
+            # gs = GridSpec(2, 5, height_ratios=[1.2, 1], width_ratios=[1, 1, 1, -0.35, 0.05], hspace=0.3, wspace=0.4)
+            
+            # # Top row plots (using default style)
+            # ax_top_org = fig.add_subplot(gs[0, :2])  # Original ionogram spans columns 0 and 1
+            # ax_top_res = fig.add_subplot(gs[0, 2])     # Resampled ionogram in column 2
+            
+            # # Plot the original ionogram (flip vertically for proper display)
+            # iono_org_disp = Image.fromarray(iono_org).transpose(Image.FLIP_TOP_BOTTOM)
+            # ax_top_org.imshow(
+            #     iono_org_disp,
+            #     extent=[self.freq_org[0], self.freq_org[-1],
+            #             self.rang_org[0], self.rang_org[-1]],
+            #     aspect='auto'
+            # )
+            # ax_top_org.set_title("Filtered Ionogram", fontsize=17)
+            # ax_top_org.set_xlabel("Frequency (MHz)", fontsize=13)
+            # ax_top_org.set_ylabel("Virtual Altitude (km)", fontsize=13)
+            # ax_top_org.legend(handles=[Patch(color='red', label='O-mode'),
+            #                            Patch(color='green', label='X-mode')],
+            #                   loc='upper right')
+            
+            # # Plot the resampled ionogram
+            # ax_top_res.imshow(
+            #     iono_resampled,
+            #     extent=[Frange[0], Frange[1], Zrange[0], Zrange[1]],
+            #     aspect='auto'
+            # )
+            # ax_top_res.set_title("Resampled Ionogram", fontsize=17)
+            # ax_top_res.set_xlabel("Frequency (MHz)", fontsize=13)
+            # ax_top_res.set_ylabel("Virtual Altitude (km)", fontsize=13)
+            # ax_top_res.legend(handles=[Patch(color='red', label='O-mode'),
+            #                            Patch(color='green', label='X-mode')],
+            #                   loc='upper right')
+            
+            # # --- Bottom row: Filtering scatter plots with Seaborn dark style ---
+            # # Use a context manager so that only these axes get the dark style.
+            # with sns.axes_style("dark"):
+            #     ax_filt0 = fig.add_subplot(gs[1, 0])
+            #     ax_filt1 = fig.add_subplot(gs[1, 1])
+            #     ax_filt2 = fig.add_subplot(gs[1, 2])
+            #     ax_space = fig.add_subplot(gs[1, 3])
+            #     ax_space.set_visible(False)
+                
+            #     cax      = fig.add_subplot(gs[1, 4])
+                
+                
+            #     # Plot 1: Original (non-filtered) data
+            #     scatter0 = ax_filt0.scatter(freq[org_mask_O], rang[org_mask_O], s=1, 
+            #                                 c=amp[org_mask_O], cmap="turbo", zorder=2)
+            #     ax_filt0.scatter(freq[org_mask_X], rang[org_mask_X], s=1, 
+            #                      c=amp[org_mask_X], cmap="turbo", zorder=2)
+            #     ax_filt0.set_title("Original", fontsize=15)
+            #     ax_filt0.set_xlabel("Frequency (MHz)", fontsize=13)
+            #     ax_filt0.set_ylabel("Virtual Altitude (km)", fontsize=13)
+            #     ax_filt0.set_xlim(0.9, 9.1)
+            #     ax_filt0.set_ylim(78, 645)
+            #     ax_filt0.grid(True)
+                
+            #     # Plot 2: Outlined Noise
+            #     scatter1 = ax_filt1.scatter(freq[mask_O], rang[mask_O], s=1, 
+            #                                 c=amp[mask_O], cmap="turbo", zorder=2)
+            #     ax_filt1.scatter(freq[mask_X], rang[mask_X], s=1, 
+            #                      c=amp[mask_X], cmap="turbo", zorder=2)
+            #     # Overlay original (non-filtered) points in black for context
+            #     ax_filt1.scatter(freq[org_mask_O], rang[org_mask_O], s=1, c="black", zorder=1)
+            #     ax_filt1.scatter(freq[org_mask_X], rang[org_mask_X], s=1, c="black", zorder=1)
+            #     ax_filt1.set_title("Outlined Noise", fontsize=15)
+            #     ax_filt1.set_xlabel("Frequency (MHz)", fontsize=13)
+            #     ax_filt1.set_xlim(0.9, 9.1)
+            #     ax_filt1.set_ylim(78, 645)
+            #     ax_filt1.grid(True)
+                
+            #     # Plot 3: Filtered data
+            #     scatter2 = ax_filt2.scatter(freq[mask_O], rang[mask_O], s=1, 
+            #                                 c=amp[mask_O], cmap="turbo", zorder=2)
+            #     ax_filt2.scatter(freq[mask_X], rang[mask_X], s=1, 
+            #                      c=amp[mask_X], cmap="turbo", zorder=2)
+            #     ax_filt2.set_title("Filtered", fontsize=15)
+            #     ax_filt2.set_xlabel("Frequency (MHz)", fontsize=13)
+            #     ax_filt2.set_xlim(0.9, 9.1)
+            #     ax_filt2.set_ylim(78, 645)
+            #     ax_filt2.grid(True)
+                
+            #     cbar = fig.colorbar(scatter0, cax=cax, orientation='vertical')
+            #     cbar.set_label('Amplitude', fontsize=13)
+                
+            
+            # # Set the overall title using the timestamp
+            # time_display = datetime.strptime(time_str_raw, "%Y.%m.%d_%H-%M-%S").strftime("%Y-%m-%d %H:%M")
+            # fig.suptitle(time_display, fontsize=18)
+            
+            # # plt.tight_layout()
+            # plt.show()
+            
+            # # Optionally, save the figure if a result path is provided
+            # if result_path:
+            #     time_file = datetime.strptime(time_str_raw, "%Y.%m.%d_%H-%M-%S").strftime("%Y%m%d_%H%M")
+            #     # fig.savefig(os.path.join(result_path, f"{time_file}_combined.png"))
+            #     fig.savefig(result_path, format="pdf", bbox_inches="tight")
 
 
 # class IonogramProcessing:

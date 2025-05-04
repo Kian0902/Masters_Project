@@ -164,9 +164,7 @@ class IonogramSorting:
         ionogram_time = []
         ionogram_data = []
         with open(datapath, "r") as file:
-            
             lines = file.readlines() # Reading all lines in txt file
-    
             data_batch = []
             for line in lines:
                 
