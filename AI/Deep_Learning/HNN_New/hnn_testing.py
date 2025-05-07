@@ -213,9 +213,9 @@ def model_predict(stored_dataset, DL_model, model_weights):
 if __name__ == "__main__":
     
     # Test data folder names
-    test_ionogram_folder = "testing_data/test_ionogram_folder"
-    test_radar_folder = "testing_data/test_eiscat_folder"
-    test_geophys_folder = "testing_data/test_geophys_folder"
+    test_ionogram_folder = "testing_data/ionogram_test_days_new"
+    test_radar_folder = "testing_data/eiscat_test_days_new"
+    test_geophys_folder = "testing_data/geophys_test_days_new"
     
     # Initializing class for matching pairs
     Pairs = Matching3Pairs(test_ionogram_folder, test_radar_folder, test_geophys_folder)
@@ -232,7 +232,7 @@ if __name__ == "__main__":
     A = Store3Dataset(ion, geo, np.log10(rad), transforms.Compose([transforms.ToTensor()]))
     
     # Path to trained weights
-    weights_path = 'best_model_weights.pth'
+    weights_path = 'best_model_weights4.pth'
     
     
     X_pred = model_predict(A, FuDMLP(), weights_path)
@@ -251,16 +251,21 @@ if __name__ == "__main__":
     
     
     # Adding 'r_h' from eiscat to all dicts
-    Eiscat_support = load_dict("X_avg_test_data")
+    Eiscat_support = load_dict("X_eiscat_new_test_data.pkl")
     X_eis = add_key_from_dict_to_dict(Eiscat_support, X_eis, key="r_h")
     X_eis = add_key_with_matching_times(Eiscat_support, X_eis, key="r_error")
     
     
     X_kian = add_key_from_dict_to_dict(Eiscat_support, X_kian, key="r_h")
-
     
-    for day in X_eis:
-        plot_compare(X_eis[day], X_kian[day])
+    save_dict(X_kian, 'new_X_pred_kiannet')
+    save_dict(X_eis, 'new_X_true_eiscat')
+    
+    # print(len(X_kian))
+    # print(len(X_eis))
+    
+    # for day in X_eis:
+    #     plot_compare(X_eis[day], X_kian[day])
     
     
 
