@@ -22,32 +22,32 @@ class GeoDMLP(nn.Module):
             nn.Linear(25, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(64, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(128, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(256, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(512, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(1024, 2048),
             nn.BatchNorm1d(2048),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
         )
         
         
@@ -55,27 +55,27 @@ class GeoDMLP(nn.Module):
             nn.Linear(2048, 1024),
             nn.BatchNorm1d(1024),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(1024, 512),
             nn.BatchNorm1d(512),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(512, 256),
             nn.BatchNorm1d(256),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(256, 128),
             nn.BatchNorm1d(128),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(128, 64),
             nn.BatchNorm1d(64),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            # nn.Dropout(0.3),
             
             nn.Linear(64, 27),
         )
@@ -121,5 +121,5 @@ if __name__ == "__main__":
     
     
     print("Iono-CNN Summary:")
-    summary(geo_dmlp, input_size=(19,))
+    summary(geo_dmlp, input_size=(25,))
     

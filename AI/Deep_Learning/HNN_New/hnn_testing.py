@@ -15,7 +15,7 @@ from torch.utils.data import DataLoader
 
 
 from torchvision import transforms
-from storing_dataset import Matching3Pairs, Store3Dataset
+from storing_dataset import Matching3Pairs, Store3Dataset, MatchingPairs, StoreDataset
 
 
 from hnn_utils import from_strings_to_array, filter_artist_times, load_dict, save_dict, convert_pred_to_dict, from_array_to_datetime, from_strings_to_datetime, from_csv_to_numpy, add_key_from_dict_to_dict, add_key_with_matching_times, inspect_dict, convert_ionograms_to_dict, convert_geophys_to_dict
@@ -189,18 +189,18 @@ def model_predict(stored_dataset, DL_model, model_weights):
     predictions = []
     
     with torch.no_grad():
-        for data1, data2, targets in test_loader:
+        for data1, data2 in test_loader:
             
             # print(data1.shape)
             
             data1 = data1.to(device)
             data2 = data2.to(device)
-            targets = targets.to(device)
+            # targets = targets.to(device)
             
             outputs = model(data1, data2)
             
-            loss = criterion(outputs, targets)
-            print(loss)
+            # loss = criterion(outputs, targets)
+            # print(loss)
             predictions.extend(outputs.cpu().numpy())
     
     
@@ -214,22 +214,22 @@ if __name__ == "__main__":
     
     # Test data folder names
     test_ionogram_folder = "testing_data/ionogram_test_days_new"
-    test_radar_folder = "testing_data/eiscat_test_days_new"
+    # test_radar_folder = "testing_data/eiscat_test_days_new"
     test_geophys_folder = "testing_data/geophys_test_days_new"
     
     # Initializing class for matching pairs
-    Pairs = Matching3Pairs(test_ionogram_folder, test_radar_folder, test_geophys_folder)
+    Pairs = MatchingPairs(test_ionogram_folder, test_geophys_folder)
     
     
     # Returning matching sample pairs
-    rad, ion, geo, radar_times = Pairs.find_pairs(return_date=True)
+    geo, ion, radar_times = Pairs.find_pairs(return_date=True)
     r_t = from_strings_to_datetime(radar_times)
     r_times = from_strings_to_array(radar_times)
     
     
     
     # Storing the sample pairs
-    A = Store3Dataset(ion, geo, np.log10(rad), transforms.Compose([transforms.ToTensor()]))
+    A = StoreDataset(ion, geo, transforms.Compose([transforms.ToTensor()]))
     
     # Path to trained weights
     weights_path = 'best_model_weights4.pth'
@@ -239,33 +239,33 @@ if __name__ == "__main__":
     X_kian = convert_pred_to_dict(r_t, r_times, X_pred)
     
     
-    X_Kian = merge_nested_dict(X_kian)
+    # X_Kian = merge_nested_dict(X_kian)
     
     
-    # save_dict(X_kian, "X_deep_pred_one_week")
+    save_dict(X_kian, "new_X_pred_kiannet")
     
     # plot_pred(X_Kian['All'])
     
-    X_true = from_csv_to_numpy(test_radar_folder)[0]
-    X_eis = convert_pred_to_dict(r_t, r_times, X_true)
+    # X_true = from_csv_to_numpy(test_radar_folder)[0]
+    # X_eis = convert_pred_to_dict(r_t, r_times, X_true)
     
     
     # Adding 'r_h' from eiscat to all dicts
-    Eiscat_support = load_dict("X_eiscat_new_test_data.pkl")
-    X_eis = add_key_from_dict_to_dict(Eiscat_support, X_eis, key="r_h")
-    X_eis = add_key_with_matching_times(Eiscat_support, X_eis, key="r_error")
+    # Eiscat_support = load_dict("X_eiscat_new_test_data.pkl")
+    # X_eis = add_key_from_dict_to_dict(Eiscat_support, X_eis, key="r_h")
+    # X_eis = add_key_with_matching_times(Eiscat_support, X_eis, key="r_error")
     
     
-    X_kian = add_key_from_dict_to_dict(Eiscat_support, X_kian, key="r_h")
+    # X_kian = add_key_from_dict_to_dict(Eiscat_support, X_kian, key="r_h")
     
-    save_dict(X_kian, 'new_X_pred_kiannet')
-    save_dict(X_eis, 'new_X_true_eiscat')
+    # save_dict(X_kian, 'new_X_pred_kiannet')
+    # save_dict(X_eis, 'new_X_true_eiscat')
     
     # print(len(X_kian))
     # print(len(X_eis))
     
-    # for day in X_eis:
-    #     plot_compare(X_eis[day], X_kian[day])
+    for day in X_kian:
+        plot_pred(X_kian[day])
     
     
 

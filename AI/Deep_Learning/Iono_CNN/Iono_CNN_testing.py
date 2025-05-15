@@ -19,7 +19,7 @@ from storing_dataset import MatchingIonoPair, StoreIonoDataset
 
 
 from Iono_CNN_utils import from_strings_to_array, filter_artist_times, load_dict, save_dict, convert_pred_to_dict, from_array_to_datetime, from_strings_to_datetime, from_csv_to_numpy, add_key_from_dict_to_dict, add_key_with_matching_times, inspect_dict, convert_geophys_to_dict
-from Iono_CNN_model import IonoCNN
+from iono_CNN_model import IonoCNN
 
 
 from matplotlib.dates import DateFormatter
@@ -132,14 +132,14 @@ def plot_compare(data1, data2):
     
     
     # Plotting EISCAT
-    ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='auto', cmap='turbo', norm=colors.LogNorm(vmin=1e10, vmax=1e12))
+    ne_EISCAT = ax0.pcolormesh(r_time, r_h, ne_eis, shading='gouraud', cmap='turbo', norm=colors.LogNorm(vmin=1e10, vmax=1e12))
     ax0.set_title('EISCAT UHF', fontsize=17)
     ax0.set_xlabel('Time [hh:mm]', fontsize=13)
     ax0.set_ylabel('Altitude [km]', fontsize=15)
     ax0.xaxis.set_major_formatter(DateFormatter('%H:%M'))
     
     # Plotting DL model
-    ax1.pcolormesh(r_time, r_h, ne_pred, shading='auto', cmap='turbo', norm=colors.LogNorm(vmin=1e10, vmax=1e12))
+    ax1.pcolormesh(r_time, r_h, ne_pred, shading='gouraud', cmap='turbo', norm=colors.LogNorm(vmin=1e10, vmax=1e12))
     ax1.set_title('Iono-CNN', fontsize=17)
     ax1.set_xlabel('Time [hh:mm]', fontsize=13)
     ax1.xaxis.set_major_formatter(DateFormatter('%H:%M'))
@@ -204,8 +204,8 @@ def model_predict(stored_dataset, DL_model, model_weights):
 if __name__ == "__main__":
     
     # Test data folder names
-    test_ionogram_folder = "testing_data/test_ionogram_folder"
-    # test_radar_folder = "testing_data/eis_test_flow_new"
+    test_ionogram_folder = "testing_data1/ionogram_test_days_new"
+    # test_radar_folder = "testing_data1/eiscat_test_days_new"
     # test_geophys_folder = "testing_data/test_geophys_folder"
     
     # Initializing class for matching pairs
@@ -233,7 +233,7 @@ if __name__ == "__main__":
     # X_Kian = merge_nested_dict(X_kian)
     
     
-    save_dict(X_kian, "X_pred_one_week")
+    save_dict(X_kian, "new_X_pred_ionocnn")
     
     # plot_pred(X_Kian['All'])
     
@@ -242,7 +242,7 @@ if __name__ == "__main__":
     
     
     # # Adding 'r_h' from eiscat to all dicts
-    # Eiscat_support = load_dict("X_avg_test_data")
+    # Eiscat_support = load_dict("new_X_true_eiscat")
     # X_eis = add_key_from_dict_to_dict(Eiscat_support, X_eis, key="r_h")
     # X_eis = add_key_with_matching_times(Eiscat_support, X_eis, key="r_error")
     

@@ -204,8 +204,8 @@ if __name__ == "__main__":
     
     # Test data folder names
     # test_ionogram_folder = "testing_data/test_ionogram_folder"
-    # test_radar_folder = "testing_data/eis_test_flow_new"
-    test_geophys_folder = "testing_data/test_geophys_folder"
+    # test_radar_folder = "testing_data/eiscat_test_days_new"
+    test_geophys_folder = "testing_data/geophys_test_days_new"
     
     # Initializing class for matching pairs
     Pairs = MatchingGeoPair(test_geophys_folder)
@@ -228,11 +228,12 @@ if __name__ == "__main__":
     X_pred = model_predict(A, GeoDMLP(), weights_path)
     X_kian = convert_pred_to_dict(r_t, r_times, X_pred)
     
+    # inspect_dict(X_kian)
     
     # X_Kian = merge_nested_dict(X_kian)
     
     
-    save_dict(X_kian, "X_pred_one_week")
+    save_dict(X_kian, "X_geophys_pred_new")
     
     # plot_pred(X_Kian['All'])
     
@@ -240,14 +241,15 @@ if __name__ == "__main__":
     # X_eis = convert_pred_to_dict(r_t, r_times, X_true)
     
     
-    # # Adding 'r_h' from eiscat to all dicts
-    # Eiscat_support = load_dict("X_avg_test_data")
+    # # # Adding 'r_h' from eiscat to all dicts
+    # Eiscat_support = load_dict("new_X_true_eiscat")
     # X_eis = add_key_from_dict_to_dict(Eiscat_support, X_eis, key="r_h")
     # X_eis = add_key_with_matching_times(Eiscat_support, X_eis, key="r_error")
     
     
     # X_kian = add_key_from_dict_to_dict(Eiscat_support, X_kian, key="r_h")
-
+    
+    # print(len(X_eis))    
     
     # for day in X_eis:
     #     plot_compare(X_eis[day], X_kian[day])
